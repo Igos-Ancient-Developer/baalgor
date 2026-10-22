@@ -461,8 +461,8 @@ body.ranked #bossbar { top: 64px; }
 #tut .tok { pointer-events: auto; flex: none; padding: 8px 12px; border-radius: 10px; background: linear-gradient(#4a8a2a, #245a12); border: 1.5px solid #8fe36a; font-family: var(--gothic); font-size: 13px; color: #f2ffe4; text-transform: uppercase; }
 .tuthint { animation: tutpulse 1s ease-in-out infinite; z-index: 9 !important; }
 @keyframes tutpulse { 0%,100% { box-shadow: 0 0 0 2px #ffe27a, 0 0 8px #ffe27a; } 50% { box-shadow: 0 0 0 4px #ffe27a, 0 0 24px 4px #ffe27a; } }
-#note { position: fixed; left: 50%; top: calc(var(--sa-top) + 14px); transform: translate(-50%, -140%); z-index: 90; max-width: 90%; padding: 9px 16px; border-radius: 12px; background: var(--slab); box-shadow: var(--slabline), 0 8px 24px rgba(0,0,0,.8); font-family: var(--gothic); font-size: 14px; color: #f0ecdc; text-align: center; transition: transform .25s; pointer-events: none; }
-#note.show { transform: translate(-50%, 0); }
+#note { opacity: 0; visibility: hidden; transition: transform .25s, opacity .2s, visibility 0s .25s; position: fixed; left: 50%; top: calc(var(--sa-top) + 14px); transform: translate(-50%, -140%); z-index: 90; max-width: 90%; padding: 9px 16px; border-radius: 12px; background: var(--slab); box-shadow: var(--slabline), 0 8px 24px rgba(0,0,0,.8); font-family: var(--gothic); font-size: 14px; color: #f0ecdc; text-align: center; pointer-events: none; }
+#note.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; transition: transform .25s, opacity .2s; }
 
 /* стартовый экран: логотип поменьше, справа сверху аватар и кристаллы */
 #title { padding-top: calc(var(--sa-top) + 52px); }

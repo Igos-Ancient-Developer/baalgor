@@ -15,6 +15,7 @@ export const TG = {
     if (!tg) return;
     try { tg.ready(); } catch (e) { /* */ }
     try { tg.expand(); } catch (e) { /* */ }
+    try { if (ver('8.0') && tg.requestFullscreen && !tg.isFullscreen) tg.requestFullscreen(); } catch (e) { /* */ }      // сразу на весь экран
     const c = '#0b0609';
     try { tg.setHeaderColor(c); } catch (e) { /* */ }
     try { tg.setBackgroundColor(c); } catch (e) { /* */ }
