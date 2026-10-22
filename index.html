@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0609">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2715%27 fill=%27%23c8202e%27/%3E%3Ctext x=%2716%27 y=%2722%27 font-size=%2718%27 text-anchor=%27middle%27%3E%E2%98%A0%3C/text%3E%3C/svg%3E">
+<title>Baalgor</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Monomakh&family=Oswald:wght@500;700&display=swap&subset=cyrillic" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <div id="note"></div>
+
+  <!-- БОЙ -->
+  <div id="game" class="hidden">
+    <div id="hud">
+      <div class="chip" id="chip-lives"><img data-icon="heart"><b id="v-lives">20</b></div>
+      <div class="chip gold" id="chip-gold">
+        <img data-icon="coin"><b id="v-gold">0</b><span id="v-inc">+5</span>
+      </div>
+      <div class="chip" id="chip-wave"><img data-icon="skull"><b id="v-wave">0/30</b></div>
+      <div class="spacer"></div>
+      <div class="chip hscore" id="chip-score"><img class="sco" alt=""><b id="v-score">0</b></div>
+      <div class="chip hidden htime" id="chip-time"><img class="hg" alt=""><b id="rh-time">0:00</b></div>
+      <button class="ibtn" id="b-pause" aria-label="Пауза"><img data-icon="pause"></button>
+    </div>
+
+    <div id="stage">
+      <canvas id="cv"></canvas>
+      <button id="wcall" class="wcall hidden" aria-label="Вызвать волну"><i class="wring"></i><span class="wface"><img class="wic" alt=""></span><b class="wn"></b><span class="wb"></span></button>
+      <div id="achtoast"></div>
+      <div id="bossbar" class="hidden"><span id="bossname"></span><i><u id="bossfill"></u></i></div>
+      <div id="tut" class="hidden"><img class="tpic" alt=""><div class="ttext"></div><button class="tok hidden">Понятно</button></div>
+      <div id="dock">
+        <div id="dinfo" class="hidden"></div>
+        <div id="slots"></div>
+        <button id="slotbtn" aria-label="Постройки"><img class="sb-ic" alt=""><i class="sb-n"></i></button>
+      </div>
+      <div id="sel" class="hidden"></div>
+    </div>
+
+    <div id="sellmodal" class="hidden"><div class="sm-box"><div class="sm-top"><img id="sm-ic" alt=""><div class="sm-v"><img class="cg" alt=""><b id="sm-v">0</b></div></div><div class="sm-q">Продать здание?</div><div class="sm-b"><button id="sm-yes" aria-label="Продать">✓</button><button id="sm-no" aria-label="Отмена">✕</button></div></div></div>
+
+    <div id="upmodal" class="hidden">
+      <div class="um-box">        <div class="um-head"><div class="um-t"><b id="um-name"></b><small id="um-sub"></small></div><span class="um-gold"><img class="cg" alt=""><b id="um-gold">0</b></span></div>
+        <div class="um-cards" id="um-cards"></div>
+        <button class="btn um-cancel" id="um-cancel">Отмена</button></div>
+    </div>
+  </div>
+
+  <!-- ЗАГРУЗКА -->
+  <div id="loading" class="screen">
+    <img class="logo-img" id="load-logo" alt="">
+    <div class="loadbar"><i id="loadfill"></i></div>
+  </div>
+
+  <!-- СТАРТ -->
+  <div id="title" class="screen hidden">
+    <div class="embers"></div>
+    <div id="toprow"><button class="gembtn" id="b-gems" aria-label="Магазин кристаллов"><span id="gem-ic"></span><b id="gem-n">0</b></button><div class="pf" id="pf"></div></div>
+    <img class="logo-img big" id="title-logo" alt="">
+    <div class="title-actions">
+      <button class="stn primary" id="b-start"><span>Начать игру</span></button>
+      <button class="stn ranked" id="b-ranked"><img class="tk" alt=""><span>Рейтинговый забег</span></button>
+      <button class="stn" id="b-forge"><span>Кузница</span></button>
+      <button class="stn" id="b-achs"><span>Награды</span></button>
+      <button class="stn" id="b-board"><span>Мировой рейтинг</span></button>
+      <button class="stn" id="b-settings"><span>Настройки</span></button>
+    </div>
+  </div>
+
+  <!-- КАРТА КАМПАНИИ -->
+  <div id="world" class="screen sub hidden">
+    <div class="topbar">
+      <button class="back" id="world-back"></button>
+      <div class="spacer"></div>
+      <div class="rps" id="world-souls"></div>
+      <div class="iconrow small" id="world-icons"></div>
+    </div>
+    <div id="worldscroll"><div id="worldmap"><img id="worldimg" alt=""><canvas id="worldcv"></canvas><div id="sectors"></div><div id="nodes"></div></div></div>
+  </div>
+
+  <!-- ВЫБОР СЛОЖНОСТИ -->
+  <div id="diffsheet" class="screen sub hidden">
+    <div class="topbar"><button class="back" id="ds-back"></button><h2 id="ds-title"></h2></div>
+    <div id="dwrap"><button class="dnav l" id="d-prev" aria-label="Назад"></button><div id="dcar"></div><button class="dnav r" id="d-next" aria-label="Вперёд"></button></div>
+    <div id="ddots"></div>
+  </div>
+
+  <!-- РЕЙТИНГОВЫЙ ЗАБЕГ -->
+  <div id="rankedsheet" class="screen sub hidden">
+    <div class="topbar"><button class="back" id="rk-back"></button><h2>Рейтинговый забег</h2></div>
+    <div class="subbody" id="rankedbody"></div>
+  </div>
+
+  <!-- НАСТРОЙКИ -->
+  <div id="settings" class="screen sub hidden">
+    <div class="topbar"><button class="back" id="st-back"></button><h2>Настройки</h2></div>
+    <div class="subbody" id="settingsbody"></div>
+  </div>
+
+  <!-- ТАБЛИЦА ЛИДЕРОВ -->
+  <div id="board" class="screen sub hidden">
+    <div class="topbar"><button class="back" id="bd-back"></button><h2 id="bd-title"></h2></div>
+    <div class="subbody wide"><div id="boardlist"></div></div>
+    <div id="bd-me" class="hidden"></div>
+  </div>
+
+  <!-- КУЗНИЦА ДУШ -->
+  <div id="forge" class="screen sub hidden">
+    <div class="topbar"><button class="back" id="forge-back"></button><h2>Кузница</h2><div class="rps" id="forge-souls"></div></div>
+    <div class="subbody">
+      <div class="sect-title">Дары</div><div id="perks"></div>
+      <div class="sect-title">Слоты в бою</div><div id="slotsbox"></div>
+      <div class="sect-title">Премиум: только за кристаллы</div><div id="premium"></div>
+      <div class="sect-title">Арсенал</div><div id="unlocks"></div>
+    </div>
+  </div>
+
+  <!-- МАГАЗИН -->
+  <div id="shop" class="screen sub hidden">
+    <div class="topbar"><button class="back" id="shop-back"></button><h2>Магазин</h2><div class="rps" id="shop-res"></div></div>
+    <div class="subbody shop" id="shopbody"></div>
+  </div>
+
+  <!-- ДОСТИЖЕНИЯ -->
+  <div id="achs" class="screen sub hidden">
+    <div class="topbar"><button class="back" id="achs-back"></button><h2>Награды</h2><div class="rps" id="achs-count"></div></div>
+    <div class="subbody"><div id="achlist"></div></div>
+  </div>
+
+  <!-- ПОДГОТОВКА К УРОВНЮ: набор зданий по слотам -->
+  <div id="loadout" class="screen sub hidden">
+    <div class="topbar"><button class="back" id="lo-back"></button><h2 id="lo-title">Подготовка</h2><div class="lo-cnt" id="lo-cnt"></div></div>
+    <div class="subbody lo">
+      <div class="lo-slots" id="lo-slots"></div>
+      <div class="lo-info" id="lo-info"></div>
+      <div class="lo-grid" id="lo-grid"></div>
+    </div>
+    <div class="lo-foot"><button class="btn big" id="lo-go">В бой</button></div>
+  </div>
+
+  <!-- ПАУЗА -->
+  <div id="pausemenu" class="screen overlay hidden">
+    <div class="modal">
+      <h2>Пауза</h2>
+      <button class="btn big" id="p-resume">Продолжить</button>
+      <button class="btn" id="p-settings">Настройки</button>
+      <button class="btn" id="p-restart">Заново</button>
+      <button class="btn danger" id="p-quit">На карту</button>
+    </div>
+  </div>
+
+  <!-- КОНЕЦ ПАРТИИ -->
+  <div id="endmenu" class="screen overlay hidden">
+    <div class="modal">
+      <h2 id="end-title"></h2>
+      <div id="end-verdict"></div>
+      <div id="end-score"></div>
+      <div id="end-stats"></div>
+      <div id="end-souls"></div>
+      <div id="end-rank" class="hidden"></div>
+      <div id="end-ach"></div>
+      <button class="btn big hidden" id="e-next">Дальше</button>
+      <button class="btn big hidden" id="e-endless">Бесконечный режим</button>
+      <button class="btn" id="e-again">Ещё раз</button>
+      <button class="btn danger" id="e-menu">На карту</button>
+    </div>
+  </div>
+
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
