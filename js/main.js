@@ -88,14 +88,17 @@ function back() {
   if (!$('#world').classList.contains('hidden')) { sfx.play('click'); goTitle(); return; }
   if (running && !paused) setPause(true);
 }
-function updateBack() { TG.backButton(!$('#title').classList.contains('hidden') ? null : back); }
+// кнопка «Назад» Telegram нужна везде, кроме главного меню (поверх него открываются Кузница, Награды и т.д., поэтому смотрим на открытые окна, а не на видимость заставки)
+function updateBack() { const home = !top() && $('#world').classList.contains('hidden') && !running; TG.backButton(home ? null : back); }
 function setupNav() {
+  let ubT = 0; new MutationObserver((recs) => { if (ubT || !recs.some((r) => r.target.classList && r.target.classList.contains('screen'))) return; ubT = setTimeout(() => { ubT = 0; updateBack(); }, 0); }).observe($('#app'), { subtree: true, attributes: true, attributeFilter: ['class'] });      // любое окно открылось или закрылось
   for (const [id, fn] of [['#st-back', back], ['#rk-back', back], ['#world-back', back], ['#ds-back', back], ['#bd-back', back], ['#forge-back', back], ['#achs-back', back], ['#lo-back', back], ['#shop-back', back]]) $(id).onclick = fn;
   $('#b-start').onclick = () => {
     sfx.unlock(); sfx.play('click'); sfx.startMusic(MENU_SPEC);
     if (!tutorialDone(save)) { prepareLevel('tut', 1); return; }               // новичка сразу ведём в обучение
     goWorld();
   };
+  for (const id of ['#world-forge', '#ds-forge', '#lo-forge', '#e-forge']) $(id).onclick = () => ctrl.openForge();      // Кузница доступна при выборе уровня, подготовке и после победы
   $('#b-ranked').onclick = () => { sfx.unlock(); sfx.play('click'); sfx.startMusic(MENU_SPEC); menus.openRanked(); updateBack(); };
   $('#b-forge').onclick = () => ctrl.openForge(); $('#b-achs').onclick = () => ctrl.openAchs();
   $('#b-board').onclick = () => { sfx.unlock(); sfx.play('click'); menus.openBoard({ global: true }); updateBack(); };
@@ -178,9 +181,9 @@ function prepareLevel(levelId, diffIdx, again = false) {
     } });
   updateBack();
 }
-function openLoadoutFor(levelId, diffIdx) {                 // перед каждым уровнем забега: все здания открыты, максимум слотов
+function openLoadoutFor(levelId, diffIdx) {                 // перед каждым уровнем забега: слоты и открытые здания игрока, как в обычной игре
   const lv = D.MAPS.find((l) => l.id === levelId);
-  menus.openLoadout({ title: `${run.i + 1}/${run.levels.length} · ${lv.name}`, slots: D.RUN_SLOTS, all: true, initial: run.loadout || getLoadout(save, D.RUN_SLOTS, true), nobackBtn: run.i > 0,
+  menus.openLoadout({ title: `${run.i + 1}/${run.levels.length} · ${lv.name}`, slots: slotsOf(save), all: false, initial: run.loadout || getLoadout(save), nobackBtn: run.i > 0,
     onGo: (list) => { run.loadout = list.slice(); startLevel(levelId, diffIdx, true, list); } });
   updateBack();
 }
@@ -189,7 +192,7 @@ function startLevel(levelId, diffIdx, ranked, loadout, boosts = []) {
   const L = D.MAPS[levelIdx], tut = !!L.tutorial;
   hideAll(); show('#game'); tally++;
   if (!ranked) { run = null; ctrl.run = null; }
-  const std = !ranked && !tut;                           // в рейтинговом забеге и обучении: без даров Кузницы
+  const std = !tut;                                      // в обучении без даров Кузницы; в рейтинговом забеге действует всё, что игрок открыл и прокачал
   sim = new Sim({ mapId: levelIdx, diffIdx, seed: (Math.random() * 1e9) | 0, perks: boostMods(perkMods(std ? save.perks : {}), boosts, diffIdx), locked: std ? lockedItems(save) : [],
     allowed: loadout, limits: tut ? { bolt: 1, mine: 1 } : null, gold: tut ? 110 : null, hold: tut });
   ctrl.sim = sim; if (location.search.includes('debug')) window.__bk = ctrl;
@@ -203,7 +206,7 @@ function startLevel(levelId, diffIdx, ranked, loadout, boosts = []) {
   sim.on('over', (d) => onOver(d));
   $('#b-pause').classList.remove('on');
   running = true; paused = false; held = false; acc = 0; ending = null; lastHud = '';
-  save.plays++; save.last = { level: levelId, diff: diffIdx }; persist();
+  save.plays++; save.last = { level: levelId, diff: diffIdx }; if (!ranked && !tut) (save.lastDiff ||= {})[levelId] = diffIdx; persist();
   TG.closingConfirm(true); updateBack();
   sfx.unlock(); sfx.startMusic(levelSpec(L, ranked));
   if (tut) tutorial.attach(sim, ui); else tutorial.detach();

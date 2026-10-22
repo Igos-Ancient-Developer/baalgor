@@ -794,3 +794,8 @@ body.tgback #world.screen.sub { padding-top: var(--sa-top); }
 .krow .btn.buy { width: auto !important; flex: 0 0 auto; min-height: 0; margin: 0; }
 
 .langsel { min-width: 140px; padding: 8px 10px; border-radius: 10px; background: #2a1219; color: var(--bone); border: 1.5px solid var(--edge2); font: inherit; font-size: 15px; }
+
+/* кнопка «Кузница» при выборе уровня, подготовке и после победы; Кузница и Магазин открываются поверх любого окна */
+.btn.tb-forge { width: auto; min-height: 0; padding: 7px 14px; font-size: 14px; flex: none; }
+#world-forge.float { position: absolute; left: 12px; bottom: calc(var(--sa-bottom) + 14px); z-index: 6; box-shadow: 0 4px 14px rgba(0,0,0,.7); }
+#forge { z-index: 35; } #shop { z-index: 36; }

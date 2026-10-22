@@ -191,9 +191,12 @@ export class Menus {
     const go = (i, smooth = true) => { i = Math.max(0, Math.min(cards.length - 1, i)); const cd = cards[i]; car.scrollTo({ left: cd.offsetLeft - (car.clientWidth - cd.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'auto' }); };
     let raf = 0; car.onscroll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(setCur); };
     $('#d-prev').onclick = () => { c.sfx.play('click'); go(cur - 1); }; $('#d-next').onclick = () => { c.sfx.play('click'); go(cur + 1); };
-    // начинаем с последней сыгранной / самой высокой открытой сложности
-    let start = 0; D.DIFFS.forEach((d, i) => { if (M.diffUnlocked(s, l, i)) start = i; });
-    if (s.last && s.last.level === l.id && M.diffUnlocked(s, l, s.last.diff)) start = s.last.diff;
+    // начинаем со сложности, на которой этот уровень играли в последний раз; иначе с самой высокой пройденной; иначе с первой
+    let start = 0;
+    const ld = (s.lastDiff || {})[l.id];
+    if (Number.isInteger(ld) && ld >= 0 && ld < D.DIFFS.length) start = ld;
+    else if (s.last && s.last.level === l.id && Number.isInteger(s.last.diff)) start = s.last.diff;
+    else D.DIFFS.forEach((d, i) => { if (M.diffCleared(s, l.id, i)) start = i; });
     this.show('#diffsheet');
     requestAnimationFrame(() => { go(start, false); setCur(); });
     // топ-3 каждой сложности (всегда на виду)
@@ -236,7 +239,7 @@ export class Menus {
         ${row('heart', 'Жизнь', 'Один пропущенный враг — забег окончен', '1', 'bad')}
         ${row('coins', 'Золото', 'Из всех источников', '+' + Math.round(d.gold * 100) + '%', 'good')}
         ${row('star', 'Очки', 'За победу над волной, за сильных врагов и за скорость прохождения уровня. Чем дальше уровень, тем больше очков. Итог каждого уровня умножается на сложность', '×' + x(d.score), 'good').replace('mrow good', 'mrow good tokrow').replace(`<img src="${bareGlyphUrl('star', 24)}" alt="">`, `<img src="${SC()}" alt="" class="scimg">`)}
-        ${row('tower', 'Слоты', `Перед каждым уровнем собираешь набор из ${D.RUN_SLOTS} зданий. Всё открыто, дары Кузницы отключены: условия у всех равные`, D.RUN_SLOTS, 'neutral')}
+        ${row('tower', 'Слоты', 'Перед каждым уровнем собираешь набор из зданий, которые у тебя открыты. Слоты, открытые башни и дары Кузницы — как в обычной игре', M.slotsOf(s), 'neutral')}
         ${row('gem', 'Редкая награда', 'За рейтинговый забег иногда можно выбить кристаллы', '✦', 'good')}
         ${row('fast', 'Ускорение', 'Скорость игры не меняется. Хочешь быстрее и получить бонус золота — вызывай следующую волну раньше срока кнопкой справа сверху', '', 'neutral').replace('<b></b>', '<b>волны</b>')}
       </div>

@@ -14,7 +14,6 @@ export const TG = {
   init() {
     if (!tg) return;
     try { tg.ready(); } catch (e) { /* */ }
-    try { document.body.classList.toggle('tgback', !!(tg.BackButton && ver('6.1') && tg.initData)); } catch (e) { /* */ }      // своя кнопка «Назад» есть у Telegram
     try { tg.expand(); } catch (e) { /* */ }
     try { if (ver('8.0') && tg.requestFullscreen && !tg.isFullscreen) tg.requestFullscreen(); } catch (e) { /* */ }      // сразу на весь экран
     const c = '#0b0609';
@@ -41,8 +40,12 @@ export const TG = {
   backButton(fn) {
     try {
       const bb = tg && tg.BackButton; if (!bb) return;
+      if (!fn && !this._shown) return;                       // ничего не изменилось
+      if (fn && this._shown && this._bb === fn) return;
       if (this._bb) { bb.offClick(this._bb); this._bb = null; }
-      if (fn) { this._bb = fn; bb.onClick(fn); bb.show(); } else bb.hide();
+      if (fn) { this._bb = fn; bb.onClick(fn); bb.show(); this._shown = true; } else { bb.hide(); this._shown = false; }
+      // внутриигровые кнопки «Назад» прячем только пока Telegram показывает свою; если её нет, остаётся наша, и из окна всегда можно выйти
+      document.body.classList.toggle('tgback', !!(this._shown && bb.isVisible !== false));
     } catch (e) { /* */ }
   },
   get isFullscreen() { return !!(tg && tg.isFullscreen); },
@@ -101,6 +104,7 @@ function mergeSave(a, b) {
     }
     out.plays = Math.max(out.plays, src.plays || 0); out.kills = Math.max(out.kills, src.kills || 0); out.souls = Math.max(out.souls, src.souls || 0); out.gems = Math.max(out.gems || 0, src.gems || 0); out.slots = Math.max(out.slots || 2, src.slots || 2); for (const k of src.packs || []) if (!out.packs.includes(k)) out.packs.push(k); out.starterBought = out.starterBought || !!src.starterBought; if (src.daily && src.daily.last > out.daily.last) out.daily = { ...src.daily }; out.tutDone = out.tutDone || src.tutDone || 0;
     if (Array.isArray(src.loadout) && src.loadout.length) out.loadout = src.loadout.slice(0, 5);
+    if (src.last) out.last = src.last; if (src.lastDiff) out.lastDiff = { ...(out.lastDiff || {}), ...src.lastDiff };      // последний сыгранный уровень и сложность на каждом уровне
     for (const k of Object.keys(src.best || {})) out.best[k] = Math.max(out.best[k] || 0, src.best[k]);
     for (const k of Object.keys(src.perks || {})) out.perks[k] = Math.max(out.perks[k] || 0, src.perks[k]);
     for (const k of Object.keys(src.unlocked || {})) out.unlocked[k] = 1;

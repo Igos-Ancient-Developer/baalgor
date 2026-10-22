@@ -80,6 +80,7 @@
 
   <!-- КАРТА КАМПАНИИ -->
   <div id="world" class="screen sub hidden">
+    <button class="btn tb-forge float" id="world-forge">Кузница</button>
     <div class="topbar">
       <button class="back" id="world-back"></button>
       <div class="spacer"></div>
@@ -91,7 +92,7 @@
 
   <!-- ВЫБОР СЛОЖНОСТИ -->
   <div id="diffsheet" class="screen sub hidden">
-    <div class="topbar"><button class="back" id="ds-back"></button><h2 id="ds-title"></h2></div>
+    <div class="topbar"><button class="back" id="ds-back"></button><h2 id="ds-title"></h2><button class="btn tb-forge" id="ds-forge">Кузница</button></div>
     <div id="dwrap"><button class="dnav l" id="d-prev" aria-label="Назад"></button><div id="dcar"></div><button class="dnav r" id="d-next" aria-label="Вперёд"></button></div>
     <div id="ddots"></div>
   </div>
@@ -140,7 +141,7 @@
 
   <!-- ПОДГОТОВКА К УРОВНЮ: набор зданий по слотам -->
   <div id="loadout" class="screen sub hidden">
-    <div class="topbar"><button class="back" id="lo-back"></button><h2 id="lo-title">Подготовка</h2><div class="lo-cnt" id="lo-cnt"></div></div>
+    <div class="topbar"><button class="back" id="lo-back"></button><h2 id="lo-title">Подготовка</h2><div class="lo-cnt" id="lo-cnt"></div><button class="btn tb-forge" id="lo-forge">Кузница</button></div>
     <div class="subbody lo">
       <div class="lo-slots" id="lo-slots"></div>
       <div class="lo-info" id="lo-info"></div>
@@ -173,6 +174,7 @@
       <button class="btn big hidden" id="e-next">Дальше</button>
       <button class="btn big hidden" id="e-endless">Бесконечный режим</button>
       <button class="btn" id="e-again">Ещё раз</button>
+      <button class="btn" id="e-forge">Кузница</button>
       <button class="btn danger" id="e-menu">На карту</button>
     </div>
   </div>
