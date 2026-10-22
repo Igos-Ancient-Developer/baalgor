@@ -1,4 +1,5 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
+import { LANGS, setLang, lang as curLang } from './i18n.js';
 import * as D from './data.js';
 import * as M from './meta.js';
 import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js';
@@ -49,9 +50,9 @@ export function diffLines(d, i) {
   const mul = (v) => '×' + x(v);
   L.push({ k: 'hp', icon: 'heart', t: 'Здоровье врагов', v: mul(d.hp), cls: d.hp > 1 ? 'bad' : d.hp < 1 ? 'good' : 'neutral', s: d.hp < 1 ? 'Враги слабее обычного' : d.hp > 1 ? `Каждый враг крепче на ${Math.round((d.hp - 1) * 100)}%` : 'Базовая прочность' });
   L.push({ k: 'spd', icon: 'fast', t: 'Скорость врагов', v: d.spd > 1 ? '+' + Math.round((d.spd - 1) * 100) + '%' : 'обычная', cls: d.spd > 1 ? 'bad' : 'neutral', s: d.spd > 1 ? 'Быстрее проходят дорогу — меньше времени на урон' : 'Темп по умолчанию' });
-  L.push({ k: 'horde', icon: 'horde', t: 'Размер орд', v: d.horde > 1 ? mul(d.horde) : 'обычный', cls: d.horde > 1 ? 'bad' : 'neutral', s: d.horde > 1 ? 'Больше врагов в каждой волне (боссы без изменений)' : 'Состав волн по умолчанию' });
+  L.push({ k: 'horde', icon: 'horde', t: 'Размер орд', v: d.horde > 1 ? mul(d.horde) : 'обычный', cls: d.horde > 1 ? 'bad' : 'neutral', s: d.horde > 1 ? 'Больше врагов в каждой волне' : 'Состав волн по умолчанию' });
   L.push({ k: 'elite', icon: 'crown', t: 'Элитные враги', v: d.elite ? Math.round(d.elite * 100) + '%' : 'нет', cls: d.elite ? 'bad' : 'neutral', s: d.elite ? 'Золотая аура: здоровье ×1.6, скорость +15%, награда ×2' : 'Золотых элит в волнах нет' });
-  L.push({ k: 'lives', icon: 'heart', t: 'Жизни крепости', v: d.lives ? String(d.lives) : String(D.START_LIVES), cls: d.lives ? 'bad' : 'neutral', s: d.lives ? 'Один пропущенный враг — и забег окончен' : 'Враги, дошедшие до ворот, отнимают жизни (боссы — больше)' });
+  L.push({ k: 'lives', icon: 'heart', t: 'Жизни крепости', v: d.lives ? String(d.lives) : String(D.START_LIVES), cls: d.lives ? 'bad' : 'neutral', s: d.lives ? 'Один пропущенный враг — и забег окончен' : 'Враги, дошедшие до ворот, отнимают жизни (тяжёлые — больше)' });
   L.push({ k: 'sep', t: 'Награды' });
   L.push({ k: 'score', icon: 'star', t: 'Множитель очков', v: mul(d.score), cls: d.score >= 1 ? 'good' : 'bad', s: 'Умножает очки за уровень: волны, сильные враги, время' });
   L.push({ k: 'souls', icon: 'soul', t: 'Души за забег', v: mul(d.souls), cls: d.souls >= 1 ? 'good' : 'bad', s: 'Валюта Кузницы: дары и новые башни' });
@@ -105,6 +106,7 @@ export class Menus {
     row('Числа над врагами', 'Урон и золото при убийстве', toggle(() => st.dmg, (v) => { st.dmg = v; }));
     row('Вибрация', '', toggle(() => st.haptic, (v) => { st.haptic = v; }));
     body.appendChild(el('div', 'sect-title', 'Приложение'));
+    { const sel = el('select', 'langsel'); for (const [id, name] of LANGS) { const o = el('option', '', name); o.value = id; if (id === curLang) o.selected = true; sel.appendChild(o); } sel.onchange = () => { c.sfx.play('click'); setLang(sel.value); }; row('Язык', '', sel); }
     row('Подтверждать выход из боя', 'Telegram спросит перед закрытием', toggle(() => st.confirm, (v) => { st.confirm = v; }));
     if (c.TG.canFullscreen()) { const b = el('button', 'btn ghost', c.TG.isFullscreen ? 'Свернуть' : 'Развернуть'); b.style.width = '130px'; b.onclick = () => { c.TG.toggleFullscreen(); setTimeout(() => { b.textContent = c.TG.isFullscreen ? 'Свернуть' : 'Развернуть'; }, 400); }; row('Полный экран', '', b); }
     const rs = el('button', 'btn danger ghost', 'Сбросить'); rs.style.width = '130px';
@@ -116,8 +118,6 @@ export class Menus {
   // ───── карта кампании ─────
   buildWorld(focus) {
     const s = this.save, c = this.c;
-    this.navButtons($('#world-icons'));
-    fillPlates($('#world-souls'), s, () => c.openShop(), () => c.openForge());
     const sc = $('#worldscroll'), map = $('#worldmap'), img = $('#worldimg');
     const H = Math.max(560, Math.min(900, (sc.clientHeight || window.innerHeight - 60) * 1.0)), f = H / MAP_H;
     map.style.width = Math.round(MAP_W * f) + 'px'; map.style.height = Math.round(H) + 'px';
@@ -125,14 +125,16 @@ export class Menus {
     this.f = f;
     // подписи секторов
     const secs = $('#sectors'); secs.innerHTML = '';
-    for (const sc2 of D.SECTORS) { const p = SECTOR_LABELS[sc2.id] && P(SECTOR_LABELS[sc2.id]); if (!p) continue; const e = el('div', 'sec', sc2.name); e.style.left = (p[0] / MAP_W) * 100 + '%'; e.style.top = (p[1] / MAP_H) * 100 + '%'; e.style.borderColor = sc2.color; secs.appendChild(e); }
+    // подписей регионов на карте нет
     // дороги между рубежами
     const cv = $('#worldcv'); cv.width = MAP_W; cv.height = MAP_H; const g = cv.getContext('2d'); g.clearRect(0, 0, MAP_W, MAP_H);
     for (const l of D.MAPS) for (const a of l.after) {
       const p0 = P(D.MAPS.find((q) => q.id === a).pos), p1 = P(l.pos), open = M.levelUnlocked(s, l);
       const mx = (p0[0] + p1[0]) / 2 + (p1[1] - p0[1]) * 0.12, my = (p0[1] + p1[1]) / 2 - (p1[0] - p0[0]) * 0.12;
-      g.lineCap = 'round'; g.setLineDash([]); g.strokeStyle = 'rgba(0,0,0,.65)'; g.lineWidth = 9; g.beginPath(); g.moveTo(p0[0], p0[1]); g.quadraticCurveTo(mx, my, p1[0], p1[1]); g.stroke();
-      g.setLineDash([2, 12]); g.strokeStyle = open ? '#ffe28a' : '#8a8f94'; g.lineWidth = 5; g.beginPath(); g.moveTo(p0[0], p0[1]); g.quadraticCurveTo(mx, my, p1[0], p1[1]); g.stroke();
+      g.lineCap = 'round'; g.setLineDash([]);
+      g.strokeStyle = 'rgba(0,0,0,.75)'; g.lineWidth = 13; g.beginPath(); g.moveTo(p0[0], p0[1]); g.quadraticCurveTo(mx, my, p1[0], p1[1]); g.stroke();                       // тёмная подложка
+      if (open) { g.strokeStyle = 'rgba(255,214,90,.45)'; g.lineWidth = 11; g.beginPath(); g.moveTo(p0[0], p0[1]); g.quadraticCurveTo(mx, my, p1[0], p1[1]); g.stroke(); }          // тёплое свечение пройденного пути
+      g.setLineDash([3, 11]); g.strokeStyle = open ? '#fff4b8' : '#c7cdd3'; g.lineWidth = 7; g.beginPath(); g.moveTo(p0[0], p0[1]); g.quadraticCurveTo(mx, my, p1[0], p1[1]); g.stroke();
     }
     // рубежи
     const nodes = $('#nodes'); nodes.innerHTML = '';
@@ -235,6 +237,7 @@ export class Menus {
         ${row('coins', 'Золото', 'Из всех источников', '+' + Math.round(d.gold * 100) + '%', 'good')}
         ${row('star', 'Очки', 'За победу над волной, за сильных врагов и за скорость прохождения уровня. Чем дальше уровень, тем больше очков. Итог каждого уровня умножается на сложность', '×' + x(d.score), 'good').replace('mrow good', 'mrow good tokrow').replace(`<img src="${bareGlyphUrl('star', 24)}" alt="">`, `<img src="${SC()}" alt="" class="scimg">`)}
         ${row('tower', 'Слоты', `Перед каждым уровнем собираешь набор из ${D.RUN_SLOTS} зданий. Всё открыто, дары Кузницы отключены: условия у всех равные`, D.RUN_SLOTS, 'neutral')}
+        ${row('gem', 'Редкая награда', 'За рейтинговый забег иногда можно выбить кристаллы', '✦', 'good')}
         ${row('fast', 'Ускорение', 'Скорость игры не меняется. Хочешь быстрее и получить бонус золота — вызывай следующую волну раньше срока кнопкой справа сверху', '', 'neutral').replace('<b></b>', '<b>волны</b>')}
       </div>
       <div class="dsub">Лучшие игроки</div><div class="rk-top">${'<div class="skel"></div>'.repeat(3)}</div></div>
@@ -328,6 +331,7 @@ export class Menus {
 
   // ───── таблицы лидеров ─────
   async openBoard(spec) {
+    if (spec.global) spec = { ...RUN, title: 'Мировой рейтинг' };      // мировой рейтинг — только те, кто проходил рейтинговый забег; результаты обычных уровней видны в таблице самого уровня
     const c = this.c, list = $('#boardlist'), me = $('#bd-me'); const seq = (this.boardSeq = (this.boardSeq || 0) + 1);
     const title = spec.title ? spec.title : spec.global ? 'Мировой рейтинг' : `${D.MAPS.find((q) => q.id === spec.level).name} · ${D.DIFFS[spec.diff].name}`;
     $('#bd-title').textContent = title; list.innerHTML = '<div class="skel"></div>'.repeat(8); me.classList.add('hidden'); me.innerHTML = '';

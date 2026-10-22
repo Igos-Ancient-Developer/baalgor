@@ -1,4 +1,5 @@
 // Расчленёнка, кровь и частицы. Подписывается на события симуляции и рисует в постоянный «слой крови».
+import { tr } from './i18n.js';
 import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js';
 import { S as ART_S } from './art.js';
 import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js';
@@ -6,7 +7,7 @@ import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSpri
 
 const GRAV = 560;
 const LAYERS = 3, SPAN = 6, HOLD = 6, FADE = 5;   // секунд игрового времени
-const MAX_PARTS = 480;
+const MAX_PARTS = 240;
 const rnd = (a = 1, b) => (b === undefined ? Math.random() * a : a + Math.random() * (b - a));
 const pick = (a) => a[(Math.random() * a.length) | 0];
 
@@ -100,7 +101,7 @@ export class Gore {
     const g = this.bg; g.save(); g.globalAlpha = alpha; g.translate(x, y); g.rotate(rot); g.drawImage(spr, -size / 2, -size / 2, size, size); g.restore();
   }
   splat(kind, x, y, size, alpha = 0.85) { this.stamp(splatSprite(kind, (Math.random() * 6) | 0), x, y, size, rnd(6.28), alpha); }
-  floatText(x, y, text, col = '#fff', k = 1) { this.floaters.push({ x, y, text, col, k, t: 0 }); }
+  floatText(x, y, text, col = '#fff', k = 1) { this.floaters.push({ x, y, text: tr(text), col, k, t: 0 }); }
   coinPop(x, y) { this.part({ k: 'coin', x, y, z: 6, vx: rnd(-50, 50), vy: rnd(-20, 20), vz: rnd(120, 220), life: 1.1, bn: 2, rot: rnd(6), vr: rnd(-10, 10) }); }
   spark(x, y, col) { const a = rnd(6.28), s = rnd(30, 110); this.part({ k: 'spark', x, y, z: rnd(4, 18), vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.5, vz: rnd(30, 120), life: rnd(0.25, 0.55), col, size: rnd(1, 2) }); }
   ring(x, y, r, col, life = 0.5) { this.part({ k: 'ring', x, y, z: 0, vx: 0, vy: 0, vz: 0, life, r, col }); }

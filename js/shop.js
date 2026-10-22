@@ -21,15 +21,19 @@ export function renderShop(save, ctrl, redraw) {
   const fail = (b) => { ctrl.sfx.play('error'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); };
   const say = (r) => { const e = r && r.error; ctrl.note(e === 'gems' ? 'Не хватает кристаллов' : e === 'notg' ? 'Покупка доступна внутри Telegram' : e === 'starter_done' ? 'Стартовый набор уже куплен' : e === 'telegram' ? 'Платежи пока не подключены' : 'Не получилось, попробуй ещё раз'); };
 
-  // ── ежедневный подарок ──
-  { const ready = Wallet.dailyReady(), streak = Wallet.online ? (save.streak || 0) : ((save.daily || {}).streak || 0), claimed = ready ? streak % 7 : streak;
-    const card = el('div', 'sh-card daily'); card.appendChild(el('div', 'sh-h', `<img class="sh-ic" src="${big(SHOP_IMG.daily, 64)}" alt="">Ежедневный подарок<small>заходи каждый день: серия 7 дней, последний день — главный приз</small>`));
-    const row = el('div', 'days');
-    D.DAILY.forEach((g, i) => row.appendChild(el('div', 'day' + (i < claimed ? ' got' : i === claimed && ready ? ' now' : ''), `<small>день ${i + 1}</small>${gemIc(22)}<b>${g}</b>${i < claimed ? '<i class="ck"></i>' : ''}`)));
-    card.appendChild(row);
-    const b = el('button', 'btn big' + (ready ? '' : ' poor'), ready ? `Забрать +${D.DAILY[claimed]}` : 'Приходи завтра');
-    b.onclick = async () => { if (!ready) { fail(b); return; } const r = await Wallet.daily(); if (r && r.ok) { ctrl.sfx.play('upgrade'); ctrl.note(`+${r.reward} кристаллов`); redraw(); } else { say(r); fail(b); } };
-    card.appendChild(b); body.appendChild(card); }
+  // ── кристаллы за Telegram Stars: главное в магазине ──
+  const t = el('div', 'sect-title', 'Кристаллы'); t.id = 'shop-packs'; body.appendChild(t);
+  body.appendChild(el('p', 'sh-note top', 'Кристаллы покупаются только за Telegram Stars. На них открываются здания, слоты, премиум-башни и усилители уровня.'));
+  const grid = el('div', 'sh-packs list');
+  D.PACKS.forEach((p) => {
+    const first = !(save.packs || []).includes(p.id), got = p.gems * (first ? D.FIRST_BONUS : 1);
+    const row = el('div', 'krow' + (p.tag ? ' ' + p.tag : ''));
+    row.innerHTML = `<div class="kl">${gemIc(30)}<b>${first ? `<s>${fmt(p.gems)}</s> ` : ''}${fmt(got)}</b>${first ? '<span class="x2">×2 за первую покупку</span>' : ''}${p.tag === 'hit' ? '<span class="tag">Хит</span>' : p.tag === 'best' ? '<span class="tag gold">Лучшая цена</span>' : ''}</div>`;
+    const b = el('button', 'btn buy', `⭐ ${p.stars}`);
+    b.onclick = async () => { b.disabled = true; const r = await Wallet.buy(p); b.disabled = false; if (ok(r)) { ctrl.sfx.play('win'); ctrl.note(`+${fmt(got)} кристаллов`); redraw(); } else if (r.status !== 'cancelled') { say(r); fail(b); } };
+    row.appendChild(b); grid.appendChild(row);
+  });
+  body.appendChild(grid);
 
   // ── стартовый набор: один раз ──
   if (!save.starterBought) {
@@ -57,21 +61,17 @@ export function renderShop(save, ctrl, redraw) {
   }
   body.appendChild(pg);
 
-  // ── пакеты кристаллов ──
-  const t = el('div', 'sect-title', 'Кристаллы'); t.id = 'shop-packs'; body.appendChild(t);
-  const grid = el('div', 'sh-packs');
-  D.PACKS.forEach((p, i) => {
-    const first = !(save.packs || []).includes(p.id), bonus = Math.round((p.gems / (p.stars * RATE) - 1) * 100), got = p.gems * (first ? D.FIRST_BONUS : 1);
-    const card = el('div', 'kcard' + (p.tag ? ' ' + p.tag : ''));
-    card.innerHTML = `${p.tag === 'hit' ? '<div class="rib">Хит</div>' : p.tag === 'best' ? '<div class="rib gold">Лучшая цена</div>' : ''}
-      <div class="pile"><img class="kimg" src="${big(SHOP_IMG.packs[i], 96)}" alt=""></div>
-      <div class="kn">${first ? `<s>${fmt(p.gems)}</s>` : ''}<b>${fmt(got)}</b></div>
-      <div class="kb">${first ? '<span class="x2">×2 за первую покупку</span>' : ''}${bonus ? `<span class="pc">+${bonus}%</span>` : ''}</div>`;
-    const b = el('button', 'btn buy', `⭐ ${p.stars}`);
-    b.onclick = async () => { b.disabled = true; const r = await Wallet.buy(p); b.disabled = false; if (ok(r)) { ctrl.sfx.play('win'); ctrl.note(`+${fmt(got)} кристаллов`); redraw(); } else if (r.status !== 'cancelled') { say(r); fail(b); } };
-    card.appendChild(b); grid.appendChild(card);
-  });
-  body.appendChild(grid);
+  // ── ежедневный подарок ──
+  { const ready = Wallet.dailyReady(), streak = Wallet.online ? (save.streak || 0) : ((save.daily || {}).streak || 0), claimed = ready ? streak % 7 : streak;
+    const card = el('div', 'sh-card daily'); card.appendChild(el('div', 'sh-h', `<img class="sh-ic" src="${big(SHOP_IMG.daily, 64)}" alt="">Ежедневный подарок<small>заходи каждый день: серия 7 дней, последний день — главный приз</small>`));
+    const row = el('div', 'days');
+    D.DAILY.forEach((g, i) => row.appendChild(el('div', 'day' + (i < claimed ? ' got' : i === claimed && ready ? ' now' : ''), `<small>день ${i + 1}</small><img class="si" src="${bareGlyphUrl('soul', 22)}" alt=""><b>${g}</b>${i < claimed ? '<i class="ck"></i>' : ''}`)));
+    card.appendChild(row);
+    const b = el('button', 'btn big' + (ready ? '' : ' poor'), ready ? `Забрать +${D.DAILY[claimed]}` : 'Приходи завтра');
+    b.onclick = async () => { if (!ready) { fail(b); return; } const r = await Wallet.daily(); if (r && r.ok) { ctrl.sfx.play('upgrade'); ctrl.note(`+${r.reward} душ`); redraw(); } else { say(r); fail(b); } };
+    card.appendChild(b); body.appendChild(card); }
+
+
   body.appendChild(el('p', 'sh-note', 'Платежи проходят через Telegram Stars. Кристаллы привязаны к твоему аккаунту. Вопросы по покупкам: команда /paysupport у бота, условия: /terms.'));
   $('#shop').scrollTop = keep;
 }

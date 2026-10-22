@@ -39,13 +39,20 @@ export const Wallet = {
   },
   dailyReady() { const s = this.save; return this.online ? !!s.dailyReady : (s.daily || {}).last !== today(); },
   dailyDay() { const s = this.save; return this.online ? ((s.streak || 0) % 7) + 1 : (((s.daily || {}).streak || 0) % 7) + 1; },
+  // ежедневный подарок — души (хранятся в сохранении); сервер лишь следит за серией и за тем, что подарок взят один раз в сутки
   async daily() {
     const s = this.save;
-    if (this.online) { try { const r = await Net.call('wallet_daily', { init_data: Net.initData() }); if (r && r.ok) this.apply(r); return r || { error: 'net' }; } catch (e) { return { error: 'net' }; } }
+    if (this.online) {
+      try {
+        const r = await Net.call('wallet_daily', { init_data: Net.initData() });
+        if (r && r.ok) { this.apply(r); const reward = D.DAILY[Math.max(0, (r.streak || 1) - 1) % 7]; s.souls = (s.souls || 0) + reward; this.onChange(); return { ok: true, reward }; }
+        return r || { error: 'net' };
+      } catch (e) { return { error: 'net' }; }
+    }
     const d = s.daily || (s.daily = { last: '', streak: 0 }); if (d.last === today()) return { error: 'done' };
     const yest = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
     d.streak = d.last === yest ? (d.streak % 7) + 1 : 1; d.last = today();
-    const reward = D.DAILY[d.streak - 1]; s.gems = (s.gems || 0) + reward; this.onChange(); return { ok: true, reward };
+    const reward = D.DAILY[d.streak - 1]; s.souls = (s.souls || 0) + reward; this.onChange(); return { ok: true, reward };
   },
   // пакет за Stars: открывает счёт Telegram, после оплаты ждёт начисления от вебхука
   async buy(pack) {

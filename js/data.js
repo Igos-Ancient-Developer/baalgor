@@ -274,7 +274,7 @@ export const HORDE_MAX_PER_WAVE = 3;
 // ───────────────────────── Заклинания ─────────────────────────
 export const SPELLS = {
   meteor: { name: 'Метеор', cd: 40, dmg: 260, radius: 1.9, burn: 22, burnT: 4, short: 'Огненный удар по площади. Тапни по полю.', target: true },
-  stasis: { name: 'Стазис', cd: 55, time: 3.5, short: 'Замораживает всех врагов на 3.5 с (боссов лишь замедляет).', target: false },
+  stasis: { name: 'Стазис', cd: 55, time: 3.5, short: 'Замораживает всех врагов на 3.5 с (тяжёлых лишь замедляет).', target: false },
   rush: { name: 'Золотая лихорадка', cd: 75, time: 15, short: 'Монеты и награды алтарей ×2 на 15 секунд.', target: false },
 };
 export const SPELL_ORDER = ['meteor', 'stasis', 'rush'];
@@ -502,7 +502,7 @@ export const PACKS = [
 ];
 export const STARTER = { stars: 25, gems: 300, souls: 300, tower: 'gold_bolt' };      // один раз на аккаунт
 export const FIRST_BONUS = 2;                                                           // первая покупка каждого пакета: кристаллов ×2
-export const DAILY = [5, 5, 10, 5, 10, 15, 30];                                         // ежедневный подарок, серия 7 дней
+export const DAILY = [3, 3, 5, 3, 6, 8, 15];                                            // ежедневный подарок — ДУШИ (не кристаллы), серия 7 дней
 export const BOOSTS = {
   gold:  { name: 'Золотой старт', short: '+100 золота на старте уровня', base: 3 },
   lives: { name: 'Запас жизней',  short: '+5 жизней (не действует на Хардкоре)', base: 5 },

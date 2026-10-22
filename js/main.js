@@ -16,6 +16,7 @@ import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slots
 import { renderForge, renderAchs } from './screens.js';
 import { renderShop } from './shop.js';
 import { Wallet } from './wallet.js';
+import { initLang, pickLang } from './i18n.js';
 import { Menus, RUN, clock } from './menus.js';
 import { Net } from './net.js';
 import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js';
@@ -35,18 +36,21 @@ const ctrl = { sim: null, view, sfx, TG };
 let save = defaultSave();
 let renderer, gore, ui, sim, meta, menus, tutorial, pollT = 0;
 let run = null;   // состояние рейтингового забега (null — обычная игра)
-let wasFrozen = false, needDraw = false;
+let wasFrozen = false, needDraw = false, drawAcc = 0;
+const DRAW_MIN = TG.isMobile ? 0.029 : 0;
 let running = false, paused = false, held = false, acc = 0, ending = null, last = 0, diffI = 1, levelIdx = 0, lastHud = '', tally = 0;
 
 // ───────── загрузка ─────────
 async function boot() {
+  await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   $('#load-logo').src = new URL('../img/ui/logo.webp', import.meta.url).href;
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
   if (location.search.includes('enemydemo')) import('./demo.js').then((m) => m.enemyDemo(ctrl));
   save = await TG.load(); ctrl.save = save;
+  if (save.set && save.set.perf !== 1) { save.set.perf = 1; save.set.gore = Math.min(save.set.gore ?? 1, 1); }      // однократно: умеренная кровь по умолчанию (легче для телефона)
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
   A.setScale(Renderer.pickScale(window.innerWidth, Math.max(300, window.innerHeight - 56), dpr));
   await loadSprites((f) => { $('#loadfill').style.width = Math.round(f * 40) + '%'; });
   applyEnemySprites();
@@ -144,7 +148,7 @@ function recordRun(won) {
   if (full && (!r.fast || run.time < r.fast)) r.fast = Math.round(run.time);
   persist();
 }
-const submitRun = (won) => Net.submit({ level: RUN.level, diff: RUN.diff, score: run.score, wave: run.waves, kills: run.kills, won, duration: run.time, lv: run.i + 1, loadout: (run.loadout || []).join(',') });
+const submitRun = (won) => Net.submit({ level: RUN.level, diff: RUN.diff, score: run.score, wave: run.waves, kills: run.kills, won, duration: run.time, lv: run.i + 1, loadout: (run.loadout || []).join(',') }).then((r) => { if (r && r.gems_drop) { Wallet.sync(); setTimeout(() => { sfx.play('win'); ctrl.note(`Награда забега: +${r.gems_drop} ${r.gems_drop === 1 ? 'кристалл' : 'кристалла'}`); }, 900); } return r; });
 function abandonRun() {
   if (!run.done && sim && sim.state === 'play') { run.score += sim.score; run.time += sim.time; run.kills += sim.stats.kills; run.waves += sim.wave; run.done = true; recordRun(false); submitRun(false); }
   goTitle();
@@ -158,7 +162,7 @@ function setupGameUi() {
   $('#b-pause').onclick = () => setPause(!paused);
   const stage = $('#stage');
   renderer = new Renderer($('#cv')); ctrl.renderer = renderer;
-  const fit = () => { const r = stage.getBoundingClientRect(); if (r.width > 0) { needDraw = true; renderer.resize(r.width, r.height, Math.min(window.devicePixelRatio || 1, 2)); }; };
+  const fit = () => { const r = stage.getBoundingClientRect(); if (r.width > 0) { needDraw = true; renderer.resize(r.width, r.height, Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2)); }; };
   new ResizeObserver(fit).observe(stage); window.addEventListener('resize', fit); ctrl.fit = fit;
 }
 // Подготовка к уровню: окно выбора зданий по слотам (обучение и повтор уровня идут без него)
@@ -310,7 +314,8 @@ function frame(now) {
     pollT += dt; if (pollT > 1) { pollT = 0; meta.poll(); }
   }
   if (!paused && tutorial) tutorial.update(dt);
-  if (!frozen || !wasFrozen || needDraw) { renderer.render(frozen ? 0 : dt, view); needDraw = false; }     // на паузе и в окнах холст не перерисовывается каждый кадр
+  drawAcc += dt;
+  if (drawAcc >= DRAW_MIN && (!frozen || !wasFrozen || needDraw)) { renderer.render(frozen ? 0 : Math.min(drawAcc, 0.1), view); needDraw = false; drawAcc = 0; }     // на паузе и в окнах холст не перерисовывается; на телефоне рисуем не чаще ~30 к/с, расчёт при этом идёт 60 раз в секунду
   wasFrozen = frozen;
   ui.update(frozen ? 0 : dt); updateRunHud();
 }

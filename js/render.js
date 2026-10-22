@@ -19,7 +19,7 @@ export class Renderer {
   }
   static pickScale(cssW, cssH, dpr) {
     const zoom = Math.min(cssW / WORLD_W, cssH / WORLD_H);
-    return clamp(Math.round(zoom * dpr * 2) / 2, 1.5, 4);
+    return clamp(Math.round(zoom * dpr * 1.3 * 2) / 2, 1.5, 3);       // масштаб кэша спрайтов: чуть больше экранного, без лишней памяти
   }
   resize(cssW, cssH, dpr) {
     this.cssW = cssW; this.cssH = cssH; this.dpr = dpr;

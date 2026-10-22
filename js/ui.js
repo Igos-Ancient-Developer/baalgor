@@ -340,13 +340,11 @@ export class GameUI {
     set('score', '#v-score', tot, (v) => { $('#v-score').textContent = v.toLocaleString('ru-RU'); });
     const can = s.canCallWave() && !s.hold;
     this.updateWaveCalls(can);
-    const boss = s.enemies.find((e) => e.def.boss && !e.dead), bb = $('#bossbar');
-    if (boss) { bb.classList.remove('hidden'); $('#bossname').textContent = boss.def.name; $('#bossfill').style.width = Math.max(0, (boss.hp / boss.maxHp) * 100) + '%'; } else bb.classList.add('hidden');
     L.cardT = (L.cardT || 0) - dt;
     if (L.cardT <= 0) {
       L.cardT = 0.2; this.refreshCards(); this.updateSel(); this.updateModal();
       if (this.selB && !this.sim.buildings.includes(this.selB)) this.deselect(); else if (this.selB && this.tickSel()) this.showSel(this.selB);
     }
-    this.c.sfx.setTension(Math.min(1, s.enemies.length / 40) + (boss ? 0.4 : 0));
+    this.c.sfx.setTension(Math.min(1, s.enemies.length / 40));
   }
 }

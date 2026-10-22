@@ -14,6 +14,7 @@ export const TG = {
   init() {
     if (!tg) return;
     try { tg.ready(); } catch (e) { /* */ }
+    try { document.body.classList.toggle('tgback', !!(tg.BackButton && ver('6.1') && tg.initData)); } catch (e) { /* */ }      // своя кнопка «Назад» есть у Telegram
     try { tg.expand(); } catch (e) { /* */ }
     try { if (ver('8.0') && tg.requestFullscreen && !tg.isFullscreen) tg.requestFullscreen(); } catch (e) { /* */ }      // сразу на весь экран
     const c = '#0b0609';
@@ -86,7 +87,7 @@ export const TG = {
 
 // лучший забег: выше достигнутый уровень, затем очки, затем меньшее время
 export const betterRun = (a, b) => !b || !(b.lv || b.score) || (a.lv || 0) > (b.lv || 0) || ((a.lv || 0) === (b.lv || 0) && ((a.score || 0) > (b.score || 0) || ((a.score || 0) === (b.score || 0) && a.time && (!b.time || a.time < b.time))));
-export const defaultSettings = () => ({ sfxVol: 1, musVol: 0.8, haptic: true, gore: 2, dmg: true, confirm: true });
+export const defaultSettings = () => ({ sfxVol: 1, musVol: 0.8, haptic: true, gore: 1, perf: 1, dmg: true, confirm: true });
 export function defaultSave() { return { best: {}, sfx: true, mus: true, set: defaultSettings(), rank: null, plays: 0, kills: 0, souls: 0, gems: 0, slots: 2, loadout: ['bolt', 'mine'], tutDone: 0, packs: [], starterBought: false, daily: { last: '', streak: 0 }, perks: {}, unlocked: {}, ach: {}, life: newLife(), prog: { cleared: {}, scores: {} } }; }
 function mergeSave(a, b) {
   const out = defaultSave();

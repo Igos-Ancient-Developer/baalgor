@@ -89,8 +89,8 @@ img[data-icon] { width: 20px; height: 20px; display: block; pointer-events: none
 /* ───── мета: кузница, награды ───── */
 .btn.gold { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px; font-size: 14px; background: linear-gradient(#4a3a1a, #2a200e); border-color: #b8922a; color: #ffe9a8; }
 .btn.gold .bi { width: 22px; height: 22px; } .btn.gold b { margin-left: 2px; padding: 1px 7px; border-radius: 999px; background: #0b0609aa; border: 1px solid #b8922a; font-size: 13px; }
-.screen.sub { justify-content: flex-start; padding-top: var(--sa-top); padding-left: 0; padding-right: 0; z-index: 25; }
-.topbar { position: sticky; top: 0; z-index: 2; width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: linear-gradient(#1c0e13, #12090c); border-bottom: 2px solid var(--edge); }
+.screen.sub { justify-content: flex-start; padding-top: 0; padding-left: 0; padding-right: 0; z-index: 25; }
+.topbar { position: sticky; top: 0; z-index: 2; width: 100%; display: flex; align-items: center; gap: 10px; padding: calc(var(--sa-top) + 10px) 12px 10px; background: linear-gradient(#1c0e13, #12090c); border-bottom: 2px solid var(--edge); }
 .topbar h2 { flex: 1; margin: 0; font-family: var(--font); font-size: 22px; letter-spacing: .06em; text-transform: uppercase; color: var(--gold); }
 .topbar .back { width: 38px; height: 36px; border-radius: 10px; background: #2a1219; border: 1.5px solid var(--edge2); font-size: 20px; }
 .souls { display: flex; align-items: center; gap: 4px; padding: 3px 10px 3px 6px; border-radius: 999px; background: #10263a; border: 1.5px solid #3a7ad8; font-family: var(--font); font-weight: 700; font-size: 17px; color: #bfe8ff; }
@@ -188,7 +188,7 @@ img[data-icon] { width: 20px; height: 20px; display: block; pointer-events: none
 /* ═════════ v3: логотип, каменные кнопки, готический шрифт ═════════ */
 :root { --gothic: 'Monomakh', 'Oswald', Georgia, serif; --stone1: #4b4f52; --stone2: #2c2f31; --stone3: #181a1c; --slime: #7cff3c; --slime2: #2e9a14; }
 .modal h2, .topbar h2, .sect-title, .dname, #bossname { font-family: var(--gothic); font-weight: 400; }
-.logo-img { display: block; width: min(86vw, 380px); height: auto; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 0 22px rgba(110,255,60,.22)); animation: logoPulse 5s ease-in-out infinite; pointer-events: none; }
+.logo-img { display: block; width: min(86vw, 380px); height: auto; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 0 22px rgba(110,255,60,.22)); pointer-events: none; }
 .logo-img.big { width: min(92vw, 420px); }
 @keyframes logoPulse { 0%,100% { filter: drop-shadow(0 0 16px rgba(110,255,60,.18)); } 50% { filter: drop-shadow(0 0 34px rgba(110,255,60,.42)); } }
 #loading .logo-img { width: min(70vw, 300px); }
@@ -236,7 +236,7 @@ body.ranked #bossbar { top: 64px; }
 .node .nl { margin-top: 2px; font-family: var(--font); font-weight: 700; font-size: 11.5px; color: #fff; padding: 1px 7px; border-radius: 999px; background: rgba(6,8,8,.72); text-shadow: 0 1px 2px #000; text-align: center; line-height: 1.15; max-width: 96px; }
 .node.locked img.ni { filter: grayscale(.9) brightness(.75) drop-shadow(0 3px 5px rgba(0,0,0,.8)); } .node.locked .nl { color: #a8a8b0; }
 .node.avail img.ni { animation: nodepulse 1.7s ease-in-out infinite; }
-@keyframes nodepulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,200,80,0); transform: scale(1); } 50% { box-shadow: 0 0 22px 7px rgba(255,200,80,.55); transform: scale(1.07); } }
+@keyframes nodepulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 .node .nsk { display: flex; gap: 1px; margin-top: 2px; padding: 1px 4px; border-radius: 999px; background: rgba(6,8,8,.6); } .node .nsk img { width: 11px; height: 11px; opacity: .3; } .node .nsk img.on { opacity: 1; filter: drop-shadow(0 0 3px #ff3a2a); }
 .node:active img.ni { transform: scale(.94); }
 .node.shake { animation: shake .3s; }
@@ -764,3 +764,33 @@ body.ranked #hud .chip { padding: 3px 8px 3px 5px; font-size: 15px; gap: 4px; } 
 .um-cancel { min-height: 46px; }
 .lo-foot .btn { min-height: 62px; }
 .stn.ranked { padding: 6px 10% 26px; } .stn.ranked span { font-size: 14.5px; letter-spacing: .03em; }
+
+/* ───── в Telegram есть своя кнопка «Назад» (BackButton): внутриигровую прячем, иначе они дублируются; на карте мира верхней панели нет совсем ───── */
+#world-souls, #world-icons { display: none; }
+body.tgback .topbar .back { display: none; }
+body.tgback #world .topbar { display: none; }
+body.tgback #world.screen.sub { padding-top: var(--sa-top); }
+
+/* карта мира: яркие кнопки рубежей (кольцо вместо тяжёлых фильтров) и без подписей регионов */
+.sec { display: none !important; }
+.node img.ni { filter: none; box-shadow: 0 0 0 2.5px #f3e7bf, 0 0 0 4.5px rgba(0,0,0,.8), 0 0 14px 4px rgba(255,236,160,.55); }
+.node.locked img.ni { filter: none; opacity: .92; box-shadow: 0 0 0 2.5px #b9c0c8, 0 0 0 4.5px rgba(0,0,0,.8), 0 0 10px 2px rgba(200,210,220,.35); }
+.node.locked .nl { color: #d4d8dc; }
+.node.avail img.ni { box-shadow: 0 0 0 3px #ffe27a, 0 0 0 5px rgba(0,0,0,.85), 0 0 18px 6px rgba(255,214,90,.8); }
+.node .nl { background: rgba(6,8,8,.82); font-size: 12px; }
+
+/* магазин: кристаллы списком, как главный товар */
+.sh-packs.list { display: flex; flex-direction: column; gap: 8px; }
+.krow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 12px; background: linear-gradient(#2a171c, #190d11); border: 1.5px solid var(--edge); }
+.krow.hit, .krow.best { border-color: #b8922a; }
+.krow .kl { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-family: var(--font); font-size: 20px; color: #e8f6ff; }
+.krow .kl b { font-weight: 700; } .krow .kl s { opacity: .5; font-size: 15px; margin-right: 4px; }
+.krow .x2 { font-size: 11px; color: #8fe36a; font-family: system-ui, sans-serif; } .krow .tag { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: #3a7ad8; color: #fff; font-family: system-ui, sans-serif; } .krow .tag.gold { background: #b8922a; }
+.krow .btn.buy { flex: none; min-width: 92px; padding: 9px 12px; border-radius: 999px; background: linear-gradient(#5fae2a, #3a7a18); border: 1.5px solid #8fd84a; color: #fff; font-weight: 700; font-size: 15px; }
+.sh-note.top { margin: 0 0 8px; }
+.day img.si { width: 22px; height: 22px; }
+
+.krow .kl { flex: 1 1 auto; min-width: 0; } .krow .kl .gemic { flex: none; }
+.krow .btn.buy { width: auto !important; flex: 0 0 auto; min-height: 0; margin: 0; }
+
+.langsel { min-width: 140px; padding: 8px 10px; border-radius: 10px; background: #2a1219; color: var(--bone); border: 1.5px solid var(--edge2); font: inherit; font-size: 15px; }

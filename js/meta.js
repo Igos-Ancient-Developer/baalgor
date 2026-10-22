@@ -115,6 +115,8 @@ export const ACH = [
   { id: 'arsenal', name: 'Арсенал', desc: 'Открой все башни в Кузнице душ', goal: 1, val: (c) => (lockedTowers(c.save).length === 0 ? 1 : 0), reward: 30 },
   { id: 'tempered', name: 'Закалённый', desc: 'Прокачай любой дар Кузницы до максимума', goal: 1, val: (c) => (PERKS.some((p) => (c.save.perks[p.id] || 0) >= p.max) ? 1 : 0), reward: 25 },
 ];
+for (const a of ACH) a.reward = Math.max(1, Math.round(a.reward * 0.4));      // награды душами скромные: прокачка идёт неспешно
+
 
 export function newLife() { return { kills: 0, decaps: 0, sawKills: 0, shatters: 0, airKills: 0, burnKills: 0, bagsTapped: 0, bosses: {}, bestWave: 0, wins: 0, hellWin: 0, flawless: 0, noEconWin: 0, hardcoreWin: 0, mapWins: {}, levels: 0 }; }
 
@@ -149,7 +151,7 @@ export class Meta {
     sim.on('upgrade', () => this.scan());
     sim.on('econ', (d) => { run.econUsed = true; if (d.kind === 'horde') { run.hordeSet.add(d.i); run.hordeTiers = run.hordeSet.size; } });
     sim.on('callwave', () => { run.earlyCalls++; });
-    sim.on('wave', (d) => { life.bestWave = Math.max(life.bestWave, d.n); award(1 + Math.floor(d.n / 5)); this.persist(); });
+    sim.on('wave', (d) => { life.bestWave = Math.max(life.bestWave, d.n); award(0.3 + d.n * 0.02); this.persist(); });
     sim.on('over', (d) => this.finish(d.won));
   }
   scan() {
@@ -177,7 +179,7 @@ export class Meta {
     const save = this.save, life = save.life, sim = this.sim, run = this.run;
     if (won && this.tut && !save.tutDone) { save.souls += 30; run.souls += 30; }      // подарок новичку: хватит на первую закрытую башню
     if (won) {
-      this.award(60);
+      this.award(12);
       life.wins++; if (this.diffIdx >= 3) life.hellWin = 1;
       if (this.diffIdx === 4) life.hardcoreWin = 1;
       if (sim.lives >= run.startLives) life.flawless = 1;
