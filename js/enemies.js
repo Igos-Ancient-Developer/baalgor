@@ -1,6 +1,6 @@
 // Процедурные спрайты врагов (кадры ходьбы) и кусков тел для расчленёнки.
-import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261023184121';
-import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023184121';
+import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261023190843';
+import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023190843';
 
 export const FRAMES = 8;
 const T2 = Math.PI * 2;
@@ -383,10 +383,10 @@ export const ENEMY_ART = {
 // ───── растровые враги: полоса кадров ходьбы из img/enemies/<файл>.webp ─────
 // id в игре → [файл, высота на экране в логических px, доп. поля]
 const SPRITE_ENEMIES = {
-  grunt: ['grunt', 38], skeleton: ['skeleton', 44], zombie: ['zombie', 44], bat: ['bat', 36, { air: true }],
-  hound: ['hound', 40], slime: ['slime', 40], slimelet: ['slime', 24, { scale: 0.6 }], shaman: ['shaman', 42, { scale: 1.05 }], knight: ['knight', 48],
+  skeleton: ['skeleton', 44], zombie: ['zombie', 44], bat: ['bat', 36, { air: true }],
+  hound: ['hound', 40], slime: ['slime', 40], slimelet: ['slime', 24, { scale: 0.6 }], knight: ['knight', 48],
   butcher: ['butcher', 52, { scale: 1.08 }], gargoyle: ['gargoyle', 44, { air: true }],
-  berserker: ['berserker', 46], ogre: ['ogre', 56, { scale: 1.1 }], reaper: ['reaper', 44], lich: ['lich', 58], demon: ['demon', 74],
+  berserker: ['berserker', 46], ogre: ['ogre', 56, { scale: 1.1 }], lich: ['lich', 58],
 };
 const FALLBACK = { ...ENEMY_ART };                                // запасные рисованные враги (если лист не загрузился)
 const ENEMY_K = 0.95;                                              // общий масштаб врагов; у каждого вида свой размер (ref листа × scale): гоблин ~36 px, шаман ~42, зомби и скелет ~42, рыцарь ~46, мясник ~53, огр ~58, владыка ~70 (клетка 48)

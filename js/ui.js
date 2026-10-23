@@ -1,10 +1,10 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261023184121';
-import * as A from './art.js?v=20261023184121';
-import { uiIcon } from './env.js?v=20261023184121';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261023184121';
-import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261023184121';
-import { TARGET_MODES } from './sim.js?v=20261023184121';
+import * as D from './data.js?v=20261023190843';
+import * as A from './art.js?v=20261023190843';
+import { uiIcon } from './env.js?v=20261023190843';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261023190843';
+import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261023190843';
+import { TARGET_MODES } from './sim.js?v=20261023190843';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -110,7 +110,7 @@ export class GameUI {
     box.style.setProperty('--n', Math.max(1, this.loadout.length));
     for (const d of this.defs()) {
       const e = el('button', 'card'); e.dataset.type = d.type;
-      e.innerHTML = `<img class="ci" src="${d.icon}" alt=""><div class="cn">${d.name}</div><div class="cc">${COIN()}<span></span></div><div class="cs"></div>`;
+      e.innerHTML = `<img class="ci" src="${d.icon}" alt=""><div class="cc">${COIN()}<span></span></div><div class="cs"></div>`;
       const card = { d, e, cost: e.querySelector('.cc span'), cs: e.querySelector('.cs') };
       e.onclick = () => this.onCard(card);
       box.appendChild(e); this.cards.push(card);

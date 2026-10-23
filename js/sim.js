@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261023184121';
+import * as D from './data.js?v=20261023190843';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -419,6 +419,7 @@ export class Sim {
     if (!e.w || !this.waveRem || !this.waveRem[e.w]) return;
     if (--this.waveRem[e.w] > 0) return;
     this.parts.waves += D.WAVE_PTS(this.idx(e.w)); this.rescore();
+    this.emit('waveclear', { n: e.w });
   }
   // очки: три части (волны, сильные враги, время) считаются с множителем глубины уровня и округляются до целых; сумма умножается на множитель сложности
   // штраф за пропущенных: доля от того, что уровень мог дать за волны и время; хоть один пропуск — минус очко (в рейтинговом забеге одна жизнь, штрафа нет)

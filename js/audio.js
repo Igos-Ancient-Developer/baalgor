@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261023184121';
+import { createTrack, MENU_SPEC } from './music.js?v=20261023190843';
 export class Sfx {
   constructor() {
     this.ctx = null; this.sfxOn = true; this.musOn = true;
@@ -59,6 +59,28 @@ export class Sfx {
     s.connect(f); f.connect(g); g.connect(this.sfxBus); s.start(t, Math.random()); s.stop(t + dur + 0.02);
   }
 
+
+  // «Нинтендо»-звуки: короткие прямоугольные и треугольные ноты по очереди
+  chip(notes, step = 0.055, type = 'square', gain = 0.11, hold = 1) {
+    notes.forEach((f, i) => { if (f) this.tone(type, f, f, step * hold, gain, i * step); });
+  }
+  // «мясные» кирпичики в духе Mortal Kombat: глухой удар, хруст костей, мокрый плеск, фонтан крови
+  punch(v = 1, f = 1) { this.tone('sine', 190 * f, 36, 0.24, 0.8 * v); this.noise('lowpass', 1500, 110, 0.15, 0.55 * v); this.noise('highpass', 2600, 1800, 0.025, 0.4 * v); }
+  crunch(n, v = 1, t0 = 0, lo = 1600, hi = 4600) { for (let i = 0; i < n; i++) this.noise('bandpass', lo + Math.random() * (hi - lo), 800, 0.016 + Math.random() * 0.02, (0.32 + Math.random() * 0.3) * v, t0 + i * (0.012 + Math.random() * 0.022), 3 + Math.random() * 5); }
+  wet(v = 1, t0 = 0, dur = 0.3, f = 1) {
+    const c = this.ctx, t = c.currentTime + t0, s = c.createBufferSource(), fl = c.createBiquadFilter(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
+    s.buffer = this.noiseBuf; s.loop = true; fl.type = 'bandpass'; fl.Q.value = 6; fl.frequency.setValueAtTime(520 * f, t); fl.frequency.exponentialRampToValueAtTime(170 * f, t + dur);
+    lfo.frequency.value = 22 + Math.random() * 16; lg.gain.value = 240 * f; lfo.connect(lg); lg.connect(fl.frequency);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.55 * v, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(fl); fl.connect(g); g.connect(this.sfxBus); s.start(t, Math.random()); s.stop(t + dur + 0.03); lfo.start(t); lfo.stop(t + dur + 0.03);
+  }
+  spurt(v = 1, t0 = 0, n = 3) {                                    // фонтан крови: шум, пульсирующий в такт сердцу
+    const c = this.ctx, t = c.currentTime + t0, dur = 0.14 * n + 0.12, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
+    s.buffer = this.noiseBuf; s.loop = true; f.type = 'highpass'; f.frequency.value = 1800; lfo.frequency.value = 7; lg.gain.value = 0.5; lfo.connect(lg); lg.connect(g.gain);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.28 * v, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(this.sfxBus); s.start(t, Math.random()); s.stop(t + dur + 0.03); lfo.start(t); lfo.stop(t + dur + 0.03);
+  }
+
   play(name, vol = 1) {
     if (!this.ctx || !this.sfxOn) return;
     const v = vol;
@@ -73,47 +95,52 @@ export class Sfx {
       case 'flame': if (!this.gate('flame', 0.13)) return; this.noise('bandpass', 700, 1800, 0.18, 0.2 * v, 0, 0.8); this.noise('lowpass', 500, 200, 0.12, 0.15 * v); break;
       case 'void': if (!this.gate('void', 0.2)) return; this.tone('sine', 420, 55, 0.45, 0.3 * v); this.noise('bandpass', 1800, 150, 0.4, 0.16 * v, 0, 1.4); this.tone('triangle', 90, 40, 0.5, 0.25 * v, 0.1); break;
       case 'harpoon': if (!this.gate('harpoon', 0.2)) return; this.tone('triangle', 260, 50, 0.22, 0.4 * v); this.noise('highpass', 2000, 800, 0.1, 0.3 * v); this.noise('lowpass', 800, 100, 0.25, 0.4 * v, 0.05); break;
-      case 'flesh': { if (!this.gate('flesh', 0.05)) return; const r = 0.8 + Math.random() * 0.4; this.noise('lowpass', 900 * r, 150, 0.1, 0.3 * v); this.tone('sine', 150 * r, 55, 0.09, 0.3 * v); break; }
-      case 'slap': { if (!this.gate('slap', 0.045)) return; const r = 0.8 + Math.random() * 0.4; this.noise('lowpass', 700 * r, 120, 0.08, 0.34 * v); this.tone('sine', 110 * r, 45, 0.1, 0.38 * v); this.noise('bandpass', 1800 * r, 900, 0.04, 0.12 * v, 0.01, 2); break; }
-      case 'thudwet': { const r = 0.85 + Math.random() * 0.3; this.noise('lowpass', 500 * r, 90, 0.18, 0.4 * v); this.tone('sine', 90 * r, 38, 0.2, 0.5 * v); this.noise('bandpass', 900, 300, 0.1, 0.2 * v, 0.05, 3); break; }
-      case 'squelch': { if (!this.gate('squelch', 0.07)) return; const r = 0.8 + Math.random() * 0.4; this.noise('bandpass', 400 * r, 1400 * r, 0.18, 0.32 * v, 0, 5); this.noise('bandpass', 700 * r, 300, 0.12, 0.22 * v, 0.08, 4); this.tone('sine', 160 * r, 60, 0.12, 0.3 * v); break; }
-      case 'rip': { const r = 0.85 + Math.random() * 0.3; this.noise('bandpass', 400 * r, 2500 * r, 0.3, 0.36 * v, 0, 1.5); this.noise('highpass', 3000, 1500, 0.1, 0.15 * v, 0.05); this.noise('lowpass', 600, 150, 0.2, 0.3 * v, 0.1); break; }
-      case 'chop': { if (!this.gate('chop', 0.06)) return; const r = 0.85 + Math.random() * 0.3; this.noise('highpass', 2200, 1200, 0.05, 0.4 * v); this.tone('triangle', 900 * r, 250, 0.07, 0.2 * v); this.tone('sine', 120 * r, 50, 0.14, 0.5 * v, 0.02); this.noise('lowpass', 800, 200, 0.12, 0.32 * v, 0.03); break; }
-      case 'bone': { if (!this.gate('bone', 0.06)) return; const r = 0.8 + Math.random() * 0.4; this.noise('highpass', 3500, 2500, 0.04, 0.4 * v); this.tone('square', 2200 * r, 800, 0.03, 0.1 * v); this.noise('highpass', 3000, 2000, 0.04, 0.3 * v, 0.05); this.tone('sine', 140 * r, 60, 0.1, 0.32 * v, 0.02); break; }
-      case 'spray': { if (!this.gate('spray', 0.15)) return; this.noise('highpass', 2500, 1200, 0.45, 0.17 * v, 0.03, 0.7); this.noise('bandpass', 900, 400, 0.4, 0.15 * v, 0.03); break; }
-      case 'burst': { if (!this.gate('burst', 0.08)) return; this.noise('lowpass', 1800, 100, 0.38, 0.6 * v); this.tone('sine', 130, 35, 0.32, 0.65 * v); [0, 0.05, 0.12, 0.2].forEach((d) => this.noise('bandpass', 500 + Math.random() * 900, 300, 0.14, 0.26 * v, d, 4)); this.noise('highpass', 2500, 1000, 0.08, 0.26 * v, 0.02); break; }
+      case 'flesh': { if (!this.gate('flesh', 0.05)) return; const r = 0.85 + Math.random() * 0.3; this.punch(0.45 * v, r); this.wet(0.4 * v, 0.01, 0.12, r); break; }
+      case 'slap': { if (!this.gate('slap', 0.045)) return; const r = 0.85 + Math.random() * 0.3; this.tone('sine', 120 * r, 45, 0.1, 0.4 * v); this.noise('lowpass', 900 * r, 150, 0.07, 0.34 * v); this.wet(0.35 * v, 0.01, 0.1, r); break; }
+      case 'thudwet': { const r = 0.85 + Math.random() * 0.3; this.punch(0.8 * v, r * 0.8); this.wet(0.6 * v, 0.03, 0.22, r); break; }
+      case 'squelch': { if (!this.gate('squelch', 0.07)) return; const r = 0.85 + Math.random() * 0.3; this.wet(0.9 * v, 0, 0.3, r); this.wet(0.6 * v, 0.1, 0.22, r * 1.3); this.punch(0.5 * v, r); break; }
+      case 'rip': { const r = 0.9 + Math.random() * 0.25; this.noise('bandpass', 500 * r, 3200 * r, 0.32, 0.4 * v, 0, 1.2); this.crunch(7, 0.9 * v, 0.02, 1200, 3800); this.wet(0.8 * v, 0.12, 0.3, r); this.tone('sawtooth', 180, 60, 0.3, 0.1 * v); break; }
+      case 'chop': { if (!this.gate('chop', 0.06)) return; const r = 0.9 + Math.random() * 0.2; this.noise('highpass', 6500, 3500, 0.07, 0.35 * v); this.tone('triangle', 2600 * r, 1200, 0.1, 0.12 * v); this.punch(0.9 * v, r); this.crunch(3, 0.7 * v, 0.02); this.wet(0.7 * v, 0.05, 0.2, r); break; }
+      case 'bone': { if (!this.gate('bone', 0.06)) return; const r = 0.85 + Math.random() * 0.3; this.crunch(5, 1 * v, 0, 1800, 5200); this.tone('triangle', 2400 * r, 520, 0.03, 0.2 * v); this.tone('sine', 150 * r, 55, 0.12, 0.35 * v, 0.03); break; }
+      case 'spray': { if (!this.gate('spray', 0.15)) return; this.spurt(0.9 * v, 0.02, 3); this.wet(0.4 * v, 0.1, 0.35, 1.4); break; }
+      case 'burst': { if (!this.gate('burst', 0.08)) return; this.punch(1.3 * v, 0.9); this.tone('sine', 90, 28, 0.5, 0.7 * v, 0.02); this.crunch(8, 1 * v, 0.02); this.wet(1 * v, 0.05, 0.45, 0.9); this.wet(0.7 * v, 0.2, 0.3, 1.4); this.spurt(0.8 * v, 0.1, 3); break; }
       case 'sizzle': { if (!this.gate('sizzle', 0.15)) return; this.noise('highpass', 5000, 3000, 0.5, 0.15 * v); for (let i = 0; i < 5; i++) this.tone('square', 3000 + Math.random() * 3000, 1200, 0.015, 0.05 * v, i * 0.06 + Math.random() * 0.03); break; }
       case 'glass': { if (!this.gate('glass', 0.06)) return; const r = 0.9 + Math.random() * 0.2; [3200, 4100, 5200, 3800].forEach((f, i) => this.tone('sine', f * r, f * r * 0.8, 0.12, 0.08 * v, i * 0.03)); this.noise('highpass', 6000, 4000, 0.1, 0.2 * v); break; }
       case 'bubble': { for (let i = 0; i < 5; i++) { const f = 220 + Math.random() * 300; this.tone('sine', f, f * 2, 0.07, 0.12 * v, i * 0.07 + Math.random() * 0.03); } this.noise('lowpass', 700, 250, 0.3, 0.12 * v); break; }
       case 'crackle': { if (!this.gate('crackle', 0.12)) return; for (let i = 0; i < 4; i++) this.noise('highpass', 3000 + Math.random() * 2000, 1500, 0.04, 0.22 * v, i * 0.05 + Math.random() * 0.03); this.noise('lowpass', 600, 200, 0.25, 0.14 * v); break; }
-      case 'voidpop': { this.tone('sine', 320, 40, 0.3, 0.4 * v); this.noise('bandpass', 1800, 150, 0.3, 0.2 * v, 0, 1.4); break; }
+      case 'voidpop': { this.tone('sine', 320, 40, 0.3, 0.4 * v); this.noise('bandpass', 1800, 150, 0.3, 0.2 * v, 0, 1.4); this.chip([1568, 784, 392, 196], 0.04, 'square', 0.06 * v); break; }
       case 'boom': if (!this.gate('boom', 0.06)) return; this.noise('lowpass', 900, 70, 0.45, 0.55 * v); this.tone('sine', 110, 35, 0.4, 0.6 * v); break;
       case 'boomsmall': if (!this.gate('boomsmall', 0.05)) return; this.noise('lowpass', 1200, 150, 0.2, 0.3 * v); this.tone('sine', 150, 60, 0.15, 0.3 * v); break;
       case 'meteor': this.noise('lowpass', 500, 40, 1.0, 0.9 * v); this.tone('sine', 90, 25, 0.9, 0.9 * v); this.noise('bandpass', 1500, 300, 0.6, 0.4 * v, 0, 1); break;
       case 'whoosh': this.noise('bandpass', 300, 2400, 0.8, 0.3 * v, 0, 1.2); break;
-      case 'splat': if (!this.gate('splat', 0.035)) return; this.noise('lowpass', 1400, 220, 0.11, 0.3 * v); this.tone('sine', 200, 65, 0.09, 0.28 * v); break;
-      case 'gib': if (!this.gate('gib', 0.07)) return; this.noise('lowpass', 1600, 250, 0.16, 0.42 * v); this.tone('sine', 170, 50, 0.14, 0.4 * v); this.noise('highpass', 1200, 900, 0.05, 0.2 * v, 0.03); break;
-      case 'gibbig': if (!this.gate('gibbig', 0.1)) return; this.noise('lowpass', 1800, 150, 0.3, 0.55 * v); this.tone('sine', 120, 38, 0.3, 0.6 * v); this.noise('highpass', 1500, 600, 0.08, 0.3 * v, 0.04); this.noise('lowpass', 800, 200, 0.14, 0.3 * v, 0.12); break;
+      case 'splat': if (!this.gate('splat', 0.035)) return; this.wet(0.5 * v, 0, 0.14); this.tone('sine', 180, 60, 0.08, 0.3 * v); break;
+      case 'gib': if (!this.gate('gib', 0.07)) return; this.punch(0.5 * v, 1.1); this.wet(0.6 * v, 0.02, 0.2, 1.1); break;
+      case 'gibbig': if (!this.gate('gibbig', 0.1)) return; this.punch(0.9 * v, 0.8); this.crunch(4, 0.8 * v, 0.03); this.wet(0.9 * v, 0.04, 0.35, 0.9); break;
       case 'crack': if (!this.gate('crack', 0.06)) return; this.noise('highpass', 2500, 1500, 0.07, 0.35 * v); this.tone('triangle', 1500, 400, 0.06, 0.2 * v); break;
-      case 'coin': if (!this.gate('coin', 0.045)) return; this.tone('sine', 1318, 1318, 0.09, 0.12 * v); this.tone('sine', 1760, 1760, 0.16, 0.12 * v, 0.06); break;
-      case 'bag': this.tone('sine', 1046, 1046, 0.08, 0.14 * v); this.tone('sine', 1318, 1318, 0.08, 0.14 * v, 0.06); this.tone('sine', 1568, 1568, 0.18, 0.14 * v, 0.12); break;
-      case 'build': this.noise('lowpass', 600, 200, 0.07, 0.4 * v); this.tone('sine', 160, 80, 0.09, 0.4 * v); this.noise('lowpass', 600, 200, 0.07, 0.4 * v, 0.1); this.tone('sine', 190, 90, 0.09, 0.4 * v, 0.1); break;
-      case 'upgrade': [523, 659, 784, 1046].forEach((f, i) => this.tone('triangle', f, f, 0.14, 0.16 * v, i * 0.07)); break;
-      case 'sell': this.tone('sine', 880, 440, 0.15, 0.15 * v); this.tone('sine', 660, 330, 0.18, 0.12 * v, 0.07); break;
+      case 'coin': if (!this.gate('coin', 0.045)) return; this.tone('square', 988, 988, 0.06, 0.09 * v); this.tone('square', 1319, 1319, 0.34, 0.09 * v, 0.06); this.tone('sine', 2637, 2637, 0.25, 0.04 * v, 0.06); break;
+      case 'bag': this.chip([1319, 1568, 1976, 2637], 0.05, 'square', 0.09 * v, 1.4); this.tone('sine', 3951, 3951, 0.3, 0.05 * v, 0.2); break;
+      case 'build': this.noise('lowpass', 700, 150, 0.08, 0.5 * v); this.tone('sine', 150, 70, 0.1, 0.5 * v); this.chip([659, 988], 0.05, 'square', 0.07 * v); this.noise('lowpass', 700, 150, 0.08, 0.4 * v, 0.1); break;
+      case 'upgrade': this.chip([523, 659, 784, 1046, 784, 1046, 1318, 1568], 0.055, 'square', 0.09 * v, 1.2); this.chip([262, 330, 392, 523], 0.11, 'triangle', 0.1 * v); this.tone('sine', 3136, 3136, 0.3, 0.04 * v, 0.4); break;
+      case 'sell': this.chip([1319, 988, 1319, 1976], 0.05, 'square', 0.08 * v); break;
       case 'horn': this.tone('sawtooth', 98, 92, 1.0, 0.16 * v); this.tone('sawtooth', 147, 138, 1.0, 0.1 * v); this.tone('square', 49, 46, 1.0, 0.1 * v); break;
       case 'bosshorn': this.tone('sawtooth', 65, 55, 1.8, 0.22 * v); this.tone('sawtooth', 98, 82, 1.8, 0.14 * v); this.noise('lowpass', 300, 80, 1.6, 0.35 * v); this.tone('square', 32, 28, 1.8, 0.2 * v); break;
-      case 'leak': this.tone('sawtooth', 240, 55, 0.55, 0.28 * v); this.noise('lowpass', 800, 100, 0.4, 0.4 * v); break;
-      case 'error': this.tone('square', 160, 120, 0.12, 0.12 * v); break;
-      case 'click': this.tone('sine', 820, 700, 0.04, 0.08 * v); break;
-      case 'select': this.tone('triangle', 600, 760, 0.06, 0.1 * v); break;
+      case 'leak': this.chip([440, 330, 220, 165], 0.07, 'square', 0.11 * v, 1.2); this.tone('sawtooth', 120, 40, 0.5, 0.25 * v); this.noise('lowpass', 800, 100, 0.4, 0.4 * v); break;
+      case 'error': this.tone('square', 233, 110, 0.16, 0.11); this.tone('square', 175, 90, 0.14, 0.09, 0.08); break;
+      case 'back': this.chip([1175, 784], 0.05, 'square', 0.08); break;
+      case 'start': this.chip([523, 659, 784, 1046, 1318, 1568], 0.06, 'square', 0.09, 1.3); this.tone('triangle', 130, 130, 0.5, 0.12); break;
+      case 'pop': if (!this.gate('pop', 0.05)) return; this.tone('square', 480, 1100, 0.05, 0.07 * v); this.tone('square', 1100, 700, 0.06, 0.06 * v, 0.045); break;
+      case 'click': this.chip([1568, 2093], 0.04, 'square', 0.07); break;
+      case 'select': this.chip([784, 1175, 1568], 0.045, 'square', 0.08); break;
       case 'freeze': this.tone('sine', 2400, 1200, 0.18, 0.1 * v); this.noise('highpass', 5000, 4000, 0.1, 0.1 * v); break;
       case 'stomp': this.noise('lowpass', 500, 50, 0.5, 0.7 * v); this.tone('sine', 70, 30, 0.5, 0.7 * v); break;
       case 'summon': this.tone('sawtooth', 200, 600, 0.4, 0.1 * v); this.noise('bandpass', 800, 3000, 0.4, 0.15 * v, 0, 2); break;
       case 'stasis': this.tone('sine', 1800, 300, 0.7, 0.18 * v); this.tone('sine', 2400, 400, 0.7, 0.1 * v); this.noise('highpass', 4000, 1000, 0.6, 0.12 * v); break;
       case 'rush': [660, 880, 1100, 1320, 1760].forEach((f, i) => this.tone('square', f, f, 0.1, 0.07 * v, i * 0.06)); break;
       case 'frenzy': this.tone('sawtooth', 180, 360, 0.4, 0.14 * v); break;
-      case 'win': [392, 523, 659, 784, 1046].forEach((f, i) => this.tone('triangle', f, f, 0.4, 0.2 * v, i * 0.14)); break;
-      case 'lose': [330, 262, 208, 165].forEach((f, i) => this.tone('sawtooth', f, f * 0.96, 0.7, 0.15 * v, i * 0.3)); break;
+      case 'win': this.chip([523, 523, 523, 659, 784, 1046, 784, 1046, 1318], 0.09, 'square', 0.1 * v, 1.1); this.chip([262, 262, 262, 330, 392, 523], 0.15, 'triangle', 0.12 * v); break;
+      case 'waveclear': this.chip([784, 988, 1175, 1568], 0.06, 'square', 0.08 * v, 1.3); this.tone('triangle', 196, 196, 0.35, 0.1 * v); break;
+      case 'sparkle': this.chip([2093, 2637, 3136, 4186], 0.04, 'triangle', 0.07 * v, 1.6); break;
+      case 'lose': this.chip([523, 494, 466, 440, 392, 330, 262], 0.16, 'square', 0.1 * v, 1.2); this.tone('sawtooth', 65, 40, 1.4, 0.15 * v, 0.3); break;
       case 'heal': if (!this.gate('heal', 0.2)) return; this.tone('sine', 700, 1100, 0.2, 0.06 * v); break;
     }
   }
@@ -140,10 +167,12 @@ export function attachSfx(sim, sfx) {
   sim.on('explosion', (d) => { if (d.kind === 'meteor') sfx.play('meteor'); else if (d.kind === 'pop') sfx.play('crack', 0.6); else if (d.kind === 'shatter') sfx.play('crack'); else if (d.kind === 'vial') sfx.play('splat', 0.8); else sfx.play(d.kind === 'bomblet' ? 'boomsmall' : 'boom', d.big ? 1.2 : 1); });
   sim.on('hit', (d) => { if (d.how === 'saw' || d.how === 'chop' || d.how === 'slash') sfx.play('sawhit', 0.7); });
   sim.on('kill', (d) => {
+    sfx.play('pop');                                              // короткий «нинтендовский» чпок на каждое убийство, под кровавые звуки
     if (d.gold > 0) sfx.play('coin', 0.7);
   });
+  sim.on('waveclear', () => sfx.play('waveclear'));
   sim.on('build', () => sfx.play('build')); sim.on('upgrade', () => sfx.play('upgrade')); sim.on('sell', () => sfx.play('sell'));
-  sim.on('chest', (d) => { if (d.kind === 'hit') sfx.play('select', 0.9); else { sfx.play('win', 0.6); sfx.play('bag'); setTimeout(() => sfx.play('coin'), 120); } });
+  sim.on('chest', (d) => { if (d.kind === 'hit') sfx.play('select', 0.9); else { sfx.play('win', 0.6); sfx.play('bag'); setTimeout(() => sfx.play('sparkle'), 150); setTimeout(() => sfx.play('coin'), 120); } });
   sim.on('bag', (d) => sfx.play(d.tapped ? 'bag' : 'coin', 0.8));
   sim.on('wave', (d) => sfx.play('horn'));
   sim.on('leak', () => sfx.play('leak'));

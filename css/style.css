@@ -186,7 +186,7 @@ img[data-icon] { width: 20px; height: 20px; display: block; pointer-events: none
 
 
 /* ═════════ v3: логотип, каменные кнопки, готический шрифт ═════════ */
-:root { --gothic: 'Monomakh', 'Oswald', Georgia, serif; --stone1: #4b4f52; --stone2: #2c2f31; --stone3: #181a1c; --slime: #7cff3c; --slime2: #2e9a14; }
+:root { --gothic: 'Playfair Display SC', Georgia, 'Times New Roman', serif; --stone1: #4b4f52; --stone2: #2c2f31; --stone3: #181a1c; --slime: #7cff3c; --slime2: #2e9a14; }
 .modal h2, .topbar h2, .sect-title, .dname, #bossname { font-family: var(--gothic); font-weight: 400; }
 .logo-img { display: block; width: min(86vw, 380px); height: auto; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 0 22px rgba(110,255,60,.22)); pointer-events: none; }
 .logo-img.big { width: min(92vw, 420px); }
@@ -397,7 +397,7 @@ body.ranked #bossbar { top: 64px; }
 #slots { --cw: clamp(50px, calc((100vw - 118px) / var(--n, 2)), 68px); position: absolute; right: 76px; bottom: 0; display: flex; gap: 6px; opacity: 0; transform: translateX(26px) scale(.9); transform-origin: right bottom; pointer-events: none; transition: opacity .16s, transform .18s cubic-bezier(.2,.9,.3,1.2); }
 #dock.open #slots { opacity: 1; transform: none; pointer-events: auto; }
 .card { position: relative; flex: none; width: var(--cw); height: calc(var(--cw) * 1.22); padding: 3px 2px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 11px; background: var(--slab); box-shadow: var(--slabline), 0 5px 12px rgba(0,0,0,.75); }
-.card .ci { width: 74%; aspect-ratio: 1; object-fit: contain; border-radius: 9px; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
+.card .ci { width: 90%; aspect-ratio: 1; object-fit: contain; border-radius: 9px; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
 .card .cn { font-family: var(--gothic); font-size: 9px; line-height: 1; text-align: center; color: #e8e8dc; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px #000; padding: 0 1px; }
 .card .cc { display: flex; align-items: center; gap: 2px; font-family: var(--font); font-weight: 700; font-size: 13px; color: var(--gold); line-height: 1; } .card .cc img { width: 13px; height: 13px; }
 .card .cs { position: absolute; top: 2px; right: 4px; font-family: var(--font); font-size: 10px; color: #8fe36a; line-height: 1; text-shadow: 0 1px 2px #000; }
@@ -854,3 +854,7 @@ body.menuopen .embers::before, body.menuopen .embers::after { animation: none; }
 #loadout .lo-foot { position: static; flex: none; margin: 0; padding: 10px 16px calc(var(--sa-bottom) + 10px); background: linear-gradient(#0b0609, #0b0609); box-shadow: 0 -10px 18px rgba(0,0,0,.55); }
 .langgrid { gap: var(--gap); }
 .rk-rules .mrow { padding: 9px 0; gap: 10px; }
+
+/* никаких полос прокрутки: прокрутка работает, но не рисуется */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }

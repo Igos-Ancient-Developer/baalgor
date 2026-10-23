@@ -20,9 +20,11 @@ const LEVEL_SPEC = {
   h1: ['lava', 28, 'phrygian', 1.0, 51], h2: ['lava', 26, 'locrian', 1.2, 52], h3: ['slaughter', 29, 'phrygian', 1.3, 53],
 };
 export const MENU_SPEC = { theme: 'menu', root: 33, mode: 'aeolian', density: 0.8, seed: 7 };
+// у каждого уровня своя «песня»: темп, ход аккордов, мотив и ритм считаются из зерна уровня, так что мелодия и пульс у всех 19 уровней разные
+const PROGS = [[0, 5, 3, 4], [0, 3, 5, 4], [0, 6, 4, 3], [0, 2, 5, 3], [0, 4, 5, 3], [0, 5, 2, 4], [0, 3, 6, 4], [0, 1, 5, 4]];
 export function levelSpec(level, ranked = false) {
-  const t = LEVEL_SPEC[level && level.id] || LEVEL_SPEC.g1;
-  return { theme: t[0], root: t[1], mode: t[2], density: t[3] * (ranked ? 1.15 : 1), seed: t[4] };
+  const t = LEVEL_SPEC[level && level.id] || LEVEL_SPEC.g1, seed = t[4];
+  return { theme: t[0], root: t[1], mode: t[2], density: t[3] * (ranked ? 1.15 : 1), seed, bpm: 50 + ((seed * 13) % 27) + (ranked ? 6 : 0), prog: PROGS[seed % PROGS.length], voice: seed % 2 };
 }
 
 export function createTrack(sfx, spec) {
@@ -139,7 +141,69 @@ export function createTrack(sfx, spec) {
       };
     },
   };
-  const tick = (worlds[spec.theme] || worlds.menu)();
+
+  // ── песня уровня: аккорды-подушка, бас, мотив на голосе сектора и свой ритм ──
+  const song = () => {
+    const beat = 60 / spec.bpm, bar = beat * 4, step = beat / 2, RM = rng(spec.seed * 31 + 7), RD = rng(spec.seed * 57 + 3);
+    const prog = spec.prog || [0, 5, 3, 4], theme = spec.theme, voice = spec.voice || 0;
+    // мотив: 8 восьмых; контур — случайное блуждание по ладу, пауз около трети
+    const motif = []; let d = 2 + ((RM() * 4) | 0);
+    for (let i = 0; i < 8; i++) { if (i > 0 && RM() < 0.38) { motif.push(null); continue; } d = Math.max(0, Math.min(9, d + pick([-2, -1, -1, 0, 1, 1, 2]))); motif.push(d); }
+    motif[0] = motif[0] ?? 3;
+    // ритм: 8 восьмых; сильная доля всегда, остальные удары — из зерна уровня
+    const kick = Array.from({ length: 8 }, (_, i) => i === 0 || (i === 4 && RD() < 0.7) || (i % 2 === 0 && RD() < 0.22));
+    const hat = Array.from({ length: 8 }, (_, i) => i % 2 === 1 && RD() < 0.5);
+    const pad = (midi, t, dur, gain, type = 'sawtooth', lp = 600) => {
+      for (const dt of [-7, 0, 7]) {
+        const o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain(); o.type = type; o.frequency.value = mtof(midi); o.detune.value = dt;
+        f.type = 'lowpass'; f.frequency.setValueAtTime(lp * 0.5, t); f.frequency.linearRampToValueAtTime(lp, t + dur * 0.5); f.frequency.linearRampToValueAtTime(lp * 0.6, t + dur);
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain / 3, t + dur * 0.35); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+        o.connect(f); f.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05);
+      }
+    };
+    const flute = (midi, t, dur, gain) => {
+      const f = mtof(midi), o = c.createOscillator(), o2 = c.createOscillator(), l = c.createOscillator(), lg = c.createGain(), g = c.createGain();
+      o.type = 'sine'; o2.type = 'triangle'; o.frequency.value = f; o2.frequency.value = f * 2; l.frequency.value = 5; lg.gain.value = f * 0.006; l.connect(lg); lg.connect(o.frequency);
+      env(g, t, 0.07, gain, dur); o.connect(g); o2.connect(g); g.connect(out); [o, o2, l].forEach((n) => { n.start(t); n.stop(t + dur + 0.05); });
+      burst('bandpass', f * 3, f * 3, t, 0.08, gain * 0.25, 4);
+    };
+    const brass = (midi, t, dur, gain) => {
+      const f = mtof(midi), o = c.createOscillator(), fl = c.createBiquadFilter(), g = c.createGain(); o.type = 'sawtooth'; o.frequency.value = f;
+      fl.type = 'lowpass'; fl.frequency.setValueAtTime(f * 1.5, t); fl.frequency.linearRampToValueAtTime(f * 5, t + dur * 0.3); fl.frequency.linearRampToValueAtTime(f * 1.5, t + dur);
+      env(g, t, 0.12, gain, dur); o.connect(fl); fl.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05);
+    };
+    const celesta = (midi, t, gain) => { const f = mtof(midi); tone('sine', f, f, t, 1.8, gain, 0.004); tone('sine', f * 4, f * 4, t, 0.5, gain * 0.35, 0.003); tone('sine', f * 2.01, f * 2.01, t, 1.0, gain * 0.2, 0.003); };
+    const metal = (midi, t, gain) => { const f = mtof(midi); tone('square', f, f * 0.99, t, 0.9, gain * 0.5, 0.004); tone('square', f * 1.414, f * 1.4, t, 0.7, gain * 0.35, 0.004); };
+    const lead = {
+      grave: (m, t, dur, g) => (voice ? pad(m, t, dur * 1.4, g * 1.6, 'triangle', 1200) : bell(m, t, g * 1.2, 3.6)),
+      forest: (m, t, dur, g) => (voice ? pluck(m, t, g * 1.2) : flute(m, t, dur, g * 1.4)),
+      desert: (m, t, dur, g) => (voice ? flute(m, t, dur, g * 1.3) : pluck(m, t, g * 1.4)),
+      ice: (m, t, dur, g) => (voice ? bell(m, t, g, 4) : celesta(m, t, g * 1.3)),
+      lava: (m, t, dur, g) => (voice ? metal(m, t, g * 1.2) : brass(m, t, dur * 1.2, g * 1.2)),
+      slaughter: (m, t, dur, g) => (voice ? brass(m, t, dur, g) : metal(m, t, g * 1.3)),
+    }[theme] || ((m, t, dur, g) => bell(m, t, g, 3));
+    const drums = { desert: 1, lava: 1, slaughter: 1, forest: 0.6, grave: 0.45, ice: 0.25 }[theme] ?? 0.5;
+    let nb = now0 + 1.2, bi = 0;
+    return (now, T) => {
+      while (nb < now + 0.8) {
+        const t0 = nb, ch = prog[bi % 4], q = Math.floor(bi / 4) % 2;
+        pad(degree(ch, 1), t0, bar * 1.04, 0.05 * (0.8 + D * 0.2), theme === 'ice' ? 'triangle' : 'sawtooth', theme === 'lava' || theme === 'slaughter' ? 520 : 380);
+        pad(degree(ch + 2, 1), t0, bar * 1.04, 0.035, 'triangle', 700); pad(degree(ch + 4, 1), t0, bar * 1.04, 0.03, 'triangle', 800);
+        tone('sine', mtof(degree(ch, -1)), mtof(degree(ch, -1)) * 0.995, t0, beat * 3.4, 0.16, 0.03);                         // бас на сильную долю
+        if (D > 0.95 || T > 0.3) tone('sine', mtof(degree(ch + 4, -1)), mtof(degree(ch + 4, -1)), t0 + beat * 2, beat * 1.6, 0.1, 0.03);
+        if (bi % 2 === 0 || T > 0.5) motif.forEach((m, i) => { if (m !== null && (i < 6 || RM() < 0.5)) lead(degree(m + (q ? 2 : 0) + ch, 2), t0 + i * step + (RM() * 0.02), step * 1.8, 0.05 * (0.85 + D * 0.15)); });
+        else if (RM() < 0.5) lead(degree(ch + 4, 2), t0 + beat * 2, bar / 2, 0.045);
+        for (let i = 0; i < 8; i++) {
+          if (drums > 0.3 && kick[i] && (drums >= 0.6 || bi % 2 === 0)) thump(t0 + i * step, 80 + drums * 20, 34, 0.1 + 0.16 * drums * (0.7 + T * 0.5), 0.3);
+          if (drums >= 0.6 && hat[i]) burst('highpass', 6000, 5000, t0 + i * step, 0.04, 0.03 * drums * (0.6 + T), 1);
+          if (drums >= 1 && i === 4) { burst('bandpass', 1800, 900, t0 + i * step, 0.12, 0.07 * (0.6 + T), 1.5); }
+        }
+        bi++; nb += bar;
+      }
+    };
+  };
+  const base = (worlds[spec.theme] || worlds.menu)(), sg = spec.bpm ? song() : null;
+  const tick = (now, T) => { base(now, T); if (sg) sg(now, T); };
   const timer = setInterval(() => { try { tick(c.currentTime, tension); } catch (e) { /* ignore */ } }, 250);
   tick(c.currentTime, 0);
   return {

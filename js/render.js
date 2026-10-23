@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023184121';
-import * as A from './art.js?v=20261023184121';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261023184121';
-import { tile } from './iconmap.js?v=20261023184121';
-import { img } from './sprites.js?v=20261023184121';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261023184121';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023190843';
+import * as A from './art.js?v=20261023190843';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261023190843';
+import { tile } from './iconmap.js?v=20261023190843';
+import { img } from './sprites.js?v=20261023190843';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261023190843';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -12,7 +12,7 @@ const BUILD_K = 1.2, FIT_W = CELL * 0.98;           // здания крупне
 function buildK(at, level, br) { if (!(A.SPR.ok && A.SPR.towers[at])) return 1; const g = A.towerGeo(at, level, br); return Math.min(BUILD_K, FIT_W / Math.max(1, g.right - g.left)); }
 
 // взмахов крыльев в секунду: раньше цикл из 8 кадров проходил за 0.1 с (кадры мелькали быстрее экрана и моргали); теперь у каждого свой неторопливый ритм
-const FLAP = { bat: 2.2, gargoyle: 1.6, reaper: 1.4 };
+const FLAP = { bat: 2.2, gargoyle: 1.6 };
 const FACE0 = { bolt: 1, mortar: 1, flame: 1, harpoon: -1 };      // куда смотрит картинка башни по умолчанию: 1 вправо, -1 влево
 // масштаб карты: на экране видно VIEW_COLS клеток в ширину, остальное достаём пальцем
 const zoomFor = (cssW) => clamp(cssW / (VIEW_COLS * CELL), 1, 1.7);
@@ -22,7 +22,7 @@ function drawBolt(ctx, x, y, sc, flip) {
   ctx.beginPath(); BOLT.forEach(([px, py], i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, x + px * sc * flip, y + py * sc)); ctx.closePath();
 }
 function drawCritText(ctx, f, a) {
-  const pop = f.t < 0.12 ? 1.5 - f.t * 4 : 1, size = 10.5 * pop, tw = (() => { ctx.font = `400 ${size}px "Monomakh", "Oswald", Impact, sans-serif`; return ctx.measureText(f.text).width; })();
+  const pop = f.t < 0.12 ? 1.5 - f.t * 4 : 1, size = 10.5 * pop, tw = (() => { ctx.font = `700 ${size}px "Playfair Display SC", "Oswald", Georgia, serif`; return ctx.measureText(f.text).width; })();
   ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   const g = ctx.createLinearGradient(0, f.y - size * 0.6, 0, f.y + size * 0.6); g.addColorStop(0, '#fff3a0'); g.addColorStop(0.5, '#ffb52a'); g.addColorStop(1, '#ff4a1a');
   ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(30,6,4,0.95)'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = g; ctx.fillText(f.text, f.x, f.y);

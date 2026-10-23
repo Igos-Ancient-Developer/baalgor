@@ -1,26 +1,26 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261023184121';
-import * as A from './art.js?v=20261023184121';
-import { Sim } from './sim.js?v=20261023184121';
-import { Gore } from './gore.js?v=20261023184121';
-import { Renderer } from './render.js?v=20261023184121';
-import { GameUI } from './ui.js?v=20261023184121';
-import { Tutorial } from './tutorial.js?v=20261023184121';
-import { Sfx, attachSfx } from './audio.js?v=20261023184121';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023184121';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023184121';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261023184121';
-import { mapBG, releaseBG } from './env.js?v=20261023184121';
-import { levelSpec, MENU_SPEC } from './music.js?v=20261023184121';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023184121';
-import { renderForge, renderAchs } from './screens.js?v=20261023184121';
-import { renderShop } from './shop.js?v=20261023184121';
-import { Wallet } from './wallet.js?v=20261023184121';
-import { initLang, pickLang } from './i18n.js?v=20261023184121';
-import { Menus, RUN, clock } from './menus.js?v=20261023184121';
-import { Net } from './net.js?v=20261023184121';
-import { gemIc } from './res.js?v=20261023184121';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023184121';
+import * as D from './data.js?v=20261023190843';
+import * as A from './art.js?v=20261023190843';
+import { Sim } from './sim.js?v=20261023190843';
+import { Gore } from './gore.js?v=20261023190843';
+import { Renderer } from './render.js?v=20261023190843';
+import { GameUI } from './ui.js?v=20261023190843';
+import { Tutorial } from './tutorial.js?v=20261023190843';
+import { Sfx, attachSfx } from './audio.js?v=20261023190843';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023190843';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023190843';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261023190843';
+import { mapBG, releaseBG } from './env.js?v=20261023190843';
+import { levelSpec, MENU_SPEC } from './music.js?v=20261023190843';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023190843';
+import { renderForge, renderAchs } from './screens.js?v=20261023190843';
+import { renderShop } from './shop.js?v=20261023190843';
+import { Wallet } from './wallet.js?v=20261023190843';
+import { initLang, pickLang } from './i18n.js?v=20261023190843';
+import { Menus, RUN, clock } from './menus.js?v=20261023190843';
+import { Net } from './net.js?v=20261023190843';
+import { gemIc } from './res.js?v=20261023190843';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023190843';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -49,8 +49,8 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023184121').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261023184121').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023190843').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261023190843').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
@@ -100,9 +100,9 @@ function back() {
   if (t) {
     if (t === '#loadout' && run && run.i > 0) { sfx.play('error'); return; }             // посреди забега назад пути нет
     hide(t); if (t === '#forge' || t === '#achs' || t === '#shop') { menus.buildTitle(); if (!$('#world').classList.contains('hidden')) menus.buildWorld(); if (!$('#loadout').classList.contains('hidden')) menus.refreshLoadout(); if (t === '#shop' && ctrl.forgeDraw && !$('#forge').classList.contains('hidden')) ctrl.forgeDraw(); if (t === '#shop' && reviveOpen) { renderRevive(); show('#revive'); } }
-    sfx.play('click'); updateBack(); return;
+    sfx.play('back'); updateBack(); return;
   }
-  if (!$('#world').classList.contains('hidden')) { sfx.play('click'); goTitle(); return; }
+  if (!$('#world').classList.contains('hidden')) { sfx.play('back'); goTitle(); return; }
   if (running && !paused) setPause(true);
 }
 // кнопка «Назад» Telegram нужна везде, кроме главного меню (поверх него открываются Кузница, Награды и т.д., поэтому смотрим на открытые окна, а не на видимость заставки)
@@ -277,7 +277,7 @@ async function startLevel(levelId, diffIdx, ranked, loadout, boosts = []) {
   reviveOpen = false; hide('#revive'); running = true; paused = false; held = false; acc = 0; ending = null; lastHud = ''; kick();
   save.plays++; save.last = { level: levelId, diff: diffIdx }; if (!ranked && !tut) (save.lastDiff ||= {})[levelId] = diffIdx; persist();
   TG.closingConfirm(true); updateBack();
-  sfx.unlock(); sfx.startMusic(levelSpec(L, ranked));
+  sfx.unlock(); sfx.startMusic(levelSpec(L, ranked)); sfx.play('start');
   if (tut) tutorial.attach(sim, ui); else tutorial.detach();
 }
 // усилители за кристаллы: золото на старте и жизни (на Хардкоре жизнь одна, усилитель жизней там не действует)
