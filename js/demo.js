@@ -23,3 +23,20 @@ export async function enemyDemo(ctrl) {
     await sleep(9000);
   }
 }
+
+// Режим «все здания»: index.html?debug&buildall — первый уровень, много золота, на свободных клетках ставятся все башни и здания добычи по одному
+// (смотреть размеры и вид); врагов нет, волны не идут (hold).
+export async function buildAll(ctrl) {
+  while (!ctrl.startLevel || !ctrl.save) await sleep(200);
+  await sleep(800); ctrl.save.tutDone = 1; ctrl.startLevel('g1', 1); await sleep(1200);
+  const go = document.querySelector('#lo-go'); if (go) go.click(); await sleep(2200);
+  const s = ctrl.sim; if (!s) return;
+  s.locked.clear(); s.allowed = null; s.limits = {}; s.gold = 99999; s.hold = true;
+  const D = await import('./data.js?v=20261023175825');
+  const types = [...Object.keys(D.TOWERS).map((t) => ['tower', t]), ...Object.keys(D.ECON).map((t) => ['econ', t])];
+  const free = []; for (let r = 0; r < s.grid.length; r++) for (let c = 0; c < s.grid[0].length; c++) if (s.canBuild(c, r)) free.push([c, r]);
+  // клетки вперемешку не нужны: идём по рядам сверху вниз через одну, чтобы здания не слипались
+  const spots = free.filter(([c, r]) => (c + r) % 2 === 0);
+  types.forEach(([kind, t], i) => { const cell = spots[i]; if (cell) s.build(kind, t, cell[0], cell[1]); });
+  console.log('buildall: поставлено', s.buildings.length, 'из', types.length);
+}
