@@ -826,3 +826,31 @@ body.menuopen .embers::before, body.menuopen .embers::after { animation: none; }
 #p-score { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: -2px 0 6px; font-family: var(--font); color: #ffe27a; }
 #p-score .ps-v { display: flex; align-items: center; gap: 6px; font-size: 30px; font-weight: 700; text-shadow: 0 2px 0 #5a3a08; } #p-score .ps-v img { width: 30px; height: 30px; }
 #p-score small { font-size: 12px; color: #b8bcb0; letter-spacing: .04em; }
+
+/* ═════════ единый отступ между ячейками на всех экранах ═════════ */
+:root { --gap: 12px; }
+#perks, #slotsbox, #premium, #unlocks, #achlist, #boardlist, .subbody, #settingsbody, #rankedbody, .lo-boosts, .sh-packs.list { display: flex; flex-direction: column; gap: var(--gap); }
+#perks > *, #slotsbox > *, #premium > *, #unlocks > *, #achlist > *, #boardlist > *, .lo-boosts > * { margin: 0 !important; }
+.subbody, .subbody.lo, .subbody.shop, #settings .subbody { gap: var(--gap); }
+.subbody > .sect-title { margin: 8px 0 0; }
+.lo-cards, .sh-prem, .sh-packs, .stn-grid { gap: var(--gap); }
+.lo-slots { gap: var(--gap); }
+.lo-grid { display: flex; flex-direction: column; gap: var(--gap); }
+.title-actions { gap: var(--gap); }
+
+/* главный экран: всё помещается в экран любой высоты, нижняя кнопка не прижата к краю */
+#title { padding-bottom: calc(var(--sa-bottom) + 22px); }
+.logo-img.big { width: min(72vw, 310px, 34vh); }
+#title .logo-img { margin: 0 0 calc(-0.06 * min(72vw, 310px, 34vh)); }
+.title-actions { gap: clamp(7px, 1.5vh, var(--gap)); }
+.title-actions .stn { min-height: clamp(46px, 7.4vh, 58px); }
+.title-actions .stn.ranked { margin-bottom: 0; }
+@media (max-height: 760px) { .title-actions .stn:not(.ranked) { border-width: 11px; border-image-width: 11px; min-height: 0; padding: 2px 12px; font-size: 19px; } .title-actions .stn.ranked { width: 104%; margin: 0 -2%; } }
+@media (max-height: 680px) { #title { padding-top: calc(var(--sa-top) + 46px); } .logo-img.big { width: min(66vw, 280px, 30vh); } .title-actions .stn:not(.ranked) { border-width: 9px; border-image-width: 9px; font-size: 17px; } .title-actions .stn.ranked { width: 100%; margin: 0; } }
+
+/* подготовка к уровню: шапка и кнопка «В бой» стоят на месте, прокручивается только середина; кнопка у самого низа без зазора */
+#loadout.screen { overflow: hidden; padding-bottom: 0; }
+#loadout .subbody.lo { flex: 1 1 auto; min-height: 0; width: min(100%, 480px); overflow-y: auto; overscroll-behavior: contain; padding-bottom: var(--gap); -webkit-overflow-scrolling: touch; }
+#loadout .lo-foot { position: static; flex: none; margin: 0; padding: 10px 16px calc(var(--sa-bottom) + 10px); background: linear-gradient(#0b0609, #0b0609); box-shadow: 0 -10px 18px rgba(0,0,0,.55); }
+.langgrid { gap: var(--gap); }
+.rk-rules .mrow { padding: 9px 0; gap: 10px; }

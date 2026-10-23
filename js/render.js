@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023180731';
-import * as A from './art.js?v=20261023180731';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261023180731';
-import { tile } from './iconmap.js?v=20261023180731';
-import { img } from './sprites.js?v=20261023180731';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261023180731';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023184121';
+import * as A from './art.js?v=20261023184121';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261023184121';
+import { tile } from './iconmap.js?v=20261023184121';
+import { img } from './sprites.js?v=20261023184121';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261023184121';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -16,6 +16,21 @@ const FLAP = { bat: 2.2, gargoyle: 1.6, reaper: 1.4 };
 const FACE0 = { bolt: 1, mortar: 1, flame: 1, harpoon: -1 };      // куда смотрит картинка башни по умолчанию: 1 вправо, -1 влево
 // масштаб карты: на экране видно VIEW_COLS клеток в ширину, остальное достаём пальцем
 const zoomFor = (cssW) => clamp(cssW / (VIEW_COLS * CELL), 1, 1.7);
+// «КРИТ»: готический шрифт, красно-золотой градиент и по молнии с каждой стороны; появляется с «ударом» и быстро гаснет
+const BOLT = [[2.5, -6], [-2.5, 0.5], [0, 0.5], [-2, 6], [3, -1], [0.3, -1]];
+function drawBolt(ctx, x, y, sc, flip) {
+  ctx.beginPath(); BOLT.forEach(([px, py], i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, x + px * sc * flip, y + py * sc)); ctx.closePath();
+}
+function drawCritText(ctx, f, a) {
+  const pop = f.t < 0.12 ? 1.5 - f.t * 4 : 1, size = 10.5 * pop, tw = (() => { ctx.font = `400 ${size}px "Monomakh", "Oswald", Impact, sans-serif`; return ctx.measureText(f.text).width; })();
+  ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  const g = ctx.createLinearGradient(0, f.y - size * 0.6, 0, f.y + size * 0.6); g.addColorStop(0, '#fff3a0'); g.addColorStop(0.5, '#ffb52a'); g.addColorStop(1, '#ff4a1a');
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(30,6,4,0.95)'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = g; ctx.fillText(f.text, f.x, f.y);
+  const bx = tw / 2 + 6 * pop, sc = 0.95 * pop;
+  for (const sd of [-1, 1]) { drawBolt(ctx, f.x + sd * bx, f.y, sc, sd); ctx.lineWidth = 2.4; ctx.strokeStyle = 'rgba(30,6,4,0.95)'; ctx.stroke(); ctx.fillStyle = '#ffe45a'; ctx.fill(); }
+  ctx.restore();
+}
+
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas; this.ctx = canvas.getContext('2d');
@@ -110,6 +125,7 @@ export class Renderer {
     this.drawOverlays(ctx, view, t);
     if (this.floaters !== false) for (const f of gore.floaters) {
       const a = 1 - clamp((f.t - 0.6) / 0.5, 0, 1);
+      if (f.kind === 'crit') { drawCritText(ctx, f, a); continue; }
       ctx.save(); ctx.globalAlpha = a; ctx.font = `800 ${Math.round(13 * f.k)}px "Oswald", Impact, sans-serif`; ctx.textAlign = 'center';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(20,8,10,0.9)'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = f.col; ctx.fillText(f.text, f.x, f.y); ctx.restore();
     }

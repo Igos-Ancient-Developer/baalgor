@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261023180731';
+import { COLS, ROWS } from './layouts.js?v=20261023184121';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD = 80;
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261023180731';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261023184121';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -45,7 +45,7 @@ export const TOWERS = {
     name: 'Арбалет', cost: 50, air: true, ground: true,
     short: 'Быстрые болты. Бьёт по земле и воздуху.',
     lv: [
-      { dmg: 14, rate: 1.5, range: 3.0, crit: 0.06, critMult: 2 },
+      { dmg: 14, rate: 1.5, range: 3.0 },
       { cost: 60, dmg: 22, rate: 1.6, range: 3.2 },
       { cost: 110, dmg: 34, rate: 1.8, range: 3.4 },
     ],
@@ -53,16 +53,16 @@ export const TOWERS = {
       A: { name: 'Пронзатель', desc: 'Болты пробивают до 7 врагов в ряд и игнорируют броню.', lv: [
         { cost: 200, dmg: 42, rate: 1.7, range: 3.6, pierce: 4, armorPierce: 0.5 },
         { cost: 330, dmg: 64, rate: 1.8, range: 3.9, pierce: 7, armorPierce: 0.8 } ] },
-      B: { name: 'Палач', desc: 'Критические удары ×3 и мгновенная казнь раненых врагов.', lv: [
-        { cost: 190, dmg: 44, rate: 2.2, range: 3.8, crit: 0.25, critMult: 3, execute: 0.15 },
-        { cost: 320, dmg: 62, rate: 2.7, range: 4.2, crit: 0.35, critMult: 3.5, execute: 0.25 } ] },
+      B: { name: 'Палач', desc: 'Критические удары сильнее обычных и мгновенная казнь раненых врагов.', lv: [
+        { cost: 190, dmg: 44, rate: 2.2, range: 3.8, execute: 0.15 },
+        { cost: 320, dmg: 62, rate: 2.7, range: 4.2, execute: 0.25 } ] },
     },
   },
   mortar: {
     name: 'Мортира', cost: 90, air: false, ground: true,
     short: 'Взрывные бомбы по площади. Только по земле.',
     lv: [
-      { dmg: 55, rate: 0.55, range: 3.6, splash: 1.0, crit: 0.12, critMult: 2.2 },
+      { dmg: 55, rate: 0.55, range: 3.6, splash: 1.0 },
       { cost: 100, dmg: 78, rate: 0.55, range: 3.8, splash: 1.1 },
       { cost: 170, dmg: 120, rate: 0.6, range: 4.0, splash: 1.25 },
     ],
@@ -199,7 +199,7 @@ TOWERS.harpoon = {
   name: 'Гарпунная баллиста', cost: 150, air: true, ground: true, defaultMode: 2,
   short: 'Дальнобойный снайпер: редкие мощные выстрелы по самому крепкому врагу. Тяжёлым врагам — больше урона.',
   lv: [
-    { dmg: 80, rate: 0.4, range: 5.2, armorPierce: 0.6, heavyMult: 1.5, crit: 0.15, critMult: 2.2 },
+    { dmg: 80, rate: 0.4, range: 5.2, armorPierce: 0.6, heavyMult: 1.5 },
     { cost: 110, dmg: 155, rate: 0.42, range: 5.4, armorPierce: 0.6, heavyMult: 1.5 },
     { cost: 180, dmg: 240, rate: 0.45, range: 5.6, armorPierce: 0.7, heavyMult: 1.5 },
   ],
@@ -404,6 +404,11 @@ function applyOpt(s, o) {
   if (o.add) for (const k of Object.keys(o.add)) s[k] = (s[k] || 0) + o.add[k];
   if (o.set) Object.assign(s, o.set);
 }
+// Критический удар: шанс даёт только перк «Меткость» в Кузнице (0…50%), у самих башен шанса нет.
+// Сила крита появляется с 3-го уровня башни и растёт с каждым следующим; крит бывает у башен с физическими снарядами.
+export const CRIT_TOWERS = ['bolt', 'mortar', 'harpoon'];
+export const CRIT_FROM_LEVEL = 3;
+export const critMultOf = (type, level, branch) => (CRIT_TOWERS.includes(type) && level >= CRIT_FROM_LEVEL ? 1.5 + 0.5 * (level - CRIT_FROM_LEVEL) + (type === 'bolt' && branch === 'B' && level >= 4 ? 0.5 : 0) : 0);
 export function towerStats(type, level, branch, picks = [0, 0]) {
   if (isPremium(type)) {                                   // премиум = характеристики базовой башни × множители
     const d0 = TOWERS[type], s0 = towerStats(d0.base, level, branch, picks);
@@ -424,6 +429,7 @@ export function towerStats(type, level, branch, picks = [0, 0]) {
       else s[k] = Math.max(s[k] ?? 0, tv);
     }
   }
+  const cm = critMultOf(type, level, branch); if (cm) s.critMult = cm;
   return s;
 }
 // Варианты следующего улучшения для UI

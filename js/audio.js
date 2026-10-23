@@ -1,17 +1,32 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261023180731';
+import { createTrack, MENU_SPEC } from './music.js?v=20261023184121';
 export class Sfx {
   constructor() {
     this.ctx = null; this.sfxOn = true; this.musOn = true;
     this.last = {}; this.track = null; this.spec = MENU_SPEC; this.tension = 0;
   }
+  // iPhone глушит WebAudio, пока стоит беззвучный режим: переводим аудиосессию в «воспроизведение» и держим тихий <audio> —
+  // тогда звук идёт и при выключенном рингере. Работает только из жеста пользователя, поэтому вызывается из unlock().
+  keepAwake() {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* */ }
+    if (this.silent) { if (this.silent.paused) this.silent.play().catch(() => {}); return; }
+    try {
+      const n = 800, b = new DataView(new ArrayBuffer(44 + n * 2)), w = (o, t) => { for (let i = 0; i < t.length; i++) b.setUint8(o + i, t.charCodeAt(i)); };
+      w(0, 'RIFF'); b.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true); b.setUint32(24, 8000, true); b.setUint32(28, 16000, true); b.setUint16(32, 2, true); b.setUint16(34, 16, true); w(36, 'data'); b.setUint32(40, n * 2, true);
+      const a = new Audio(URL.createObjectURL(new Blob([b.buffer], { type: 'audio/wav' }))); a.loop = true; a.volume = 0.01; a.setAttribute('playsinline', ''); this.silent = a; a.play().catch(() => {});
+    } catch (e) { /* */ }
+  }
   unlock() {
-    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    this.keepAwake();
+    if (this.ctx) { if (this.ctx.state !== 'running') this.ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     this.ctx = new AC();
-    this.master = this.ctx.createGain(); this.master.gain.value = 0.8; this.master.connect(this.ctx.destination);
-    this.sfxBus = this.ctx.createGain(); this.sfxBus.gain.value = this.volS ?? 1; this.sfxBus.connect(this.master);
-    this.musBus = this.ctx.createGain(); this.musBus.gain.value = 0.85 * (this.volM ?? 0.8); this.musBus.connect(this.master);
+    // общий компрессор: можно делать звук погромче, не боясь перегруза динамика телефона
+    this.master = this.ctx.createGain(); this.master.gain.value = 1.0;
+    const comp = this.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.knee.value = 12; comp.ratio.value = 5; comp.attack.value = 0.004; comp.release.value = 0.2;
+    this.master.connect(comp); comp.connect(this.ctx.destination);
+    this.sfxBus = this.ctx.createGain(); this.sfxBus.gain.value = 1.9 * (this.volS ?? 1); this.sfxBus.connect(this.master);
+    this.musBus = this.ctx.createGain(); this.musBus.gain.value = 2.6 * (this.volM ?? 0.8); this.musBus.connect(this.master);
     // шумовой буфер
     const len = this.ctx.sampleRate * 1.5, buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
@@ -26,7 +41,7 @@ export class Sfx {
     if (this.musOn && this.wantMusic) this.startMusic();
   }
   setSfx(on) { this.sfxOn = on; }
-  setVolumes(sfx, mus) { this.volS = sfx; this.volM = mus; if (this.ctx) { this.sfxBus.gain.value = sfx; this.musBus.gain.value = 0.85 * mus; } }
+  setVolumes(sfx, mus) { this.volS = sfx; this.volM = mus; if (this.ctx) { this.sfxBus.gain.value = 1.9 * sfx; this.musBus.gain.value = 2.6 * mus; } }
   setMusic(on) { this.musOn = on; if (!this.ctx) return; if (on) this.startMusic(); else this.stopMusic(); }
   gate(name, gap) { if (!this.ctx) return false; const t = this.ctx.currentTime; if (this.last[name] && t - this.last[name] < gap) return false; this.last[name] = t; return true; }
 

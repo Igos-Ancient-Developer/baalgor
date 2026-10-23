@@ -1,7 +1,7 @@
 // Пакет иконок в «рисованном» стиле Warcraft 3: квадрат с бронзовой фаской, насыщенный фон, жирный контур, глянец.
 // Всё рисуется кодом; иконки кэшируются в canvas и dataURL.
-import { OUT, S as ART_S, mk, cached, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow } from './art.js?v=20261023180731';
-import { GLYPH_IMG, tile, inner } from './iconmap.js?v=20261023180731';
+import { OUT, S as ART_S, mk, cached, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow } from './art.js?v=20261023184121';
+import { GLYPH_IMG, tile, inner } from './iconmap.js?v=20261023184121';
 
 const T2 = Math.PI * 2;
 export const PALETTE = {
@@ -151,9 +151,9 @@ export function bareGlyph(name, size = 20) {
 export function bareGlyphUrl(name, size = 20) { return iconUrl(bareGlyph(name, size * 2)); }
 
 // ───── соответствия ─────
-export const STAT_GLYPH = { dmg: 'dmg', rate: 'rate', range: 'range', splash: 'blast', chains: 'chain', pierce: 'pierce', crit: 'skull', execute: 'skull', slow: 'frost', freeze: 'frost', brittle: 'frost', shatter: 'frost', poison: 'poison', stacks: 'poison', plague: 'poison', shred: 'poison', orbit: 'dmg', bounce: 'dmg', stun: 'rate', cleave: 'dmg', rateBuff: 'banner', dmgBuff: 'banner', mark: 'skull', cluster: 'blast', fire: 'fire', burn: 'fire', spread: 'fire', trail: 'fire', pull: 'vortex', collapseMult: 'vortex', anchor: 'chain', heavyMult: 'crown', armorPierce: 'pierce', income: 'coins', bonus: 'coins', cap: 'coins' };
+export const STAT_GLYPH = { dmg: 'dmg', rate: 'rate', range: 'range', splash: 'blast', chains: 'chain', pierce: 'pierce', critMult: 'skull', execute: 'skull', slow: 'frost', freeze: 'frost', brittle: 'frost', shatter: 'frost', poison: 'poison', stacks: 'poison', plague: 'poison', shred: 'poison', orbit: 'dmg', bounce: 'dmg', stun: 'rate', cleave: 'dmg', rateBuff: 'banner', dmgBuff: 'banner', mark: 'skull', cluster: 'blast', fire: 'fire', burn: 'fire', spread: 'fire', trail: 'fire', pull: 'vortex', collapseMult: 'vortex', anchor: 'chain', heavyMult: 'crown', armorPierce: 'pierce', income: 'coins', bonus: 'coins', cap: 'coins' };
 export const SPELL_GLYPH = { meteor: 'meteor', stasis: 'stasis', rush: 'rush' };
-export const PERK_GLYPH = { treasury: 'coins', fortress: 'heart', taxes: 'chart', temper: 'dmg', greed: 'bag', luck: 'gold', merchant: 'scales', wisdom: 'book' };
+export const PERK_GLYPH = { treasury: 'coins', fortress: 'heart', taxes: 'chart', temper: 'dmg', greed: 'bag', luck: 'gold', merchant: 'scales', aim: 'skull', wisdom: 'book' };
 export const ACH_GLYPH = {
   first_blood: 'skull', hundred: 'skull', thousand: 'dmg', ten_k: 'horns', decap: 'dmg', lumberjack: 'dmg', sculptor: 'frost', storm: 'chain', starfall: 'meteor', birds: 'wing', burn: 'fire',
   butcher: 'goblin', lich_slayer: 'skull', demon_slayer: 'horns', bags: 'bag', bags500: 'bag', scrooge: 'coins', mine_king: 'pickaxe', gold_lvl: 'pickaxe', tycoon: 'chart', devil_deal: 'horde',

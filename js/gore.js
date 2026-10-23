@@ -1,9 +1,9 @@
 // Расчленёнка, кровь и частицы. Подписывается на события симуляции и рисует в постоянный «слой крови».
-import { tr } from './i18n.js?v=20261023180731';
-import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261023180731';
-import { S as ART_S } from './art.js?v=20261023180731';
-import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261023180731';
-import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261023180731';
+import { tr } from './i18n.js?v=20261023184121';
+import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261023184121';
+import { S as ART_S } from './art.js?v=20261023184121';
+import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261023184121';
+import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261023184121';
 
 const GRAV = 560;
 const LAYERS = 3, SPAN = 6, HOLD = 6, FADE = 5;   // секунд игрового времени
@@ -101,7 +101,7 @@ export class Gore {
     const g = this.bg; g.save(); g.globalAlpha = alpha; g.translate(x, y); g.rotate(rot); g.drawImage(spr, -size / 2, -size / 2, size, size); g.restore();
   }
   splat(kind, x, y, size, alpha = 0.85) { this.stamp(splatSprite(kind, (Math.random() * 6) | 0), x, y, size, rnd(6.28), alpha); }
-  floatText(x, y, text, col = '#fff', k = 1) { this.floaters.push({ x, y, text: tr(text), col, k, t: 0 }); }
+  floatText(x, y, text, col = '#fff', k = 1, kind = '') { this.floaters.push({ x, y, text: tr(text), col, k, t: 0, kind }); }
   coinPop(x, y) { this.part({ k: 'coin', x, y, z: 6, vx: rnd(-50, 50), vy: rnd(-20, 20), vz: rnd(120, 220), life: 1.1, bn: 2, rot: rnd(6), vr: rnd(-10, 10) }); }
   spark(x, y, col) { const a = rnd(6.28), s = rnd(30, 110); this.part({ k: 'spark', x, y, z: rnd(4, 18), vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.5, vz: rnd(30, 120), life: rnd(0.25, 0.55), col, size: rnd(1, 2) }); }
   ring(x, y, r, col, life = 0.5) { this.part({ k: 'ring', x, y, z: 0, vx: 0, vy: 0, vz: 0, life, r, col }); }
@@ -194,7 +194,7 @@ export class Gore {
     if (crit && how !== 'blast' && how !== 'crit' && how !== 'execute' && mode === 'topple') mode = 'headshot';
     if (boss && (mode === 'topple' || mode === 'headshot')) mode = 'explode_small';
     e._gibbed = ['explode', 'explode_small', 'dismember', 'headshot', 'shatter', 'implode'].includes(mode);      // тело разлетелось: анимацию «упал» не показываем
-    if (crit) this.floatText(x, y - 26, 'КРИТ!', '#ffd24a', 1.15);
+    if (crit) this.floatText(x, y - 26, 'КРИТ', '#ffd24a', 1, 'crit');
     const poolKind = bk;
     const addPool = (scale = 1, T = 1.6) => this.pools.push({ x, y, kind: poolKind, t: 0, T, scale: scale * big, n: 0 });
     switch (mode) {

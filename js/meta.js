@@ -1,5 +1,5 @@
 // Мета-прогресс: души, дары кузницы, открытие башен, достижения. Не зависит от DOM (можно тестировать в Node).
-import * as D from './data.js?v=20261023180731';
+import * as D from './data.js?v=20261023184121';
 
 export const SOUL_K = 0.5;                  // общий множитель душ: души дают прокачку, поэтому капают вдвое скупее прежнего
 export const DIFF_SOULS = [0.7, 1, 1.8];   // множитель душ по сложности (индекс как в DIFFS)
@@ -11,9 +11,10 @@ export const PERKS = [
   { id: 'taxes', name: 'Налоги', icon: 'income', max: 5, c0: 40, per: '+8% золота с каждой монеты рудника', mod: (l) => ({ mine: 0.08 * l }) },
   { id: 'temper', name: 'Закалка', icon: 'sword', max: 5, c0: 50, per: '+2.5% урона башен', mod: (l) => ({ dmg: 0.025 * l }) },
   { id: 'luck', name: 'Золотая рука', icon: 'income', max: 3, c0: 35, per: '+10% золота с каждой монеты', mod: (l) => ({ bag: 0.1 * l }) },
+  { id: 'aim', name: 'Меткость', icon: 'crit', max: 10, c0: 30, g: 1.28, per: '+5% шанса крита (до 50%). Крит бьёт сильнее с 3-го уровня башни', mod: (l) => ({ crit: 0.05 * l }) },
   { id: 'merchant', name: 'Торговец', icon: 'sell', max: 3, c0: 30, per: '+4% при продаже', mod: (l) => ({ sell: 0.04 * l }) },
 ];
-export const perkCost = (p, level) => Math.round(p.c0 * (1 + 0.7 * level));
+export const perkCost = (p, level) => Math.round(p.g ? p.c0 * Math.pow(p.g, level) : p.c0 * (1 + 0.7 * level));
 export function perkMods(levels) {
   const out = {};
   for (const p of PERKS) { const l = (levels && levels[p.id]) || 0; if (l) for (const [k, v] of Object.entries(p.mod(l))) out[k] = (out[k] || 0) + v; }

@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261023180731';
+import * as D from './data.js?v=20261023184121';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -43,7 +43,7 @@ export { TARGET_MODES };
 export class Sim {
   constructor({ mapId = 0, diffIdx = 1, seed = 1, perks = null, locked = [], allowed = null, limits = null, gold = null, hold = false, autoCollect = false } = {}) {
     this.autoCollect = autoCollect;      // боты: монеты собираются сами; у игрока — только тапом
-    this.mods = Object.assign({ startGold: 0, lives: 0, baseIncome: 0, mine: 0, dmg: 0, gold: 0, bag: 0, sell: 0, spellCd: 0 }, perks || {});
+    this.mods = Object.assign({ startGold: 0, lives: 0, baseIncome: 0, mine: 0, crit: 0, dmg: 0, gold: 0, bag: 0, sell: 0, spellCd: 0 }, perks || {});
     this.locked = new Set(locked);
     this.allowed = allowed ? new Set(allowed) : null;      // набор зданий, взятых в бой (слоты); null — можно всё
     this.limits = limits;                                  // потолок по типам (обучение)
@@ -737,7 +737,7 @@ export class Sim {
         const a = Math.atan2(p.y - Y, p.x - X);
         b.angle = a;
         this.projs.push({ kind: 'bolt', x: X + Math.cos(a) * 14, y: Y + Math.sin(a) * 14, vx: Math.cos(a) * 620, vy: Math.sin(a) * 620,
-          dmg: st.dmg * dm, pierce: st.pierce || 0, armorPierce: st.armorPierce || 0, crit: st.crit, critMult: st.critMult, execute: st.execute,
+          dmg: st.dmg * dm, pierce: st.pierce || 0, armorPierce: st.armorPierce || 0, crit: st.critMult ? this.mods.crit : 0, critMult: st.critMult, execute: st.execute,
           life: (st.range * CELL + 30) / 620, hit: new Set(), owner: b, big: !!st.pierce });
         this.emit('shot', { b, kind: 'bolt', x: X, y: Y, a });
         break;
@@ -746,7 +746,7 @@ export class Sim {
         const dist = Math.hypot(tg.x - X, tg.y - Y), T = Math.min(1.5, Math.max(0.65, dist / 230));
         const p = this.predict(tg, T);
         this.projs.push({ kind: 'shell', x0: X, y0: Y, x1: p.x, y1: p.y, x: X, y: Y, t: 0, T, dmg: st.dmg * dm, r: st.splash * CELL,
-          cluster: st.cluster || 0, fire: st.fire, fireT: st.fireT, crit: st.crit, critMult: st.critMult, owner: b });
+          cluster: st.cluster || 0, fire: st.fire, fireT: st.fireT, crit: st.critMult ? this.mods.crit : 0, critMult: st.critMult, owner: b });
         this.emit('shot', { b, kind: 'mortar', x: X, y: Y, a: Math.atan2(p.y - Y, p.x - X) });
         break;
       }
@@ -788,7 +788,7 @@ export class Sim {
         const p = this.predict(tg, T);
         const a = Math.atan2(p.y - Y, p.x - X); b.angle = a;
         this.projs.push({ kind: 'bolt', harpoon: true, x: X + Math.cos(a) * 16, y: Y + Math.sin(a) * 16, vx: Math.cos(a) * 950, vy: Math.sin(a) * 950,
-          dmg: st.dmg * dm, pierce: 0, armorPierce: st.armorPierce || 0, crit: st.crit, critMult: st.critMult, heavyMult: st.heavyMult, anchor: st.anchor, splash: st.splash, shred: st.shred,
+          dmg: st.dmg * dm, pierce: 0, armorPierce: st.armorPierce || 0, crit: st.critMult ? this.mods.crit : 0, critMult: st.critMult, heavyMult: st.heavyMult, anchor: st.anchor, splash: st.splash, shred: st.shred,
           life: (st.range * CELL + 40) / 950, hit: new Set(), owner: b, big: true, aim: tg });
         this.emit('shot', { b, kind: 'harpoon', x: X, y: Y, a });
         break;

@@ -1,26 +1,26 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261023180731';
-import * as A from './art.js?v=20261023180731';
-import { Sim } from './sim.js?v=20261023180731';
-import { Gore } from './gore.js?v=20261023180731';
-import { Renderer } from './render.js?v=20261023180731';
-import { GameUI } from './ui.js?v=20261023180731';
-import { Tutorial } from './tutorial.js?v=20261023180731';
-import { Sfx, attachSfx } from './audio.js?v=20261023180731';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023180731';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023180731';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261023180731';
-import { mapBG, releaseBG } from './env.js?v=20261023180731';
-import { levelSpec, MENU_SPEC } from './music.js?v=20261023180731';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023180731';
-import { renderForge, renderAchs } from './screens.js?v=20261023180731';
-import { renderShop } from './shop.js?v=20261023180731';
-import { Wallet } from './wallet.js?v=20261023180731';
-import { initLang, pickLang } from './i18n.js?v=20261023180731';
-import { Menus, RUN, clock } from './menus.js?v=20261023180731';
-import { Net } from './net.js?v=20261023180731';
-import { gemIc } from './res.js?v=20261023180731';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023180731';
+import * as D from './data.js?v=20261023184121';
+import * as A from './art.js?v=20261023184121';
+import { Sim } from './sim.js?v=20261023184121';
+import { Gore } from './gore.js?v=20261023184121';
+import { Renderer } from './render.js?v=20261023184121';
+import { GameUI } from './ui.js?v=20261023184121';
+import { Tutorial } from './tutorial.js?v=20261023184121';
+import { Sfx, attachSfx } from './audio.js?v=20261023184121';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023184121';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023184121';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261023184121';
+import { mapBG, releaseBG } from './env.js?v=20261023184121';
+import { levelSpec, MENU_SPEC } from './music.js?v=20261023184121';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023184121';
+import { renderForge, renderAchs } from './screens.js?v=20261023184121';
+import { renderShop } from './shop.js?v=20261023184121';
+import { Wallet } from './wallet.js?v=20261023184121';
+import { initLang, pickLang } from './i18n.js?v=20261023184121';
+import { Menus, RUN, clock } from './menus.js?v=20261023184121';
+import { Net } from './net.js?v=20261023184121';
+import { gemIc } from './res.js?v=20261023184121';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023184121';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -49,8 +49,8 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023180731').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261023180731').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023184121').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261023184121').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
@@ -448,6 +448,8 @@ function setupInput() {
     else if (e.key === 'n' || e.key === 'N') { const w = document.querySelector('.wcall:not(.hidden)'); if (w) w.click(); }
   });
   window.addEventListener('pagehide', flushRun);
+  // звук включается и «оживает» с любого касания: iOS принимает только click/touchend, а после звонка или сворачивания контекст уходит в suspended/interrupted
+  for (const ev of ['click', 'touchend']) document.addEventListener(ev, () => sfx.unlock(), { capture: true, passive: true });
   TG.onVisibility((hidden) => { if (hidden) flushRun(); if (hidden && running && !paused && !held && ending === null && !location.search.includes('debug')) setPause(true); if (sfx.ctx) { if (hidden) sfx.ctx.suspend && sfx.ctx.suspend(); else sfx.ctx.resume && sfx.ctx.resume(); } });
 }
 function handleTap(p, ptype) {
