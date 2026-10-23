@@ -1,12 +1,13 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js';
-import { TOWERS } from './data.js';
+import { SPR, img } from './sprites.js?v=20261023142219';
+import { TOWERS } from './data.js?v=20261023142219';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
 const cache = new Map();
 export function setScale(s) { S = s; cache.clear(); }
+export function dropCache(pred) { for (const k of [...cache.keys()]) if (pred(k)) cache.delete(k); }      // выбросить кэшированные спрайты (освободить память)
 export function cached(key, make) { let v = cache.get(key); if (!v) { v = make(); cache.set(key, v); } return v; }
 
 export function mk(w, h, fn) {

@@ -1,14 +1,14 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=20261023142219';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
 
-async function rpc(fn, body, { timeout = 7000 } = {}) {
+async function rpc(fn, body, { timeout = 7000, keepalive = false } = {}) {
   if (!Net.enabled) throw new Error('offline');
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), timeout);
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, { method: 'POST', signal: ctl.signal, headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, { method: 'POST', signal: ctl.signal, keepalive, headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
     if (!r.ok) throw new Error('http ' + r.status);
     return await r.json();
   } finally { clearTimeout(t); }
@@ -43,10 +43,10 @@ export const Net = {
   },
 
   // Отправка результата партии. Возвращает { ok, level_rank, global_rank, improved, best, total } или { error }
-  async submit({ level, diff, score, wave, kills, won, duration, lv = 0, loadout = '' }) {
+  async submit({ level, diff, score, wave, kills, won, duration, lv = 0, loadout = '' }, { keepalive = false } = {}) {
     if (!this.canSubmit()) return { error: 'noauth' };
     try {
-      const r = await rpc('submit_run', { init_data: tg.initData, p: { level, diff, score: Math.round(score), wave, kills, won: !!won, duration: Math.round(duration || 0), lv, loadout } }, { timeout: 10000 });
+      const r = await rpc('submit_run', { init_data: tg.initData, p: { level, diff, score: Math.round(score), wave, kills, won: !!won, duration: Math.round(duration || 0), lv, loadout } }, { timeout: 10000, keepalive });
       this.invalidate(level);
       return r;
     } catch (e) { return { error: 'net' }; }

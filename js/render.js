@@ -1,38 +1,64 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, MARGIN, TOWERS, ECON, SPELLS } from './data.js';
-import * as A from './art.js';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, drawAnim, BLOOD } from './enemies.js';
-import { tile } from './iconmap.js';
-import { img } from './sprites.js';
-import { bakeMap, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, guardSprite, scorchSprite } from './env.js';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023142219';
+import * as A from './art.js?v=20261023142219';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, drawAnim, BLOOD } from './enemies.js?v=20261023142219';
+import { tile } from './iconmap.js?v=20261023142219';
+import { img } from './sprites.js?v=20261023142219';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, guardSprite, scorchSprite } from './env.js?v=20261023142219';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const BUILD_K = 1.14;
 
 const FACE0 = { bolt: 1, mortar: 1, flame: 1, harpoon: -1 };      // куда смотрит картинка башни по умолчанию: 1 вправо, -1 влево
+// масштаб карты: на экране видно VIEW_COLS клеток в ширину, остальное достаём пальцем
+const zoomFor = (cssW) => clamp(cssW / (VIEW_COLS * CELL), 1, 1.7);
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas; this.ctx = canvas.getContext('2d');
     this.zoom = 1; this.ox = 0; this.oy = 0; this.dpr = 1; this.cssW = 0; this.cssH = 0;
+    this.cx = WORLD_W / 2; this.cy = WORLD_H / 2; this.vx = 0; this.vy = 0;          // центр камеры в мире и скорость прокрутки (инерция)
+    this.vw = { x0: 0, y0: 0, x1: WORLD_W, y1: WORLD_H };                              // видимая часть мира (для отсечения невидимого)
     this.t = 0; this.chestFx = [];
     this.bg = null; this.mapId = null;
   }
   static pickScale(cssW, cssH, dpr) {
-    const zoom = Math.min(cssW / WORLD_W, cssH / WORLD_H);
-    return clamp(Math.round(zoom * dpr * 1.3 * 2) / 2, 1.5, 3);       // масштаб кэша спрайтов: чуть больше экранного, без лишней памяти
+    return clamp(Math.round(zoomFor(cssW) * dpr * 1.3 * 2) / 2, 1.5, 3);       // масштаб кэша спрайтов: чуть больше экранного, без лишней памяти
   }
   resize(cssW, cssH, dpr) {
     this.cssW = cssW; this.cssH = cssH; this.dpr = dpr;
-    this.canvas.width = Math.round(cssW * dpr); this.canvas.height = Math.round(cssH * dpr);
-    this.zoom = Math.min(cssW / WORLD_W, cssH / WORLD_H);
-    this.ox = (cssW - WORLD_W * this.zoom) / 2; this.oy = (cssH - WORLD_H * this.zoom) / 2;
+    const w = Math.round(cssW * dpr), h = Math.round(cssH * dpr);
+    if (this.canvas.width !== w) this.canvas.width = w;                // присваивание размера очищает и пересоздаёт холст: только если размер правда изменился
+    if (this.canvas.height !== h) this.canvas.height = h;
+    this.zoom = zoomFor(cssW); this.place();
   }
+  // камера: центр (cx, cy) держим внутри фона карты; если фон меньше экрана — по центру
+  place() {
+    const z = this.zoom, hw = this.cssW / z / 2, hh = this.cssH / z / 2, x0 = -PAD.l, x1 = WORLD_W + PAD.r, y0 = -PAD.t, y1 = WORLD_H + PAD.b;
+    this.cx = x1 - x0 <= hw * 2 ? (x0 + x1) / 2 : clamp(this.cx, x0 + hw, x1 - hw);
+    this.cy = y1 - y0 <= hh * 2 ? (y0 + y1) / 2 : clamp(this.cy, y0 + hh, y1 - hh);
+    this.ox = this.cssW / 2 - this.cx * z; this.oy = this.cssH / 2 - this.cy * z;
+    this.vw = { x0: this.cx - hw, y0: this.cy - hh, x1: this.cx + hw, y1: this.cy + hh };
+  }
+  panBy(dxCss, dyCss) { this.goal = null; this.cx += dxCss / this.zoom; this.cy += dyCss / this.zoom; this.place(); }
+  // выбранное здание не должно прятаться за панелью внизу или у края экрана: плавно сдвигаем карту
+  reveal(wx, wy, bottom = 210, top = 70, side = 56) {
+    const sy = (wy - this.vw.y0) * this.zoom, sx = (wx - this.vw.x0) * this.zoom; let dx = 0, dy = 0;
+    if (sy > this.cssH - bottom) dy = (sy - (this.cssH - bottom)) / this.zoom; else if (sy < top) dy = (sy - top) / this.zoom;
+    if (sx < side) dx = (sx - side) / this.zoom; else if (sx > this.cssW - side) dx = (sx - (this.cssW - side)) / this.zoom;
+    if (dx || dy) this.goal = { x: this.cx + dx, y: this.cy + dy };
+  }
+  focus(wx, wy) { this.cx = wx; this.cy = wy; this.vx = this.vy = 0; this.goal = null; this.place(); }
+  inView(x, y, m = 60) { const v = this.vw; return x > v.x0 - m && x < v.x1 + m && y > v.y0 - m && y < v.y1 + m; }
   setGame(sim, gore) {
     this.sim = sim; this.gore = gore; this.chestFx = []; this.corpses = [];
     if (!sim._cfx2) { sim._cfx2 = true; sim.on('kill', (d) => { const e = d.e, a = ENEMY_ART[e.type]; if (a && a.anims && a.anims.rows.death) this.corpses.push({ e, type: e.type, x: e.x, y: e.y, face: e.face || 1, air: !!e.def.air, t0: this.t }); }); }      // анимация смерти играет на месте убитого
     if (!sim._cfx) { sim._cfx = true; sim.on('chest', (d) => { if (d.kind === 'open') this.chestFx.push({ x: d.x, y: d.y, t0: this.t }); }); }      // открытый сундук ненадолго остаётся на карте
-    if (this.mapId !== sim.mapId) { this.bg = bakeMap(sim.map); this.mapId = sim.mapId; }
+    this.bg = mapBG(sim.map); this.mapId = sim.mapId;
+    const ps = sim.map.paths; this.vx = this.vy = 0; this.goal = null; this.cx = ps.reduce((a, p) => a + (p[0][0] + 0.5) * CELL, 0) / ps.length; this.cy = -1e4; if (this.cssW) this.place();      // на старте виден верх карты: оттуда придут враги
   }
+  // освободить память после боя: фон карты и кэши
+  release() { this.bg = null; this.mapId = null; this.corpses = []; this.chestFx = []; this.sim = null; this.gore = null; }
   toScreen(wx, wy) { return { x: this.ox + wx * this.zoom, y: this.oy + wy * this.zoom }; }
   toWorld(clientX, clientY) {
     const r = this.canvas.getBoundingClientRect();
@@ -42,13 +68,21 @@ export class Renderer {
   render(dt, view) {
     const sim = this.sim, gore = this.gore, ctx = this.ctx;
     this.t += dt; const t = this.t;
+    if (this.goal) {
+      const k = 1 - Math.exp(-dt * 9); this.cx += (this.goal.x - this.cx) * k; this.cy += (this.goal.y - this.cy) * k;
+      if (Math.abs(this.goal.x - this.cx) + Math.abs(this.goal.y - this.cy) < 0.6) this.goal = null;
+    }
+    if (this.vx || this.vy) {                                           // инерция прокрутки после броска пальцем
+      this.cx += this.vx * dt; this.cy += this.vy * dt; const f = Math.exp(-dt * 4.5); this.vx *= f; this.vy *= f;
+      if (Math.abs(this.vx) + Math.abs(this.vy) < 4) this.vx = this.vy = 0;
+    }
+    this.place(); gore.cam.x = this.cx; gore.cam.y = this.cy;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#0b0609'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    const sh = gore.shake, sx = sh ? (Math.random() - 0.5) * sh : 0, sy = sh ? (Math.random() - 0.5) * sh : 0;
     const k = this.dpr * this.zoom;
-    ctx.setTransform(k, 0, 0, k, this.dpr * (this.ox + sx), this.dpr * (this.oy + sy));
+    ctx.setTransform(k, 0, 0, k, this.dpr * this.ox, this.dpr * this.oy);
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(this.bg, 0, -MARGIN, WORLD_W, WORLD_H + 2 * MARGIN);
+    this.drawBg(ctx);
     gore.drawBlood(ctx);
     this.drawZones(ctx, t);
     this.drawCorpses(ctx, t);
@@ -57,11 +91,11 @@ export class Renderer {
 
     // сущности: наземные сортируем по y, воздух поверх
     const list = [];
-    for (const b of sim.buildings) list.push({ y: b.y + 10, o: b, k: 0 });
-    for (const g of sim.guards) if (!g.dead) list.push({ y: g.y, o: g, k: 1 });
-    if (sim.chest) list.push({ y: sim.chest.y + 6, o: sim.chest, k: 3 });
+    for (const b of sim.buildings) if (this.inView(b.x, b.y, 80)) list.push({ y: b.y + 10, o: b, k: 0 });
+    for (const g of sim.guards) if (!g.dead && this.inView(g.x, g.y, 50)) list.push({ y: g.y, o: g, k: 1 });
+    if (sim.chest && this.inView(sim.chest.x, sim.chest.y, 60)) list.push({ y: sim.chest.y + 6, o: sim.chest, k: 3 });
     const air = [];
-    for (const e of sim.enemies) { if (e.dead) continue; (e.air ? air : list).push({ y: e.y, o: e, k: 2 }); }
+    for (const e of sim.enemies) { if (e.dead || !this.inView(e.x, e.y, 90)) continue; (e.air ? air : list).push({ y: e.y, o: e, k: 2 }); }
     list.sort((a, b) => a.y - b.y); air.sort((a, b) => a.y - b.y);
     for (const it of list) { if (it.k === 0) this.drawBuilding(ctx, it.o, t, view); else if (it.k === 1) this.drawGuard(ctx, it.o, t); else if (it.k === 3) this.drawChest(ctx, it.o, t); else this.drawEnemy(ctx, it.o, t); }
     for (const it of air) this.drawEnemy(ctx, it.o, t);
@@ -84,15 +118,25 @@ export class Renderer {
     }
   }
 
+  // рисуем только видимый кусок запечённого фона
+  drawBg(ctx) {
+    const bg = this.bg; if (!bg) return;
+    const sc = bg.width / bg.lw, v = this.vw, bx = -PAD.l, by = -PAD.t;
+    const x0 = Math.max(v.x0, bx), y0 = Math.max(v.y0, by), x1 = Math.min(v.x1, bx + bg.lw), y1 = Math.min(v.y1, by + bg.lh);
+    if (x1 <= x0 || y1 <= y0) return;
+    ctx.drawImage(bg, (x0 - bx) * sc, (y0 - by) * sc, (x1 - x0) * sc, (y1 - y0) * sc, x0, y0, x1 - x0, y1 - y0);
+  }
+
   // ───── сущности ─────
-  // враги проявляются на входе и растворяются у выхода: поле больше не обрывается на краю, а уходит в тьму
+  // враг выходит из зева портала (растёт и проявляется) и у ворот уменьшается и исчезает в проёме
   drawEnemy(ctx, e, t) {
-    const f = Math.min(1, e.d / 26, (e.path.total - e.d) / 26);
+    const fin = Math.min(1, e.d / 22), fout = Math.min(1, (e.path.total - e.d) / 20), f = Math.min(fin, fout);
     if (f >= 1) { this.drawEnemyInner(ctx, e, t); return; }
-    ctx.save(); ctx.globalAlpha = Math.max(0, f); this.drawEnemyInner(ctx, e, t); ctx.restore();
+    const k = 0.55 + 0.45 * f;
+    ctx.save(); ctx.globalAlpha = Math.max(0, f); ctx.translate(e.x, e.y); ctx.scale(k, k); ctx.translate(-e.x, -e.y); this.drawEnemyInner(ctx, e, t); ctx.restore();
   }
   drawEnemyInner(ctx, e, t) {
-    const sim = this.sim, def = e.def, a = ENEMY_ART[e.type];
+    const sim = this.sim, def = e.def, a = ENEMY_ART[e.type]; if (!a) return;           // лист этого вида не загружен (не должно случаться): пропускаем, а не роняем отрисовку
     if (Math.abs(e.dx) > 0.35) e.face = e.dx > 0 ? 1 : -1; else if (!e.face) e.face = 1;
     const speed = sim.curSpeed(e);
     let fi, spr, animName = null, mirror = e.face < 0;
@@ -141,7 +185,7 @@ export class Renderer {
     if (e.shred > 0) { ctx.fillStyle = '#d6ff3a'; ctx.font = '8px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('▼', e.x + 9, top - 2); }
     // HP
     if (e.hp < e.maxHp - 0.01) {
-      const w = 14 + 8 * def.size, h = def.heavy ? 4 : 3, bx = e.x - w / 2, by = top - 3;
+      const w = (14 + 8 * def.size) * 1.2, h = def.heavy ? 4.5 : 3.5, bx = e.x - w / 2, by = top - 3;
       ctx.fillStyle = 'rgba(10,4,6,0.85)'; ctx.fillRect(bx - 1, by - 1, w + 2, h + 2);
       const f = clamp(e.hp / e.maxHp, 0, 1);
       ctx.fillStyle = f > 0.5 ? '#6fd13a' : f > 0.25 ? '#f0b020' : '#e0243a'; ctx.fillRect(bx, by, w * f, h);
@@ -198,6 +242,11 @@ export class Renderer {
   }
 
   drawBuilding(ctx, b, t, view) {
+    ctx.save(); ctx.translate(b.x, b.y + 6); ctx.scale(BUILD_K, BUILD_K); ctx.translate(-b.x, -b.y - 6);      // здания крупнее: хорошо видны и не теряются на большой карте
+    this.drawBuilding0(ctx, b, t, view);
+    ctx.restore();
+  }
+  drawBuilding0(ctx, b, t, view) {
     const x = b.x, y = b.y + 6;
     const pop = b.age < 0.35 ? (1 - b.age / 0.35) : 0, wob = pop * 0.2 * Math.cos(b.age * 26);
     const body = b.kind === 'econ' ? A.econBody(b.type, b.level) : A.towerBody(A.artType(b.prem || b.type), b.level, b.branch);
@@ -452,6 +501,7 @@ export class Renderer {
 
   drawParticles(ctx, gore, t) {
     for (const p of gore.parts) {
+      if (!this.inView(p.x, p.y, 70)) continue;
       const f = p.age / p.max, y = p.y - (p.z || 0);
       switch (p.k) {
         case 'drop': { ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x, y, p.size * 1.15, 0, T2); ctx.fill(); break; }
@@ -487,7 +537,8 @@ export class Renderer {
   drawPlaceHints(ctx, view, t) {
     const sim = this.sim;
     ctx.save();
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const v = this.vw, c0 = Math.max(0, Math.floor(v.x0 / CELL)), c1 = Math.min(COLS - 1, Math.floor(v.x1 / CELL)), r0 = Math.max(0, Math.floor(v.y0 / CELL)), r1 = Math.min(ROWS - 1, Math.floor(v.y1 / CELL));
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
       if (!sim.canBuild(c, r)) continue;
       const x = c * CELL, y = r * CELL;
       ctx.fillStyle = 'rgba(120,255,160,0.07)'; ctx.fillRect(x + 1.5, y + 1.5, CELL - 3, CELL - 3);
@@ -496,12 +547,11 @@ export class Renderer {
     ctx.restore();
   }
   drawPortalGate(ctx, t) {
-    // анимированное свечение порталов
+    // мерцание порталов у зева, откуда выходят враги
     for (const p of this.sim.map.paths) {
-      const [sc, sr] = p[0]; const px = clamp(sc, 0, COLS - 1), py = clamp(sr, 0, ROWS - 1);
-      const x = (px + 0.5) * CELL + (sc < 0 ? 4 : 0), y = (py + 0.5) * CELL + (sr < 0 ? -6 : 0);
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.45 + 0.2 * Math.sin(t * 3); ctx.drawImage(glowSprite('#ff4a6a'), x - 30, y - 30, 60, 44); ctx.restore();
-      ctx.save(); ctx.strokeStyle = 'rgba(255,190,200,0.55)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(x, y - 8, 4 + ((t * 8) % 10), 3 + ((t * 5) % 8), 0, 0, T2); ctx.stroke(); ctx.restore();
+      const x = (p[0][0] + 0.5) * CELL, y = (p[0][1] + 0.5) * CELL - 6;
+      if (!this.inView(x, y, 60)) continue;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.4 + 0.18 * Math.sin(t * 3); ctx.drawImage(glowSprite('#ff4a6a'), x - 34, y - 30, 68, 56); ctx.restore();
     }
   }
   drawOverlays(ctx, view, t) {
@@ -520,7 +570,7 @@ export class Renderer {
       if (ok) {
         const { kind, type } = view.armed;
         const body = kind === 'econ' ? A.econBody(type, 1) : A.towerFull(A.artType(type), 1, null);
-        ctx.save(); ctx.globalAlpha = 0.7; ctx.drawImage(body, x - A.TW_AX, y + 6 - A.TW_AY, A.TW_W, A.TW_H);
+        ctx.save(); ctx.globalAlpha = 0.7; ctx.translate(x, y + 6); ctx.scale(BUILD_K, BUILD_K); ctx.translate(-x, -y - 6); ctx.drawImage(body, x - A.TW_AX, y + 6 - A.TW_AY, A.TW_W, A.TW_H);
         if (kind === 'tower') { const bt = TOWERS[type].base || type, h = A.towerHead(bt, 1, null); if (h && A.TOWER_ART[bt].lift !== undefined) ctx.drawImage(h, x - A.HEAD / 2, y + 6 - A.TOWER_ART[bt].lift - A.HEAD / 2, A.HEAD, A.HEAD); }
         ctx.restore();
         const stt = kind === 'tower' ? TOWERS[type].lv[0] : ECON[type].lv[0];

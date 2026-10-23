@@ -1,10 +1,10 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js';
-import * as A from './art.js';
-import { uiIcon } from './env.js';
-import { enemyFrame, gibSprite } from './enemies.js';
-import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js';
-import { TARGET_MODES } from './sim.js';
+import * as D from './data.js?v=20261023142219';
+import * as A from './art.js?v=20261023142219';
+import { uiIcon } from './env.js?v=20261023142219';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261023142219';
+import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261023142219';
+import { TARGET_MODES } from './sim.js?v=20261023142219';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -80,18 +80,17 @@ export class GameUI {
   attachSim(sim, loadout) {
     this.last = {}; this.closeSell(); this.closeUpgrade(true); this.deselect(); this.disarm(); this.view.spell = null; this.setOpen(false);
     this.loadout = loadout; this.buildCards(); this.buildWaveCalls();
-    sim.on('build', () => { this.refreshCards(); this.c.TG.haptic.impact('medium'); });
+    sim.on('build', () => { this.refreshCards(); });
     sim.on('sell', () => this.refreshCards());
-    sim.on('upgrade', (b) => { this.refreshCards(); if (this.selB === b) this.showSel(b); this.c.TG.haptic.impact('light'); });
+    sim.on('upgrade', (b) => { this.refreshCards(); if (this.selB === b) this.showSel(b); });
     sim.on('wave', () => { this.refreshCards(); });
-    sim.on('leak', () => { this.pulse($('#chip-lives'), 'hurt'); this.c.TG.haptic.notify('error'); });
+    sim.on('leak', () => { this.pulse($('#chip-lives'), 'hurt'); });
     sim.on('tick', () => this.pulse($('#chip-gold'), 'bump'));
-    sim.on('explosion', (d) => { if (d.kind === 'meteor') this.c.TG.haptic.impact('heavy'); });
   }
   pulse(e, cls) { e.classList.remove(cls); void e.offsetWidth; e.classList.add(cls); }
   // ошибка без текста: звук, вибрация, встряска
   fail(r, target) {
-    this.c.sfx.play('error'); this.c.TG.haptic.notify('error');
+    this.c.sfx.play('error');
     const t = target || (r === 'gold' ? $('#chip-gold') : null);
     if (t) this.pulse(t, 'shake');
     if (r === 'gold') this.pulse($('#chip-gold'), 'hurt');
@@ -157,7 +156,7 @@ export class GameUI {
   showInfo(i, card) { const e = $('#dinfo'), k = card.d.id; e.classList.remove('hidden'); if (this._ik !== k) { this._ik = k; e.innerHTML = `<b>${card.d.name}</b><span class="dch">${i.chips}</span>`; } }
   onCard(card) {
     const d = card.d, on = this.cardSel === d.id;
-    this.c.sfx.play('select'); this.c.TG.haptic.select();
+    this.c.sfx.play('select');
     this.deselect();
     if (on) { this.disarm(); this.refreshCards(); return; }
     if (this.cardInfo(card).locked) { this.fail('limit', card.e); return; }
@@ -168,7 +167,7 @@ export class GameUI {
   disarm() { this.view.armed = null; this.view.hover = null; this.view.pending = null; this.cardSel = null; for (const c of this.cards) c.e.classList.remove('on'); this.hideInfo(); const b = $('#slotbtn'); if (b) { b.classList.remove('armed', 'poor'); this._ic = bareGlyphUrl('tower', 34); $('#slotbtn .sb-ic').src = this._ic; $('#slotbtn .sb-n').textContent = ''; } }
 
   // ───── блок выбранного здания: по центру внизу, только иконки ─────
-  select(b) { this.disarm(); this.setOpen(false); this.view.spell = null; this.selB = b; this.view.selected = b; this.sellArm = 0; this.showSel(b); this.c.onSelect && this.c.onSelect(b); }
+  select(b) { this.disarm(); this.setOpen(false); this.view.spell = null; this.selB = b; this.view.selected = b; this.sellArm = 0; this.showSel(b); this.c.renderer && this.c.renderer.reveal(b.x, b.y - 20); this.c.onSelect && this.c.onSelect(b); }
   deselect() { this.selB = null; this.view.selected = null; $('#sel').classList.add('hidden'); $('#dock').classList.remove('hide'); }
   statChips(b, max = 6) {
     const st = b.st;
@@ -303,7 +302,7 @@ export class GameUI {
   // ───── кнопка вызова волны: справа сверху, круглая каменная кнопка с портретом и кольцом таймера ─────
   buildWaveCalls() {
     const e = $('#wcall'); this.wcall = e;
-    e.onclick = () => { if (this.sim.callWave()) this.c.TG.haptic.impact('medium'); };
+    e.onclick = () => { this.sim.callWave(); };
     this.last.wmax = 0; this.last.wk = null;
   }
   updateWaveCalls(can) {
@@ -335,7 +334,7 @@ export class GameUI {
     const set = (key, id, val, fn) => { if (L[key] !== val) { L[key] = val; (fn || ((v) => { $(id).textContent = v; }))(val); } };
     set('lives', '#v-lives', s.lives); set('gold', '#v-gold', Math.floor(s.gold));
     set('inc', '#v-inc', s.incomePerTick(), (v) => { $('#v-inc').textContent = v ? '+' + v : ''; });
-    set('wave', '#v-wave', s.endless ? `${s.wave}` : `${s.wave}/${s.total}`);
+    set('wave', '#v-wave', `${s.wave}/${s.total}`);
     const run = this.c.run, tot = Math.floor(s.score + (run ? run.score : 0));      // в забеге плашка показывает очки всего забега
     set('score', '#v-score', tot, (v) => { $('#v-score').textContent = v.toLocaleString('ru-RU'); });
     const can = s.canCallWave() && !s.hold;

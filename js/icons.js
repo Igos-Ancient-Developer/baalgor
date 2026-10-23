@@ -1,7 +1,7 @@
 // Пакет иконок в «рисованном» стиле Warcraft 3: квадрат с бронзовой фаской, насыщенный фон, жирный контур, глянец.
 // Всё рисуется кодом; иконки кэшируются в canvas и dataURL.
-import { OUT, S as ART_S, mk, cached, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow } from './art.js';
-import { GLYPH_IMG, tile, inner } from './iconmap.js';
+import { OUT, S as ART_S, mk, cached, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow } from './art.js?v=20261023142219';
+import { GLYPH_IMG, tile, inner } from './iconmap.js?v=20261023142219';
 
 const T2 = Math.PI * 2;
 export const PALETTE = {
@@ -157,6 +157,6 @@ export const PERK_GLYPH = { treasury: 'coins', fortress: 'heart', taxes: 'chart'
 export const ACH_GLYPH = {
   first_blood: 'skull', hundred: 'skull', thousand: 'dmg', ten_k: 'horns', decap: 'dmg', lumberjack: 'dmg', sculptor: 'frost', storm: 'chain', starfall: 'meteor', birds: 'wing', burn: 'fire',
   butcher: 'goblin', lich_slayer: 'skull', demon_slayer: 'horns', bags: 'bag', bags500: 'bag', scrooge: 'coins', mine_king: 'pickaxe', gold_lvl: 'pickaxe', tycoon: 'chart', devil_deal: 'horde',
-  collector: 'tower', master: 'star', both_ways: 'fork', impatient: 'fast', wave10: 'flag', wave20: 'flag', win: 'crown', hell_win: 'horns', flawless: 'shield', grim: 'dmg', endless40: 'hourglass', all_maps: 'map', arsenal: 'tower', tempered: 'book',
+  collector: 'tower', master: 'star', both_ways: 'fork', impatient: 'fast', wave10: 'flag', wave20: 'flag', win: 'crown', hell_win: 'horns', flawless: 'shield', grim: 'dmg', all_maps: 'map', arsenal: 'tower', tempered: 'book',
   hardcore_win: 'horns', levels10: 'map', levels_all: 'map', score_40: 'star', score_150: 'crown',
 };

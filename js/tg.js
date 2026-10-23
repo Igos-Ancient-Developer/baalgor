@@ -1,5 +1,5 @@
 // Обёртка над Telegram Mini App SDK. Вне Telegram (обычный браузер) всё работает без него.
-import { newLife } from './meta.js';
+import { newLife } from './meta.js?v=20261023142219';
 const tg = window.Telegram && window.Telegram.WebApp;
 const KEY = 'bloodkeep_save_v1';
 
@@ -54,13 +54,8 @@ export const TG = {
     try { if (tg.isFullscreen) tg.exitFullscreen(); else tg.requestFullscreen(); return true; } catch (e) { return false; }
   },
   canFullscreen() { return !!(tg && ver('8.0') && tg.requestFullscreen); },
-  allowConfirm: true, hapticOn: true,
+  allowConfirm: true,
   closingConfirm(on) { try { if (tg) { (on && this.allowConfirm) ? tg.enableClosingConfirmation() : tg.disableClosingConfirmation(); } } catch (e) { /* */ } },
-  haptic: {
-    impact(style = 'light') { if (!TG.hapticOn) return; try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred(style); else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 30 : 10); } catch (e) { /* */ } },
-    notify(type = 'success') { if (!TG.hapticOn) return; try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(type); else if (navigator.vibrate) navigator.vibrate(type === 'error' ? [40, 40, 40] : 20); } catch (e) { /* */ } },
-    select() { if (!TG.hapticOn) return; try { if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged(); } catch (e) { /* */ } },
-  },
   user() { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null; },
   onVisibility(cb) {
     document.addEventListener('visibilitychange', () => cb(document.hidden));
@@ -90,7 +85,7 @@ export const TG = {
 
 // лучший забег: выше достигнутый уровень, затем очки, затем меньшее время
 export const betterRun = (a, b) => !b || !(b.lv || b.score) || (a.lv || 0) > (b.lv || 0) || ((a.lv || 0) === (b.lv || 0) && ((a.score || 0) > (b.score || 0) || ((a.score || 0) === (b.score || 0) && a.time && (!b.time || a.time < b.time))));
-export const defaultSettings = () => ({ sfxVol: 1, musVol: 0.8, haptic: true, gore: 1, perf: 1, dmg: true, confirm: true });
+export const defaultSettings = () => ({ sfxVol: 1, musVol: 0.8, gore: 1, perf: 1, dmg: true, confirm: true });
 export function defaultSave() { return { best: {}, sfx: true, mus: true, set: defaultSettings(), rank: null, plays: 0, kills: 0, souls: 0, gems: 0, slots: 2, loadout: ['bolt', 'mine'], tutDone: 0, packs: [], starterBought: false, daily: { last: '', streak: 0 }, perks: {}, unlocked: {}, ach: {}, life: newLife(), prog: { cleared: {}, scores: {} } }; }
 function mergeSave(a, b) {
   const out = defaultSave();

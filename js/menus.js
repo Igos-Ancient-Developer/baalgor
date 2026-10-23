@@ -1,13 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js';
-import * as D from './data.js';
-import * as M from './meta.js';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js';
-import { url as imgUrl } from './sprites.js';
-import { Net } from './net.js';
-import { towerIcon, econIcon, itemChips } from './ui.js';
-import { fillPlates, gemIc } from './res.js';
-import { Wallet } from './wallet.js';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261023142219';
+import * as D from './data.js?v=20261023142219';
+import * as M from './meta.js?v=20261023142219';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261023142219';
+import { url as imgUrl } from './sprites.js?v=20261023142219';
+import { Net } from './net.js?v=20261023142219';
+import { towerIcon, econIcon, itemChips } from './ui.js?v=20261023142219';
+import { fillPlates, gemIc } from './res.js?v=20261023142219';
+import { gemHtml } from './gem3d.js?v=20261023142219';
+import { Wallet } from './wallet.js?v=20261023142219';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -27,7 +28,7 @@ export function avatar(photo, name, id) {
   const init = (name || '?').trim().charAt(0).toUpperCase() || '?';
   const mk = () => { const d = el('div', 'av', init); d.style.background = `hsl(${(Number(id) * 47) % 360} 45% 32%)`; return d; };
   if (!photo) return mk();
-  const i = el('img', 'av'); i.src = photo; i.alt = ''; i.referrerPolicy = 'no-referrer'; i.onerror = () => i.replaceWith(mk()); return i;
+  const i = el('img', 'av'); i.style.background = `hsl(${(Number(id) * 47) % 360} 45% 32%)`; i.src = photo; i.alt = ''; i.referrerPolicy = 'no-referrer'; i.onerror = () => i.replaceWith(mk()); return i;
 }
 
 // строка таблицы рейтингового забега: аватар, ник и очки; стрелка раскрывает слоты, время и уровень с названием
@@ -52,7 +53,7 @@ export function diffLines(d, i) {
   L.push({ k: 'spd', icon: 'fast', t: 'Скорость врагов', v: d.spd > 1 ? '+' + Math.round((d.spd - 1) * 100) + '%' : 'обычная', cls: d.spd > 1 ? 'bad' : 'neutral', s: d.spd > 1 ? 'Быстрее проходят дорогу — меньше времени на урон' : 'Темп по умолчанию' });
   L.push({ k: 'horde', icon: 'horde', t: 'Размер орд', v: d.horde > 1 ? mul(d.horde) : 'обычный', cls: d.horde > 1 ? 'bad' : 'neutral', s: d.horde > 1 ? 'Больше врагов в каждой волне' : 'Состав волн по умолчанию' });
   L.push({ k: 'elite', icon: 'crown', t: 'Элитные враги', v: d.elite ? Math.round(d.elite * 100) + '%' : 'нет', cls: d.elite ? 'bad' : 'neutral', s: d.elite ? 'Золотая аура: здоровье ×1.6, скорость +15%, награда ×2' : 'Золотых элит в волнах нет' });
-  L.push({ k: 'lives', icon: 'heart', t: 'Жизни крепости', v: d.lives ? String(d.lives) : String(D.START_LIVES), cls: d.lives ? 'bad' : 'neutral', s: d.lives ? 'Один пропущенный враг — и забег окончен' : 'Враги, дошедшие до ворот, отнимают жизни (тяжёлые — больше)' });
+  L.push({ k: 'lives', icon: 'heart', t: 'Жизни крепости', v: d.lives ? String(d.lives) : String(D.START_LIVES), cls: d.lives ? 'bad' : 'neutral', s: d.lives ? 'Один пропущенный враг — и забег окончен' : 'Враги, дошедшие до ворот, отнимают жизни (тяжёлые — больше). Добавить жизни можно перком «Крепость» в Кузнице и усилителем за кристаллы' });
   L.push({ k: 'sep', t: 'Награды' });
   L.push({ k: 'score', icon: 'star', t: 'Множитель очков', v: mul(d.score), cls: d.score >= 1 ? 'good' : 'bad', s: 'Умножает очки за уровень: волны, сильные враги, время' });
   L.push({ k: 'souls', icon: 'soul', t: 'Души за забег', v: mul(d.souls), cls: d.souls >= 1 ? 'good' : 'bad', s: 'Валюта Кузницы: дары и новые башни' });
@@ -80,11 +81,11 @@ export class Menus {
   // ───── стартовый экран ─────
   buildTitle() {
     const s = this.save, c = this.c;
-    $('#title-logo').src = imgUrl('ui/logo.webp'); $('#load-logo').src = imgUrl('ui/logo.webp');
+    $('#title-logo').src = imgUrl('ui/logo.webp');
     $('#b-ranked .tk').src = imgUrl('ui/icon_skull.webp');
     const me = Net.me() || c.TG.user(), pf = $('#pf'); pf.innerHTML = '';
     pf.appendChild(avatar(me && (me.photo || me.photo_url), me ? (me.name || me.first_name || me.username) : 'Игрок', me ? me.id : 0));
-    $('#gem-ic').innerHTML = gemIc(30); $('#gem-n').textContent = (s.gems || 0).toLocaleString('ru-RU');
+    $('#gem-ic').innerHTML = gemHtml(30, 0, true); $('#gem-n').textContent = (s.gems || 0).toLocaleString('ru-RU');
   }
 
   // ───── настройки: всё в одном месте ─────
@@ -95,23 +96,18 @@ export class Menus {
     const row = (label, sub, ctl) => { const r = el('div', 'srow'); r.innerHTML = `<div class="lb">${label}${sub ? `<small>${sub}</small>` : ''}</div>`; r.appendChild(ctl); body.appendChild(r); return r; };
     const toggle = (get, set) => { const b = el('button', 'tgl' + (get() ? ' on' : '')); b.onclick = () => { set(!get()); b.classList.toggle('on', get()); c.sfx.play('click'); save(); }; return b; };
     const slider = (get, set) => { const i = el('input', 'rng'); i.type = 'range'; i.min = 0; i.max = 100; i.value = Math.round(get() * 100); i.oninput = () => { set(i.value / 100); c.applySettings(); }; i.onchange = () => { c.persist(); c.sfx.play('click'); }; return i; };
-    const seg = (opts, get, set) => { const d = el('div', 'seg'); opts.forEach(([v, t]) => { const b = el('button', get() === v ? 'on' : '', t); b.onclick = () => { set(v); [...d.children].forEach((x, k) => x.classList.toggle('on', opts[k][0] === v)); c.sfx.play('click'); save(); }; d.appendChild(b); }); return d; };
     body.appendChild(el('div', 'sect-title', 'Звук'));
     row('Звуки', '', toggle(() => c.sfx.sfxOn, () => c.toggleSnd()));
     row('Громкость звуков', '', slider(() => st.sfxVol, (v) => { st.sfxVol = v; }));
     row('Музыка', '', toggle(() => c.sfx.musOn, () => c.toggleMus()));
     row('Громкость музыки', '', slider(() => st.musVol, (v) => { st.musVol = v; }));
     body.appendChild(el('div', 'sect-title', 'Бой'));
-    row('Кровь и расчленёнка', '', seg([[2, 'Полная'], [1, 'Меньше'], [0, 'Минимум']], () => st.gore, (v) => { st.gore = v; }));
     row('Числа над врагами', 'Урон и золото при убийстве', toggle(() => st.dmg, (v) => { st.dmg = v; }));
-    row('Вибрация', '', toggle(() => st.haptic, (v) => { st.haptic = v; }));
-    body.appendChild(el('div', 'sect-title', 'Приложение'));
-    { const sel = el('select', 'langsel'); for (const [id, name] of LANGS) { const o = el('option', '', name); o.value = id; if (id === curLang) o.selected = true; sel.appendChild(o); } sel.onchange = () => { c.sfx.play('click'); setLang(sel.value); }; row('Язык', '', sel); }
     row('Подтверждать выход из боя', 'Telegram спросит перед закрытием', toggle(() => st.confirm, (v) => { st.confirm = v; }));
-    if (c.TG.canFullscreen()) { const b = el('button', 'btn ghost', c.TG.isFullscreen ? 'Свернуть' : 'Развернуть'); b.style.width = '130px'; b.onclick = () => { c.TG.toggleFullscreen(); setTimeout(() => { b.textContent = c.TG.isFullscreen ? 'Свернуть' : 'Развернуть'; }, 400); }; row('Полный экран', '', b); }
-    const rs = el('button', 'btn danger ghost', 'Сбросить'); rs.style.width = '130px';
-    rs.onclick = () => { if (!rs.dataset.sure) { rs.dataset.sure = 1; rs.textContent = 'Точно?'; setTimeout(() => { delete rs.dataset.sure; rs.textContent = 'Сбросить'; }, 3000); return; } c.resetProgress(); };
-    row('Прогресс', 'Души, дары, награды и пройденные рубежи — навсегда', rs);
+    body.appendChild(el('div', 'sect-title', 'Язык'));
+    const grid = el('div', 'langgrid');
+    for (const [id, name] of LANGS) { const b = el('button', 'stn' + (id === curLang ? ' on' : ''), `<span>${name}</span>`); b.onclick = () => { if (id === curLang) return; c.sfx.play('click'); setLang(id); }; grid.appendChild(b); }
+    body.appendChild(grid);
     this.show('#settings'); $('#settings').scrollTop = 0;
   }
 
@@ -146,7 +142,7 @@ export class Menus {
       const frame = state === 'locked' ? 'dark' : state === 'cleared' ? 'nature' : 'blood';
       const n = el('button', `node ${state}${l.tutorial ? ' tutnode' : ''}`, `<img class="ni" src="${iconUrl(glyphIcon(l.tutorial ? 'book' : glyph, { bg, frame }))}" alt=""><div class="nl">${l.name}</div>${unlocked && !l.tutorial ? `<div class="nsk">${[0, 1, 2, 3, 4].map((i) => `<img class="${M.diffCleared(s, l.id, i) ? 'on' : ''}" src="${bareGlyphUrl('skull', 11)}" alt="">`).join('')}</div>` : ''}`);
       const lp = P(l.pos); n.style.left = (lp[0] / MAP_W) * 100 + '%'; n.style.top = (lp[1] / MAP_H) * 100 + '%';
-      n.onclick = () => { if (state === 'locked') { c.sfx.play('error'); c.TG.haptic.notify('error'); n.classList.remove('shake'); void n.offsetWidth; n.classList.add('shake'); return; } c.sfx.play('select'); if (l.tutorial) { c.startLevel(l.id, 1); return; } this.openDiff(l.id); };
+      n.onclick = () => { if (state === 'locked') { c.sfx.play('error'); n.classList.remove('shake'); void n.offsetWidth; n.classList.add('shake'); return; } c.sfx.play('select'); if (l.tutorial) { c.startLevel(l.id, 1); return; } this.openDiff(l.id); };
       nodes.appendChild(n);
     }
     // прокрутка к текущему рубежу
@@ -158,7 +154,7 @@ export class Menus {
   // ───── выбор сложности: карусель ─────
   openDiff(levelId) {
     const l = D.MAPS.find((q) => q.id === levelId), s = this.save, c = this.c, seq = ++this.diffSeq;
-    this.level = l;
+    this.level = l; if (c.warm) c.warm(levelId);              // пока игрок выбирает сложность, готовим листы врагов и фон карты
     $('#ds-title').textContent = l.name;
     const car = $('#dcar'); car.innerHTML = '';
     const cards = D.DIFFS.map((d, i) => {
@@ -174,7 +170,7 @@ export class Menus {
         ${unlocked ? '' : `<div class="dlock"><img src="${iconUrl(glyphIcon('skulllock', { size: 96, bg: PALETTE.lock, frame: 'dark' }))}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}
         <div class="dbody"><div class="dsub">Испытания</div>${rows}<div class="dsub">Лучшие на этом рубеже</div><div class="dtop">${'<div class="skel"></div>'.repeat(3)}</div></div>
         <div class="dfoot"><button class="btn big play">Играть</button><button class="btn ghost board"><img src="${bareGlyphUrl('crown', 22)}" alt="" style="width:26px;height:26px"></button></div>`;
-      card.querySelector('.play').onclick = () => { if (!unlocked) { c.sfx.play('error'); c.TG.haptic.notify('error'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); return; } c.sfx.play('click'); c.startLevel(l.id, i); };
+      card.querySelector('.play').onclick = () => { if (!unlocked) { c.sfx.play('error'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); return; } c.sfx.play('click'); c.startLevel(l.id, i); };
       card.querySelector('.board').onclick = () => { c.sfx.play('click'); this.openBoard({ level: l.id, diff: i }); };
       car.appendChild(card); return card;
     });
@@ -268,7 +264,7 @@ export class Menus {
     this.refreshLoadout(); this.show('#loadout'); $('#loadout').scrollTop = 0;
   }
   refreshLoadout() {
-    const lo = this.lo; if (!lo) return; const s = this.save, c = this.c, shake = (e) => { c.sfx.play('error'); c.TG.haptic.notify('error'); e.classList.remove('shake'); void e.offsetWidth; e.classList.add('shake'); };
+    const lo = this.lo; if (!lo) return; const s = this.save, c = this.c, shake = (e) => { c.sfx.play('error'); e.classList.remove('shake'); void e.offsetWidth; e.classList.add('shake'); };
     const open = (t) => (lo.all ? !D.isPremium(t) : M.itemUnlocked(s, t));
     lo.sel = lo.sel.filter((t) => open(t)).slice(0, lo.slots);
     $('#lo-title').textContent = lo.title; $('#lo-back').style.visibility = lo.nobackBtn ? 'hidden' : '';
@@ -351,6 +347,7 @@ export class Menus {
     const empty = (icon) => { list.innerHTML = `<div class="empty-state"><img src="${bareGlyphUrl(icon, 64)}" alt=""></div>`; };
     if (!Net.enabled) { empty('crown'); return; }
     let offset = 0; const LIM = 50;
+    const hideDup = () => { if (list.querySelector('.me')) me.classList.add('hidden'); };      // я уже в списке — закреплённая строка внизу не нужна (иначе меня два раза)
     const load = async () => {
       let rows;
       try { rows = spec.global ? await Net.globalBoard(offset, LIM) : await Net.levelBoard(spec.level, spec.diff, offset, LIM); } catch (e) { if (seq === this.boardSeq && !offset) empty('skull'); return; }
@@ -359,15 +356,16 @@ export class Menus {
       list.querySelector('.more')?.remove();
       if (!rows.length && !offset) { empty('crown'); return; }
       for (const r of rows) list.appendChild(row2(r));
-      offset += rows.length;
+      offset += rows.length; hideDup();
       if (rows.length === LIM) { const more = el('button', 'btn ghost more', '…'); more.onclick = () => { more.textContent = '…'; load(); }; list.appendChild(more); }
     };
-    load();
-    // моя позиция
+    const first = load();
+    // моя позиция: только если меня нет среди загруженных строк
     if (meU) {
       try {
         const r = spec.global ? await Net.globalRank() : await Net.levelRank(spec.level, spec.diff);
-        if (seq === this.boardSeq && r) { me.classList.remove('hidden'); me.innerHTML = ''; me.appendChild(row2({ rank: r.rank, tg_id: meU.id, name: meU.name, username: meU.username, photo: meU.photo, score: r.score, lv: r.lv || (this.save.rank || {}).lv, duration: r.duration || (this.save.rank || {}).time, loadout: r.loadout || (this.save.rank || {}).loadout })); }
+        await first;
+        if (seq === this.boardSeq && r && !list.querySelector('.me')) { me.classList.remove('hidden'); me.innerHTML = ''; me.appendChild(row2({ rank: r.rank, tg_id: meU.id, name: meU.name, username: meU.username, photo: meU.photo, score: r.score, lv: r.lv || (this.save.rank || {}).lv, duration: r.duration || (this.save.rank || {}).time, loadout: r.loadout || (this.save.rank || {}).loadout })); }
       } catch (e) { /* без связи */ }
     }
   }

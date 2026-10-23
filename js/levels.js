@@ -1,6 +1,5 @@
 // Уровни кампании: секторы, раскладки, связи (after = открывается после прохождения ЛЮБОГО из перечисленных).
-import { LAYOUTS, expand } from './layouts.js';
-const COLS = 8, ROWS = 10;
+import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261023142219';
 
 export const SECTORS = [
   { id: 'grave', name: 'Проклятый погост', theme: 'grave', color: '#7fa86a' },
@@ -10,21 +9,31 @@ export const SECTORS = [
   { id: 'hell', name: 'Врата Ада', theme: 'lava', color: '#ff6a3a' },
 ];
 
+// Декор: только деревья и валуны (листы nature_* из assets/used). Здания и прочие постройки на картах не стоят.
 export const DECOR_KINDS = {
-  grave: ['tomb', 'deadtree', 'boulder', 'skullpike', 'boulder', 'deadtree', 'deadtree'],
-  slaughter: ['barrel', 'bones', 'pen', 'hook', 'boulder'],
-  ice: ['icerock', 'snowspruce', 'snowspruce', 'boulder', 'crystal'],
-  forest: ['oak', 'spruce', 'oak', 'boulder', 'spruce', 'oak', 'boulder'],
-  desert: ['cactus', 'skullbig', 'obelisk', 'dunerock', 'boulder'],
-  lava: ['lavapool', 'obsidian', 'spikes', 'brazier', 'boulder'],
+  grave: ['deadtree', 'boulder', 'deadtree', 'boulder', 'deadtree'],
+  slaughter: ['deadtree', 'boulder', 'boulder', 'deadtree'],
+  ice: ['snowspruce', 'snowspruce', 'boulder', 'snowspruce'],
+  forest: ['oak', 'spruce', 'oak', 'boulder', 'spruce', 'oak'],
+  desert: ['boulder', 'deadtree', 'boulder'],
+  lava: ['boulder', 'deadtree', 'boulder'],
 };
 
 function rng(seed) { let a = seed | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
-// Препятствия (деревья, валуны, статуи): чем выше уровень, тем их больше и тем чаще они стоят на самых выгодных клетках у дороги.
+// Клетки рядом с порталами и воротами: строить нельзя (там стоят сами портал и ворота, они шире клетки)
+function blockCells(paths) {
+  const on = new Set(), out = [];
+  for (const p of paths) for (const c of expand(p)) on.add(c + '');
+  for (const p of paths) for (const [c, r] of [p[0], p[p.length - 1]]) for (const dc of [-1, 1]) { const q = [c + dc, r]; if (q[0] >= 0 && q[0] < COLS && !on.has(q + '') && !out.some((o) => o[0] === q[0] && o[1] === q[1])) out.push(q); }
+  return out;
+}
+
+// Препятствия (деревья, валуны): чем выше уровень, тем их больше и тем чаще они стоят на самых выгодных клетках у дороги.
 function autoDecor(paths, theme, seed, lvl = 1) {
   const R = rng(seed * 131 + 7), onPath = new Set(), pc = [];
   for (const p of paths) for (const c of expand(p)) { if (!onPath.has(c + '')) { onPath.add(c + ''); pc.push(c); } }
+  for (const c of blockCells(paths)) onPath.add(c + '');
   const free = [];
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     if (onPath.has(c + ',' + r)) continue;
@@ -32,7 +41,7 @@ function autoDecor(paths, theme, seed, lvl = 1) {
     free.push({ c, r, cov });
   }
   const t = lvl <= 0 ? 0 : Math.min(1, (lvl - 1) / 18);
-  const want = Math.min(lvl <= 0 ? 4 : Math.round(6 + 9 * t), free.length - 26);
+  const want = Math.min(lvl <= 0 ? 6 : Math.round(9 + 12 * t), free.length - 34);
   const sorted = [...free].sort((a, b) => b.cov - a.cov), prime = new Set(sorted.slice(0, Math.ceil(free.length / 3)).map((q) => q.c + ',' + q.r));
   for (const q of free) q.w = 1 + R() * 0.6 + (prime.has(q.c + ',' + q.r) ? 5 * t : 0);
   const kinds = DECOR_KINDS[theme === 'slaughter' ? 'slaughter' : theme], out = [], taken = new Set();
@@ -46,14 +55,6 @@ function autoDecor(paths, theme, seed, lvl = 1) {
     taken.add(q.c + ',' + q.r); out.push([q.c, q.r, kinds[Math.floor(R() * kinds.length)]]);
   }
   return out;
-}
-
-// воздушный маршрут: зигзаг через всё поле (дольше, чем по прямой)
-function flyRoute(paths) {
-  const p = paths[0], s = p[0], e = p[p.length - 1];
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const sc = clamp(s[0], 0, COLS - 1), sr = clamp(s[1], 0, ROWS - 1);
-  return [[s[0], s[1]], [COLS - 1 - sc, Math.max(3, sr + 3)], [sc === COLS - 1 - sc ? 1 : sc, 6], [e[0], e[1]]];
 }
 
 // [id, имя, сектор, раскладка, тема, волн, множитель здоровья, after, позиция на карте мира]
@@ -81,12 +82,12 @@ const SPEC = [
 
 export const LEVELS = SPEC.map(([id, name, sector, layout, theme, waves, hp, after, pos], i) => {
   const paths = LAYOUTS[layout];
-  return { id, name, sector, theme, layout, paths, fly: flyRoute(paths), decor: autoDecor(paths, theme, i + 1, i + 1), waves, hp, after, pos, index: i, lvl: i + 1 };
+  return { id, name, sector, theme, layout, paths, block: blockCells(paths), decor: autoDecor(paths, theme, i + 1, i + 1), waves, hp, after, pos, index: i, lvl: i + 1 };
 });
 // Обучение: самая простая карта, 3 волны из простых врагов. Стоит в конце массива, чтобы не сдвигать номера остальных уровней.
 {
   const paths = LAYOUTS.tutor, w = (...g) => g;
-  LEVELS.push({ id: 'tut', name: 'Обучение', sector: 'grave', theme: 'grave', layout: 'tutor', paths, fly: flyRoute(paths), decor: autoDecor(paths, 'grave', 77, 0), waves: 3, hp: 0.55, after: [], pos: [185, 758], index: LEVELS.length, lvl: 0, tutorial: true,
+  LEVELS.push({ id: 'tut', name: 'Обучение', sector: 'grave', theme: 'grave', layout: 'tutor', paths, block: blockCells(paths), decor: autoDecor(paths, 'grave', 77, 0), waves: 3, hp: 0.55, after: [], pos: [185, 758], index: LEVELS.length, lvl: 0, tutorial: true,
     waveList: [w(['grunt', 4, 1.7]), w(['grunt', 6, 1.4]), w(['grunt', 5, 1.2], ['skeleton', 2, 1.4])] });
 }
 export const CAMPAIGN = LEVELS.filter((l) => !l.tutorial);

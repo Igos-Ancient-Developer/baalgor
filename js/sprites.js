@@ -20,9 +20,8 @@ function loadImg(path, tries = 3) {
 }
 
 export const TILE_KINDS = ['grass', 'snow', 'sand', 'lava'];
-export const DECOR_IMGS = ['dead_tree', 'rocks', 'bones', 'crystal', 'ruin', 'torch', 'cart', 'campfire', 'skull_pole', 'chest_loot', 'chest', 'statue',
-  'townhall', 'smithy', 'tents', 'tavern', 'warehouse', 'portal', 'altar', 'shrine', 'obelisk', 'farm', 'mill', 'fishhut', 'watchtower', 'woodcutter', 'quarry', 'camp', 'hut',
-  'obj_gate', 'obj_portal', 'obj_chest', 'obj_chest_open',
+// декор карт: только деревья и валуны, портал и ворота, сундук (всё из assets/used)
+export const DECOR_IMGS = ['chest_loot', 'obj_gate', 'obj_portal', 'obj_chest', 'obj_chest_open',
   ...[1, 2, 3, 4, 5].map((n) => 'nat_oak_' + n), 'nat_dead_1', 'nat_spruce_1', ...[1, 2, 3, 4, 5, 6, 7].map((n) => 'nat_rock_' + n)];
 export const GIB_IMGS = ['gib_1', 'gib_2', 'gib_3', 'gib_4', 'heart', 'arm', 'leg', 'bones', 'skull'];
 export const PORTRAITS = ['imp', 'brute', 'succubus', 'pitlord', 'archdemon', 'skull'];
@@ -44,19 +43,23 @@ export async function loadSprites(onProgress = () => {}) {
   SPR.towers = tw; SPR.enemies = en;
   const list = [];
   for (const [t, m] of Object.entries(tw)) { for (let i = 0; i < m.n; i++) list.push(`towers/${t}_${i}.webp`); if (m.head) list.push(`towers/${t}_head.webp`); }
-  for (const k of Object.keys(en)) list.push(`enemies/${k}.webp`);
   for (const k of TILE_KINDS) for (let i = 0; i < 4; i++) list.push(`tiles/${k}_${i}.webp`);
   for (const k of DECOR_IMGS) list.push(`decor/${k}.webp`);
   for (const k of GIB_IMGS) list.push(`gibs/${k}.webp`);
   for (const k of PORTRAITS) list.push(`ui/portrait_${k}.webp`);
   for (const k of UI_ICONS) list.push(`ui/icon_${k}.webp`);
   for (const k of ICON_NAMES) list.push(`icons/${k}.webp`);
-  list.push('ui/logo.webp', 'ui/worldmap.webp');
+  list.push('ui/logo.webp', 'ui/worldmap.webp', ...['plain', 'glow', 'rust', 'hands'].map((k) => `ui/plate_${k}.webp`), 'ui/stone.webp', 'ui/chain.webp');      // картинки кнопок и панелей из css: грузим заранее, чтобы кнопки не появлялись пустыми
   let done = 0;
   await Promise.all(list.map((p) => loadImg(p).then(() => onProgress(++done / list.length))));
   SPR.ok = true;
   return true;
 }
+
+// листы врагов грузим по требованию: на уровне нужны только его виды (остальные не занимают память)
+export const enemyFile = (f) => `enemies/${f}.webp`;
+export function loadEnemyImgs(files) { return Promise.all(files.filter((f) => !SPR.imgs.has(enemyFile(f))).map((f) => loadImg(enemyFile(f)))); }
+export function dropImg(path) { SPR.imgs.delete(path); }
 
 export const img = (path) => { const im = SPR.imgs.get(path); return im && im.complete && im.naturalWidth > 0 ? im : null; };
 export const url = (path) => ROOT + path;

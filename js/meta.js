@@ -1,5 +1,5 @@
 // Мета-прогресс: души, дары кузницы, открытие башен, достижения. Не зависит от DOM (можно тестировать в Node).
-import * as D from './data.js';
+import * as D from './data.js?v=20261023142219';
 
 export const DIFF_SOULS = [0.7, 1, 1.8];   // множитель душ по сложности (индекс как в DIFFS)
 
@@ -110,7 +110,6 @@ export const ACH = [
   { id: 'score_150', name: 'Мастер счёта', desc: 'Набери 150 очков за один уровень', goal: 150, val: R('score'), reward: 120 },
   { id: 'flawless', name: 'Неприступный', desc: 'Победи, не потеряв ни одной жизни', goal: 1, val: L('flawless'), reward: 100 },
   { id: 'grim', name: 'Суровый воин', desc: 'Победи без рудников, банка, алтаря, рабочих и орды', goal: 1, val: L('noEconWin'), reward: 80 },
-  { id: 'endless40', name: 'Бесконечность', desc: 'Дойди до 40 волны в бесконечном режиме', goal: 40, val: L('bestWave'), reward: 80 },
   { id: 'all_maps', name: 'Покоритель секторов', desc: 'Пройди хотя бы по одному уровню в каждом секторе', goal: 5, val: (c) => new Set(D.CAMPAIGN.filter((l) => levelCleared(c.save, l.id)).map((l) => l.sector)).size, reward: 70 },
   { id: 'arsenal', name: 'Арсенал', desc: 'Открой все башни в Кузнице душ', goal: 1, val: (c) => (lockedTowers(c.save).length === 0 ? 1 : 0), reward: 30 },
   { id: 'tempered', name: 'Закалённый', desc: 'Прокачай любой дар Кузницы до максимума', goal: 1, val: (c) => (PERKS.some((p) => (c.save.perks[p.id] || 0) >= p.max) ? 1 : 0), reward: 25 },

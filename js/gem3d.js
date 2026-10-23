@@ -53,28 +53,34 @@ const mix = (a, b, t) => a.map((x, i) => x + (b[i] - x) * t);
 function normal(p) { const u = [p[1][0] - p[0][0], p[1][1] - p[0][1], p[1][2] - p[0][2]], v = [p[2][0] - p[0][0], p[2][1] - p[0][1], p[2][2] - p[0][2]]; return norm([u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]); }
 
 let tick = 0, timer = 0;
-// Анимируем только те кристаллы, что сейчас на экране (IntersectionObserver), и не чаще 10 раз в секунду; остальным рисуем один статичный кадр.
+// Анимируем только кристалл на главном экране (IntersectionObserver), не чаще 10 раз в секунду и только пока ничто его не закрывает; остальным рисуем один статичный кадр.
 // Раньше таймер каждые 55 мс перерисовывал все холсты на странице (в Кузнице их десятки) — телефон грелся.
 const visible = new Set(); let io = null;
 function watch(c) {
   c.dataset.w = '1';
   const g = c.getContext('2d'); g.drawImage(frames[(+c.dataset.ph || 0) % N], 0, 0, c.width, c.height);
-  if (io) io.observe(c); else visible.add(c);
+  if (c.closest('#title')) { if (io) io.observe(c); else visible.add(c); }      // вращается только кристалл на главном экране, в остальных окнах он неподвижный
 }
 function paint() {
   if (document.hidden) return;
   const gm = document.getElementById('game'); if (gm && !gm.classList.contains('hidden')) return;           // в бою кристаллов нет: не тратим время
-  tick = (tick + 1) % N;
   for (const c of document.querySelectorAll('canvas.gem3d:not([data-w])')) watch(c);
+  if (document.querySelector('.screen:not(#title):not(#loading):not(.hidden)')) return;                       // поверх главного экрана открыто окно: не анимируем скрытое
+  tick = (tick + 1) % N;
   for (const c of visible) {
     if (!c.isConnected) { visible.delete(c); if (io) io.unobserve(c); continue; }
     const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height); g.drawImage(frames[(tick * 2 + (+c.dataset.ph || 0)) % N], 0, 0, c.width, c.height);
   }
 }
 export function startGems() {
-  if (timer) return; frames = build();
+  if (timer) return; frames = frames || build();
   try { io = new IntersectionObserver((es) => { for (const e of es) { if (e.isIntersecting) visible.add(e.target); else visible.delete(e.target); } }); } catch (e) { io = null; }
   timer = setInterval(paint, 100);
 }
-// HTML кристалла нужного размера (n — в пикселях страницы)
-export const gemHtml = (n = 24, ph = 0) => `<span class="gemic"><canvas class="gem3d" width="${Math.round(n * 2)}" height="${Math.round(n * 2)}" data-ph="${ph}" style="width:${n}px;height:${n}px"></canvas></span>`;
+// Неподвижный кристалл (все окна, кроме главного экрана): готовая картинка, без холстов и таймеров
+const urls = new Map();
+export function gemUrl(ph = 0) { if (!frames) frames = build(); const k = ph % N; let u = urls.get(k); if (!u) { u = frames[k].toDataURL(); urls.set(k, u); } return u; }
+// HTML кристалла нужного размера (n — в пикселях страницы); anim = true — вращающийся (только на главном экране)
+export const gemHtml = (n = 24, ph = 0, anim = false) => anim
+  ? `<span class="gemic"><canvas class="gem3d" width="${Math.round(n * 2)}" height="${Math.round(n * 2)}" data-ph="${ph}" style="width:${n}px;height:${n}px"></canvas></span>`
+  : `<span class="gemic"><img src="${gemUrl(ph)}" alt="" width="${n}" height="${n}" style="width:${n}px;height:${n}px"></span>`;

@@ -1,9 +1,9 @@
 // Расчленёнка, кровь и частицы. Подписывается на события симуляции и рисует в постоянный «слой крови».
-import { tr } from './i18n.js';
-import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js';
-import { S as ART_S } from './art.js';
-import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js';
-import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js';
+import { tr } from './i18n.js?v=20261023142219';
+import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261023142219';
+import { S as ART_S } from './art.js?v=20261023142219';
+import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261023142219';
+import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261023142219';
 
 const GRAV = 560;
 const LAYERS = 3, SPAN = 6, HOLD = 6, FADE = 5;   // секунд игрового времени
@@ -14,7 +14,7 @@ const pick = (a) => a[(Math.random() * a.length) | 0];
 export class Gore {
   constructor() {
     this.parts = []; this.emitters = []; this.pools = []; this.bolts = []; this.floaters = [];
-    this.shake = 0; this.flash = 0; this.flashCol = '#ff2a2a';
+    this.flash = 0; this.flashCol = '#ff2a2a';
     // Слои крови по времени: каждый слой копит следы SPAN секунд, затем держится HOLD и тает FADE — кровь и трупы со временем исчезают
     this.B = Math.min(ART_S, 1.25);
     this.t = 0; this.cur = 0;
@@ -25,8 +25,10 @@ export class Gore {
     this.layers[0].start = 0;
     this.stats = { gibs: 0 };
     this.onSound = null;
+    this.cam = { x: WORLD_W / 2, y: WORLD_H / 2 };      // центр камеры: сюда выводятся надписи на весь экран
   }
   get bg() { return this.layers[this.cur].g; }
+  dispose() { for (const l of this.layers) { l.c.width = 0; l.c.height = 0; } this.parts.length = 0; this.layers = []; }      // освободить слои крови
   sound(name, vol = 1) { if (this.onSound) this.onSound(name, vol); }
   clearBlood() { for (const l of this.layers) { l.g.clearRect(0, 0, WORLD_W, WORLD_H); l.start = null; this.resetBox(l); } this.layers[this.cur].start = this.t; }
   resetBox(l) { l.x0 = l.y0 = 1e9; l.x1 = l.y1 = -1e9; }
@@ -57,8 +59,8 @@ export class Gore {
     sim.on('explosion', (d) => this.onExplosion(d));
     sim.on('lightning', (d) => { this.bolts.push({ pts: d.pts, t: 0, T: 0.18, seed: Math.random() * 99 }); });
     sim.on('shot', (d) => this.onShot(d));
-    sim.on('leak', (d) => { this.shake = Math.min(12, this.shake + 5); this.flash = 0.45; this.flashCol = '#ff1a2a'; this.ring(d.x, d.y, 40, '#ff2a2a', 0.5); });
-    sim.on('stomp', (d) => { this.shake = Math.min(14, this.shake + 7); this.ring(d.x, d.y, 2.3 * CELL, '#ffb060', 0.6); this.dust(d.x, d.y, 14, 2.3 * CELL); });
+    sim.on('leak', (d) => { this.flash = 0.45; this.flashCol = '#ff1a2a'; this.ring(d.x, d.y, 40, '#ff2a2a', 0.5); });
+    sim.on('stomp', (d) => { this.ring(d.x, d.y, 2.3 * CELL, '#ffb060', 0.6); this.dust(d.x, d.y, 14, 2.3 * CELL); });
     sim.on('summon', (d) => { this.ring(d.x, d.y, 60, '#9aff6a', 0.7); for (let i = 0; i < 10; i++) this.spark(d.x + rnd(-14, 14), d.y + rnd(-8, 8), '#9aff6a'); });
     sim.on('heal', (d) => { for (let i = 0; i < 7; i++) this.part({ k: 'plus', x: d.x + rnd(-24, 24), y: d.y + rnd(-10, 10), z: rnd(10, 30), vx: 0, vy: 0, vz: rnd(20, 40), life: 0.9 }); });
     sim.on('blink', (d) => { this.smokeAt(d.x0, d.y0, '#8a5aff', 5); this.smokeAt(d.x1, d.y1, '#8a5aff', 5); });
@@ -68,12 +70,12 @@ export class Gore {
     sim.on('bag', (d) => { this.floatText(d.x, d.y - 8, '+' + d.gold, d.tapped ? '#fff27a' : '#ffd24a', d.tapped ? 1.25 : 1); for (let i = 0; i < (d.tapped ? 6 : 3); i++) this.coinPop(d.x, d.y); });
     sim.on('guardhit', (d) => { this.part({ k: 'drop', x: d.g.x + rnd(-4, 4), y: d.g.y, z: 14, vx: rnd(-40, 40), vy: rnd(-20, 20), vz: rnd(30, 90), life: 1, col: '#b3101e', size: 1.4 }); });
     sim.on('guarddie', (g) => { for (let i = 0; i < 6; i++) this.part({ k: 'drop', x: g.x, y: g.y, z: 12, vx: rnd(-60, 60), vy: rnd(-30, 30), vz: rnd(60, 160), life: 1, col: '#b3101e', size: 1.6 }); });
-    sim.on('callwave', (d) => { if (d.bonus) this.floatText(WORLD_W / 2, WORLD_H / 2 - 30, '+' + d.bonus + ' за скорость', '#ffd24a', 1.2); });
+    sim.on('callwave', (d) => { if (d.bonus) this.floatText(this.cam.x, this.cam.y - 30, '+' + d.bonus + ' за скорость', '#ffd24a', 1.2); });
     sim.on('build', (b) => { this.dust(b.x, b.y + 8, 8, 26); });
     sim.on('upgrade', (b) => { this.ring(b.x, b.y, 34, '#ffe27a', 0.5); for (let i = 0; i < 8; i++) this.spark(b.x + rnd(-14, 14), b.y + rnd(-6, 8), '#ffe27a'); });
     sim.on('chest', (d) => {
-      if (d.kind === 'hit') { for (let i = 0; i < 3; i++) this.coinPop(d.x, d.y - 10); this.spark(d.x, d.y - 16, '#fff6c0'); this.dust(d.x, d.y + 8, 4, 18); this.shake = Math.min(6, this.shake + 2); }
-      else { for (let i = 0; i < 18; i++) this.coinPop(d.x + rnd(-10, 10), d.y - 8); this.ring(d.x, d.y, 46, '#ffe9a0', 0.55); this.flash = 0.22; this.flashCol = '#fff6d0'; this.dust(d.x, d.y + 6, 14, 34); this.shake = Math.min(10, this.shake + 6); this.floatText(d.x, d.y - 24, '+' + d.gold, '#fff27a', 1.5); }
+      if (d.kind === 'hit') { for (let i = 0; i < 3; i++) this.coinPop(d.x, d.y - 10); this.spark(d.x, d.y - 16, '#fff6c0'); this.dust(d.x, d.y + 8, 4, 18); }
+      else { for (let i = 0; i < 18; i++) this.coinPop(d.x + rnd(-10, 10), d.y - 8); this.ring(d.x, d.y, 46, '#ffe9a0', 0.55); this.flash = 0.22; this.flashCol = '#fff6d0'; this.dust(d.x, d.y + 6, 14, 34); this.floatText(d.x, d.y - 24, '+' + d.gold, '#fff27a', 1.5); }
     });
     sim.on('sell', ({ b }) => { this.dust(b.x, b.y + 8, 8, 26); for (let i = 0; i < 4; i++) this.coinPop(b.x, b.y); });
     sim.on('frosthit', (d) => { for (let i = 0; i < 3; i++) this.spark(d.x, d.y - 6, '#bfe8ff'); });
@@ -89,7 +91,7 @@ export class Gore {
       const col = d.b.branch === 'A' ? '#ff4a9a' : d.b.branch === 'B' ? '#4adcff' : '#b070ff';
       this.ring(d.x, d.y, d.r, col, 0.55); this.ring(d.x, d.y, d.r * 0.6, col, 0.4);
       for (let i = 0; i < 14; i++) { const a = rnd(6.28), r = d.r * rnd(0.6, 1); this.part({ k: 'spark', x: d.x + Math.cos(a) * r, y: d.y + Math.sin(a) * r * 0.8, z: rnd(4, 20), vx: -Math.cos(a) * r * 1.8, vy: -Math.sin(a) * r * 1.4, vz: 0, life: 0.5, col, size: rnd(1.2, 2.2) }); }
-      if (d.collapse) { this.shake = Math.min(14, this.shake + 4); this.flash = 0.2; this.flashCol = col; this.ring(d.x, d.y, d.r * 1.15, '#ffffff', 0.35); }
+      if (d.collapse) { this.flash = 0.2; this.flashCol = col; this.ring(d.x, d.y, d.r * 1.15, '#ffffff', 0.35); }
     });
     sim.on('frenzy', (b) => { this.ring(b.x, b.y, b.st.range * CELL, '#ff3a3a', 0.7); });
   }
@@ -138,8 +140,8 @@ export class Gore {
     if (!col) return;
     const a = d.a || 0, x = d.x + Math.cos(a) * 14, y = d.y + Math.sin(a) * 8 - 18;
     this.part({ k: 'flash', x, y, z: 0, vx: 0, vy: 0, vz: 0, life: 0.1, r: d.kind === 'mortar' ? 18 : 10, col });
-    if (d.kind === 'harpoon') { this.shake = Math.min(14, this.shake + 1.2); this.dust(x, y + 12, 3, 12); }
-    if (d.kind === 'mortar') { this.dust(x, y + 12, 4, 14); this.shake = Math.min(14, this.shake + 0.8); }
+    if (d.kind === 'harpoon') { this.dust(x, y + 12, 3, 12); }
+    if (d.kind === 'mortar') { this.dust(x, y + 12, 4, 14); }
   }
   onHit({ e, dmg, type, how, x, y, dx, dy, crit }) {
     if (this.parts.length > MAX_PARTS - 40) return;
@@ -168,7 +170,6 @@ export class Gore {
     for (let i = 0; i < nSmoke; i++) { const a = rnd(6.28), d = rnd(r * 0.8); this.part({ k: 'smoke', x: x + Math.cos(a) * d, y: y + Math.sin(a) * d * 0.7, z: rnd(0, 10), vx: Math.cos(a) * 18, vy: Math.sin(a) * 10, vz: rnd(14, 40), life: rnd(0.6, 1.2), size: rnd(14, 28) * k, col: 'dark' }); }
     for (let i = 0; i < 10 * k; i++) { const a = rnd(6.28), s = rnd(40, 170) * k; this.part({ k: 'ember', x, y, z: rnd(2, 10), vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.6, vz: rnd(60, 220), life: rnd(0.4, 0.9), size: rnd(1, 2.4) }); }
     this.stamp(scorchSprite(), x, y, Math.max(26, r * 2.1), rnd(6), 0.75);
-    this.shake = Math.min(14, this.shake + (kind === 'meteor' ? 9 : big ? 3 : 1.3 * k));
     if (kind === 'meteor') { this.flash = 0.3; this.flashCol = '#ff9a2a'; }
   }
 
@@ -206,7 +207,6 @@ export class Gore {
         for (let i = 0; i < 4 * big; i++) this.splat(bk, x + rnd(-26, 26) * big, y + rnd(-16, 16) * big, rnd(24, 46) * big, 0.85);
         addPool(1.3, 1.2);
         this.part({ k: 'flash', x, y, z: 0, vx: 0, vy: 0, vz: 0, life: 0.18, r: 38 * big, col: bleeds ? '#ff5a5a' : '#fff0c0' });
-        this.shake = Math.min(14, this.shake + 3.5 * big);
         break;
       }
       case 'implode': {
@@ -221,7 +221,6 @@ export class Gore {
         this.gibs(e, kinds, Math.min(6, kinds.length), dir, 1.2, 150);
         this.drops(x, y, 18, blood[0], dir, 1.4, 160, 14);
         this.splat(bk, x, y, rnd(26, 38) * big, 0.9); addPool(1);
-        this.shake = Math.min(14, this.shake + 1);
         break;
       }
       case 'dismember': {
@@ -232,7 +231,6 @@ export class Gore {
         this.splat(bk, x, y, rnd(26, 40) * big, 0.9); this.splat(bk, x + (dir ? dir.x * 18 : 0), y + (dir ? dir.y * 10 : 0), rnd(16, 28) * big, 0.85);
         addPool(1.1);
         this.emitter(x, y, dir, 0.45, bk, 60, 90);
-        this.shake = Math.min(14, this.shake + 0.8);
         break;
       }
       case 'topple': {                                      // обычная смерть: проигрывается анимация падения, на земле остаётся кровь
@@ -249,7 +247,6 @@ export class Gore {
         this.drops(x, y, 22 * big, blood[0], dir, 1.0, 240, 22, 2);
         this.splat(bk, x, y, rnd(28, 40) * big, 0.9); this.splat(bk, x + (dir ? dir.x * 26 : 0), y + (dir ? dir.y * 14 : 0), rnd(18, 28) * big, 0.85);
         addPool(1.2, 1.4);
-        this.shake = Math.min(14, this.shake + 1.6);
         break;
       }
       case 'char': {
@@ -290,7 +287,6 @@ export class Gore {
   update(dt) {
     this.t += dt;
     if (this.t - this.layers[this.cur].start >= SPAN) this.advanceLayer();
-    this.shake = Math.max(0, this.shake - dt * 28);
     if (this.flash > 0) this.flash -= dt;
     // фонтаны
     for (let i = this.emitters.length - 1; i >= 0; i--) {

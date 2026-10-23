@@ -1,15 +1,17 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-export const CELL = 48, COLS = 8, ROWS = 10;
+import { COLS, ROWS } from './layouts.js?v=20261023142219';
+export const CELL = 48;
+export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
-export const MARGIN_ROWS = 5, MARGIN = CELL * MARGIN_ROWS;    // фон карты продолжается над и под полем: карта занимает весь экран
+export const PAD = { l: 26, r: 26, t: 44, b: 190 };           // фон карты шире поля: портал и ворота не прячутся за краем, а нижние ряды можно поднять над панелью здания
+export const VIEW_COLS = 7.2;                                  // сколько клеток в ширину видно на экране: карта больше экрана и двигается пальцем
 export const TICK = 10;          // «такт» дохода для подсчёта «золота за 10 секунд» в интерфейсе
 export const COIN_PERIOD = 12;   // каждое здание добычи выбрасывает монету раз в столько секунд
 export const COIN_FIRST = 6;     // первая монета — через столько секунд после постройки
 export const COIN_LIFE = 12;     // секунд, пока монету можно подобрать
-export const MAX_WAVE = 30;
-export const START_LIVES = 20;
+export const START_LIVES = 5;      // докупаются: перк «Крепость» в Кузнице и усилитель за кристаллы
 export const START_GOLD = 175;
 export const BASE_INCOME = 0;    // золота «просто так» нет: только монеты зданий добычи и награды за убийства
 export const SELL_RATE = 0.7;
@@ -18,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD = 80;
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261023142219';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -296,11 +298,11 @@ export const ENEMIES = {
   reaper:   { name: 'Жнец',           hp: 220, spd: 60, gold: 0, lives: 1, size: 1.0,  atk: 10, ghost: true, blink: 7, blood: 'ichor', pts: 0.03 },
   gargoyle: { name: 'Горгулья',       hp: 140, spd: 58, gold: 0, lives: 1, size: 1.0,  atk: 0,  air: true, armor: 0.2, blood: 'bone', pts: 0.015 },
   // тяжёлые и уникальные: очень медленные, много здоровья, выходят по одному-два и нечасто (как в Kingdom Rush)
-  knight:   { name: 'Чёрный рыцарь',  hp: 320, spd: 21, gold: 0, lives: 2, size: 1.05, atk: 12, armor: 0.2, heavy: true, blood: 'dark', pts: 0.03 },
-  butcher:  { name: 'Мясник',         hp: 560, spd: 17, gold: 0, lives: 3, size: 1.3,  atk: 16, armor: 0.1, heavy: true, blood: 'red', pts: 0.04 },
-  lich:     { name: 'Лич',            hp: 760, spd: 15, gold: 0, lives: 3, size: 1.4,  atk: 20, armor: 0.2, summon: 10, heavy: true, blood: 'bone', pts: 0.05 },
-  ogre:     { name: 'Огр',            hp: 900, spd: 14, gold: 0, lives: 4, size: 1.45, atk: 22, armor: 0.2, stomp: 9, heavy: true, blood: 'red', pts: 0.06 },
-  demon:    { name: 'Владыка Ада',    hp: 1500, spd: 12, gold: 0, lives: 5, size: 1.7, atk: 30, armor: 0.3, stomp: 12, heavy: true, blood: 'ichor', pts: 0.1 },
+  knight:   { name: 'Чёрный рыцарь',  hp: 320, spd: 21, gold: 0, lives: 1, size: 1.05, atk: 12, armor: 0.2, heavy: true, blood: 'dark', pts: 0.03 },
+  butcher:  { name: 'Мясник',         hp: 560, spd: 17, gold: 0, lives: 2, size: 1.3,  atk: 16, armor: 0.1, heavy: true, blood: 'red', pts: 0.04 },
+  lich:     { name: 'Лич',            hp: 760, spd: 15, gold: 0, lives: 2, size: 1.4,  atk: 20, armor: 0.2, summon: 10, heavy: true, blood: 'bone', pts: 0.05 },
+  ogre:     { name: 'Огр',            hp: 900, spd: 14, gold: 0, lives: 2, size: 1.45, atk: 22, armor: 0.2, stomp: 9, heavy: true, blood: 'red', pts: 0.06 },
+  demon:    { name: 'Владыка Ада',    hp: 1500, spd: 12, gold: 0, lives: 3, size: 1.7, atk: 30, armor: 0.3, stomp: 12, heavy: true, blood: 'ichor', pts: 0.1 },
 };
 export const HEAVY_CAP = { knight: 3, butcher: 2, lich: 1, ogre: 2, demon: 1 };      // не больше стольких за волну
 
@@ -311,7 +313,6 @@ export const goldScale = (n) => 1 + TUNE.gold1 * (n - 1);
 
 // Волны: [тип, кол-во, интервал между юнитами сек]; группы идут последовательно.
 const G = (t, c, i = 1) => [t, c, i];
-export let WAVES = [];       // кривая «волны 1..30» для бесконечного режима; заполняется ниже из genWave
 export const waveGap = (n) => 26 + Math.min(8, n * 0.25);   // пауза после того, как волна целиком вышла на дорогу: время подумать или вызвать следующую волну раньше
 
 // ───── Волны кампании ─────
@@ -342,8 +343,15 @@ export function genWave(L, n, T) {
   const main = out.find((g) => !HEAVY_CAP[g[0]]); if (main && spare) main[1] += Math.round(spare / COST[main[0]]);      // сэкономленное на тяжёлых уходит в обычных
   return out;
 }
-WAVES = Array.from({ length: MAX_WAVE }, (_, k) => genWave(10, k + 1, MAX_WAVE));
 export const FIRST_WAVE_DELAY = 30;
+// какие виды врагов появятся на уровне (для загрузки только нужных листов): все из волн, их порождения и вызванные; гоблин, скелет и зомби нужны для орд
+export function levelTypes(map) {
+  const s = new Set(['grunt', 'skeleton', 'zombie']);
+  if (map.waveList) for (const w of map.waveList) for (const g of w) s.add(g[0]);
+  else for (let n = 1; n <= map.waves; n++) for (const g of genWave(map.lvl, n, map.waves)) s.add(g[0]);
+  for (const t of [...s]) { const d = ENEMIES[t]; if (d && d.split) s.add(d.split); }
+  return [...s];
+}
 
 // Утилиты данных
 export function legacyStats(type, level, branch) {

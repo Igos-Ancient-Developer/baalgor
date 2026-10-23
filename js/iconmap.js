@@ -1,6 +1,6 @@
 // Растровые иконки из листа (img/icons/*.webp, нарезка — tools/build_icons.py) вместо нарисованных кодом.
 // Имя глифа игры → файл иконки. Если файла нет, остаётся запасной рисунок из icons.js / env.js.
-import { img } from './sprites.js';
+import { img } from './sprites.js?v=20261023142219';
 
 // имя глифа в игре → имя иконки на листе
 export const GLYPH_IMG = {
@@ -17,7 +17,7 @@ export const ACH_IMG = {
   first_blood: 'ach_17', hundred: 'ach_01', thousand: 'ach_26', ten_k: 'ach_31', decap: 'ach_02', lumberjack: 'ach_28', sculptor: 'ach_23', storm: 'ach_24', birds: 'ach_21', burn: 'ach_25',
   butcher: 'ach_27', lich_slayer: 'ach_18', demon_slayer: 'ach_22', bags: 'ach_15', bags500: 'gold', scrooge: 'chest', mine_king: 'ach_29', gold_lvl: 'pickaxe', tycoon: 'vip',
   collector: 'ach_10', master: 'ach_35', both_ways: 'ach_06', impatient: 'ach_36', wave10: 'ach_03', wave20: 'ach_08', win: 'ach_38', hell_win: 'ach_30', hardcore_win: 'ach_07',
-  levels10: 'ach_11', levels_all: 'ach_20', score_40: 'ach_04', score_150: 'ach_09', flawless: 'ach_19', grim: 'ach_33', endless40: 'ach_32', all_maps: 'map', arsenal: 'premium_chest', tempered: 'ach_16',
+  levels10: 'ach_11', levels_all: 'ach_20', score_40: 'ach_04', score_150: 'ach_09', flawless: 'ach_19', grim: 'ach_33', all_maps: 'map', arsenal: 'premium_chest', tempered: 'ach_16',
 };
 export const SHOP_IMG = { daily: 'gift', starter: 'premium_chest', premium: 'premium', packs: ['ruby', 'crystal_pack', 'gem_pack', 'gold', 'premium_chest', 'premium'] };
 

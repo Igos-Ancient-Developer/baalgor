@@ -1,6 +1,6 @@
 // Процедурные спрайты врагов (кадры ходьбы) и кусков тел для расчленёнки.
-import { SPR, img } from './sprites.js';
-import { OUT, S, mk, cached, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js';
+import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261023142219';
+import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023142219';
 
 export const FRAMES = 8;
 const T2 = Math.PI * 2;
@@ -387,19 +387,39 @@ const SPRITE_ENEMIES = {
   hound: ['hound', 40], slime: ['slime', 40], slimelet: ['slime', 24, { scale: 0.6 }], shaman: ['shaman', 42], knight: ['knight', 48], butcher: ['butcher', 52], gargoyle: ['gargoyle', 44, { air: true }],
   berserker: ['berserker', 46], ogre: ['ogre', 56], reaper: ['reaper', 44], lich: ['lich', 58], demon: ['demon', 74],
 };
-export function applyEnemySprites() {
+const FALLBACK = { ...ENEMY_ART };                                // запасные рисованные враги (если лист не загрузился)
+const ENEMY_K = 1.22;                                              // враги крупнее: они хорошо видны на широкой дороге
+const RIM = { light: '#fff1cc', dark: '#0d0508', rl: 2.4, rd: 4.2, boost: 0.14 };    // яркая обводка с тёмной каймой и лёгкая подсветка: врага видно на любом фоне
+// Лист с обводкой: рисуем силуэт кольцом смещений (тёмная кайма, затем светлая), поверх — сам лист чуть светлее. Поля между кадрами (5+ px) обводка не пересекает.
+function outlineAtlas(im) {
+  const W = im.naturalWidth, H = im.naturalHeight, mkc = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
+  const sil = (col) => { const c = mkc(), g = c.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, W, H); return c; };
+  const out = mkc(), g = out.getContext('2d');
+  const ring = (c, r) => { for (const [rr, n] of [[r, 14], [r * 0.55, 8]]) for (let i = 0; i < n; i++) { const a = (i / n) * T2 + (rr === r ? 0 : 0.4); g.drawImage(c, Math.cos(a) * rr, Math.sin(a) * rr); } };
+  const dark = sil(RIM.dark); ring(dark, RIM.rd); dark.width = 0;
+  const light = sil(RIM.light); ring(light, RIM.rl); light.width = 0;
+  g.drawImage(im, 0, 0);
+  g.globalCompositeOperation = 'lighter'; g.globalAlpha = RIM.boost; g.drawImage(im, 0, 0);
+  return out;
+}
+const spriteTypes = (types) => Object.keys(SPRITE_ENEMIES).filter((id) => !types || types.includes(id));
+export const enemyFiles = (types) => [...new Set(spriteTypes(types).map((id) => SPRITE_ENEMIES[id][0]))];
+// Собрать спрайты врагов для перечисленных видов (листы уже загружены: sprites.loadEnemyImgs); без списка — для всех
+export function applyEnemySprites(types) {
   if (!SPR.ok) return false;
-  for (const [id, [file, h, extra]] of Object.entries(SPRITE_ENEMIES)) {
-    const m = SPR.enemies[file], im = img(`enemies/${file}.webp`); if (!m || !im) continue;
+  for (const id of spriteTypes(types)) {
+    const [file, h, extra] = SPRITE_ENEMIES[id];
+    if (ENEMY_ART[id] && ENEMY_ART[id].atlas) continue;                  // уже собран
+    const m = SPR.enemies[file], im = img(enemyFile(file)); if (!m || !im) continue;
     if (m.anims) {                                              // лист анимаций: ходьба в трёх направлениях, атака, смерть
-      const k = m.k * ((extra && extra.scale) || 1), size = Math.ceil(Math.max(m.cw, m.ch) * k) + 6, ay = size / 2 - (m.ch * k) / 2 + m.ay * k;
-      ENEMY_ART[id] = { size, ax: size / 2, ay, shadow: Math.max(9, m.cw * k * 0.3), raster: true, anims: m, atlas: im, k, air: !!m.air, lift: (m.lift || 0) * ((extra && extra.scale) || 1),
+      const sc = (extra && extra.scale) || 1, k = m.k * sc * ENEMY_K, size = Math.ceil(Math.max(m.cw, m.ch) * k) + 6, ay = size / 2 - (m.ch * k) / 2 + m.ay * k;
+      ENEMY_ART[id] = { size, ax: size / 2, ay, shadow: Math.max(9, m.cw * k * 0.3), raster: true, anims: m, atlas: im, atlasO: outlineAtlas(im), file, k, air: !!m.air, lift: (m.lift || 0) * sc * ENEMY_K,
         draw(g, ph) { const n = m.rows.walkR.n, i = Math.min(n - 1, Math.floor(ph * n)); drawCell(g, this, 'walkR', i); } };
       continue;
     }
     const w = h * m.w / m.h, size = Math.ceil(Math.max(w, h) + 10), pad = 4;
     ENEMY_ART[id] = {
-      size, ax: size / 2, ay: size - pad, shadow: Math.max(9, w * 0.3), raster: true, ...extra,
+      size, ax: size / 2, ay: size - pad, shadow: Math.max(9, w * 0.3), raster: true, ...extra, file, atlas: im,
       draw(g, ph) {
         const k = Math.min(m.n - 1, Math.floor(ph * m.n));
         g.imageSmoothingQuality = 'high';
@@ -407,8 +427,19 @@ export function applyEnemySprites() {
       },
     };
   }
-  for (const id of Object.keys(SPRITE_ENEMIES)) if (!ENEMY_ART[id]) ENEMY_ART[id] = ENEMY_ART.grunt;      // нет листа — рисуем запасного
+  for (const id of spriteTypes(types)) if (!ENEMY_ART[id]) ENEMY_ART[id] = FALLBACK.grunt;      // нет листа — рисуем запасного
   return true;
+}
+// Освободить листы и кэши видов, которых нет в списке: после боя, при смене уровня
+export function releaseEnemies(keep = []) {
+  for (const id of Object.keys(SPRITE_ENEMIES)) {
+    if (keep.includes(id)) continue;
+    const a = ENEMY_ART[id]; if (!a || !a.atlas) { if (!keep.includes(id)) delete ENEMY_ART[id]; continue; }
+    if (a.atlasO) a.atlasO.width = 0;
+    a.atlas = null; a.atlasO = null; if (a.file) dropImg(enemyFile(a.file));
+    delete ENEMY_ART[id];
+    dropCache((k) => k.includes(':' + id + ':'));
+  }
 }
 
 // кадр листа анимаций: anim = walkR | walkD | walkU | attack | death; кадр кладём на холст size×size так, чтобы точка опоры (ноги или центр) была в (ax, ay)
@@ -421,7 +452,7 @@ function drawCell(g, a, anim, i) {
 export function drawAnim(g, type, anim, i) {
   const a = ENEMY_ART[type], m = a.anims, r = m.rows[anim]; if (!r) return;
   const k = Math.min(r.n - 1, Math.max(0, i | 0)), w = m.cw * a.k, h = m.ch * a.k;
-  g.drawImage(a.atlas, k * m.cw, r.row * m.ch, m.cw, m.ch, -w / 2, a.size / 2 - h / 2 - a.ay, w, h);
+  g.drawImage(a.atlasO || a.atlas, k * m.cw, r.row * m.ch, m.cw, m.ch, -w / 2, a.size / 2 - h / 2 - a.ay, w, h);
 }
 export function animFrame(type, anim, i) {
   const a = ENEMY_ART[type]; if (!a.anims || !a.anims.rows[anim]) return null;

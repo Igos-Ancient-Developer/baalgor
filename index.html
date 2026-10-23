@@ -4,17 +4,40 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0b0609">
+<meta name="color-scheme" content="dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2715%27 fill=%27%23c8202e%27/%3E%3Ctext x=%2716%27 y=%2722%27 font-size=%2718%27 text-anchor=%27middle%27%3E%E2%98%A0%3C/text%3E%3C/svg%3E">
 <title>Baalgor</title>
 <meta property="og:title" content="Baalgor">
 <meta property="og:description" content="Мрачная tower defense: строй башни и отбивай нечисть">
 <meta property="og:image" content="cover.jpg">
 <meta name="twitter:card" content="summary_large_image">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Monomakh&family=Oswald:wght@500;700&display=swap&subset=cyrillic" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="preload" as="image" href="img/ui/logo_s.webp">
+<link rel="preload" as="font" type="font/woff2" href="fonts/oswald-cyrillic-3.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="fonts/monomakh-cyrillic-0.woff2" crossorigin>
+<style>
+/* Критический стиль: тёмный фон, логотип и полоса загрузки видны сразу, до загрузки основного css и скриптов (без белых прямоугольников) */
+html,body{margin:0;height:100%;background:#0b0609;overflow:hidden;color-scheme:dark}
+#app{position:fixed;inset:0;height:100dvh;background:radial-gradient(ellipse at 50% 0%,#2a1018 0%,#0b0609 60%)}
+.hidden{display:none!important}
+#loading{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 20%,#3a1420 0%,#120709 55%,#0b0609 100%)}
+#loading .logo-img{display:block;width:min(70vw,300px);height:auto;aspect-ratio:1;object-fit:contain;opacity:0;transition:opacity .25s}
+#loading .logo-img.ok{opacity:1}
+img:not([src]),img[src=""]{visibility:hidden}
+.loadbar{width:min(80%,300px);height:10px;margin-top:30px;border:2px solid #6e3a3a;border-radius:8px;background:#1a0a0e;overflow:hidden}
+.loadbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#8a1220,#ff4a5a)}
+@font-face{font-family:'Monomakh';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/monomakh-cyrillic-0.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Monomakh';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/monomakh-latin-ext-1.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Monomakh';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/monomakh-latin-2.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Oswald';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/oswald-cyrillic-3.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Oswald';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/oswald-latin-ext-4.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Oswald';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/oswald-latin-5.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Oswald';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/oswald-cyrillic-3.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Oswald';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/oswald-latin-ext-4.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Oswald';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/oswald-latin-5.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+</style>
+<script defer src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="css/style.css?v=20261023142219" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="css/style.css?v=20261023142219"></noscript>
 </head>
 <body>
 <div id="app">
@@ -23,7 +46,7 @@
   <!-- БОЙ -->
   <div id="game" class="hidden">
     <div id="hud">
-      <div class="chip" id="chip-lives"><img data-icon="heart"><b id="v-lives">20</b></div>
+      <div class="chip" id="chip-lives"><img data-icon="heart"><b id="v-lives">5</b></div>
       <div class="chip gold" id="chip-gold">
         <img data-icon="coin"><b id="v-gold">0</b><span id="v-inc">+5</span>
       </div>
@@ -57,9 +80,11 @@
     </div>
   </div>
 
+  <div id="busy" class="hidden"><i></i></div>
+
   <!-- ЗАГРУЗКА -->
   <div id="loading" class="screen">
-    <img class="logo-img" id="load-logo" alt="">
+    <img class="logo-img" id="load-logo" src="img/ui/logo_s.webp" alt="" onload="this.classList.add('ok')">
     <div class="loadbar"><i id="loadfill"></i></div>
   </div>
 
@@ -172,7 +197,6 @@
       <div id="end-rank" class="hidden"></div>
       <div id="end-ach"></div>
       <button class="btn big hidden" id="e-next">Дальше</button>
-      <button class="btn big hidden" id="e-endless">Бесконечный режим</button>
       <button class="btn" id="e-again">Ещё раз</button>
       <button class="btn" id="e-forge">Кузница</button>
       <button class="btn danger" id="e-menu">На карту</button>
@@ -180,6 +204,6 @@
   </div>
 
 </div>
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=20261023142219"></script>
 </body>
 </html>

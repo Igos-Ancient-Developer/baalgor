@@ -1,25 +1,25 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js';
-import * as A from './art.js';
-import { Sim } from './sim.js';
-import { Gore } from './gore.js';
-import { Renderer } from './render.js';
-import { GameUI } from './ui.js';
-import { Tutorial } from './tutorial.js';
-import { Sfx, attachSfx } from './audio.js';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js';
-import { ENEMY_ART, FRAMES, enemyFrame, gibSprite, gibKinds, applyEnemySprites } from './enemies.js';
-import { loadSprites } from './sprites.js';
-import { bakeMap } from './env.js';
-import { levelSpec, MENU_SPEC } from './music.js';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js';
-import { renderForge, renderAchs } from './screens.js';
-import { renderShop } from './shop.js';
-import { Wallet } from './wallet.js';
-import { initLang, pickLang } from './i18n.js';
-import { Menus, RUN, clock } from './menus.js';
-import { Net } from './net.js';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js';
+import * as D from './data.js?v=20261023142219';
+import * as A from './art.js?v=20261023142219';
+import { Sim } from './sim.js?v=20261023142219';
+import { Gore } from './gore.js?v=20261023142219';
+import { Renderer } from './render.js?v=20261023142219';
+import { GameUI } from './ui.js?v=20261023142219';
+import { Tutorial } from './tutorial.js?v=20261023142219';
+import { Sfx, attachSfx } from './audio.js?v=20261023142219';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023142219';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023142219';
+import { loadSprites, loadEnemyImgs } from './sprites.js?v=20261023142219';
+import { mapBG, releaseBG } from './env.js?v=20261023142219';
+import { levelSpec, MENU_SPEC } from './music.js?v=20261023142219';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023142219';
+import { renderForge, renderAchs } from './screens.js?v=20261023142219';
+import { renderShop } from './shop.js?v=20261023142219';
+import { Wallet } from './wallet.js?v=20261023142219';
+import { initLang, pickLang } from './i18n.js?v=20261023142219';
+import { Menus, RUN, clock } from './menus.js?v=20261023142219';
+import { Net } from './net.js?v=20261023142219';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023142219';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -42,28 +42,18 @@ let running = false, paused = false, held = false, acc = 0, ending = null, last 
 
 // ───────── загрузка ─────────
 async function boot() {
+  const sheet = document.querySelector('link[href^="css/style.css"]');            // основной css подгружается без блокировки показа; перед построением экранов ждём его
+  if (sheet && sheet.media !== 'all') await new Promise((r) => { sheet.addEventListener('load', r, { once: true }); setTimeout(r, 4000); });
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
-  $('#load-logo').src = new URL('../img/ui/logo.webp', import.meta.url).href;
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023142219').then((m) => m.enemyDemo(ctrl));
   save = await TG.load(); ctrl.save = save;
-  if (save.set && save.set.perf !== 1) { save.set.perf = 1; save.set.gore = Math.min(save.set.gore ?? 1, 1); }      // однократно: умеренная кровь по умолчанию (легче для телефона)
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
   A.setScale(Renderer.pickScale(window.innerWidth, Math.max(300, window.innerHeight - 56), dpr));
-  await loadSprites((f) => { $('#loadfill').style.width = Math.round(f * 40) + '%'; });
-  applyEnemySprites();
+  await loadSprites((f) => { $('#loadfill').style.width = Math.round(f * 100) + '%'; });
   menus = new Menus(ctrl); ctrl.menus = menus;
-  const tasks = [];
-  for (const t of D.TOWER_ORDER) for (const [lv, br] of [[1, null], [2, null], [3, null], [4, 'A'], [5, 'A'], [4, 'B'], [5, 'B']]) tasks.push(() => { A.towerBody(t, lv, br); A.towerHead(t, lv, br); });
-  for (const t of D.ECON_ORDER) for (let lv = 1; lv <= 5; lv++) tasks.push(() => A.econBody(t, lv));
-  for (const t of Object.keys(ENEMY_ART)) { tasks.push(() => { for (let i = 0; i < (ENEMY_ART[t].anims ? 1 : FRAMES); i++) enemyFrame(t, i); }); tasks.push(() => { for (const k of new Set(gibKinds(t))) for (let v = 0; v < 3; v++) gibSprite(t, k, v); }); }
-  for (const m of [D.MAPS[D.MAPS.length - 1], ...D.MAPS.slice(0, 2)]) tasks.push(() => bakeMap(m));
-  for (let i = 0; i < tasks.length; i++) {
-    tasks[i]();
-    if (i % 4 === 0) { $('#loadfill').style.width = Math.round(40 + (i / tasks.length) * 60) + '%'; await new Promise((r) => setTimeout(r, 0)); }
-  }
   $('#loadfill').style.width = '100%';
   setupGameUi(); setupInput(); setupOverlays(); setupNav();
   Wallet.init(save, () => { persist(); }); Wallet.sync().then(() => { if (!$('#title').classList.contains('hidden')) menus.buildTitle(); });
@@ -71,11 +61,34 @@ async function boot() {
   last = performance.now(); requestAnimationFrame(frame);
 }
 
+// ───────── ресурсы уровня ─────────
+// Листы врагов, фон карты и спрайты зданий готовим под уровень заранее (пока игрок выбирает сложность и здания) и освобождаем, когда уровень закрыт:
+// в памяти только то, что нужно сейчас.
+let warmId = null, warmP = null;
+function ensureLevel(L) {
+  if (warmId === L.id && warmP) return warmP;
+  warmId = L.id;
+  const types = D.levelTypes(L);
+  warmP = (async () => {
+    await loadEnemyImgs(enemyFiles(types));
+    applyEnemySprites(types); releaseEnemies(types);
+    mapBG(L);
+  })().catch((e) => { console.error(e); });
+  return warmP;
+}
+function releaseLevel() {
+  warmId = null; warmP = null;
+  if (renderer) renderer.release();
+  if (gore) { gore.dispose(); gore = null; ctrl.gore = null; }
+  releaseBG(); releaseEnemies([]); sim = null; ctrl.sim = null;
+}
+function busy(on) { $('#busy').classList.toggle('hidden', !on); }
+
 // ───────── навигация ─────────
 const SCREENS = ['#title', '#world', '#game'], OVERLAYS = ['#shop', '#settings', '#diffsheet', '#rankedsheet', '#board', '#forge', '#achs', '#loadout', '#pausemenu', '#endmenu'];
 function hideAll() { for (const id of [...SCREENS, ...OVERLAYS]) hide(id); }
-function goTitle() { hideAll(); stopPlay(); menus.buildTitle(); show('#title'); sfx.startMusic(MENU_SPEC); updateBack(); }
-function goWorld(focus) { hideAll(); stopPlay(); menus.buildWorld(focus); show('#world'); sfx.startMusic(MENU_SPEC); updateBack(); }
+function goTitle() { hideAll(); stopPlay(); releaseLevel(); menus.buildTitle(); show('#title'); sfx.startMusic(MENU_SPEC); updateBack(); }
+function goWorld(focus) { hideAll(); stopPlay(); releaseLevel(); menus.buildWorld(focus); show('#world'); sfx.startMusic(MENU_SPEC); updateBack(); }
 function stopPlay() { running = false; paused = false; held = false; run = null; ctrl.run = null; document.body.classList.remove('ranked'); TG.closingConfirm(false); if (tutorial) tutorial.detach(); if (ui) ui.closeUpgrade(true); tally++; }
 function top() { for (const id of ['#shop', '#settings', '#board', '#forge', '#achs', '#loadout', '#rankedsheet', '#diffsheet']) if (!$(id).classList.contains('hidden')) return id; return null; }
 function back() {
@@ -89,7 +102,7 @@ function back() {
   if (running && !paused) setPause(true);
 }
 // кнопка «Назад» Telegram нужна везде, кроме главного меню (поверх него открываются Кузница, Награды и т.д., поэтому смотрим на открытые окна, а не на видимость заставки)
-function updateBack() { const home = !top() && $('#world').classList.contains('hidden') && !running; TG.backButton(home ? null : back); }
+function updateBack() { const home = !top() && $('#world').classList.contains('hidden') && !running; TG.backButton(home ? null : back); document.body.classList.toggle('menuopen', !home); }
 function setupNav() {
   let ubT = 0; new MutationObserver((recs) => { if (ubT || !recs.some((r) => r.target.classList && r.target.classList.contains('screen'))) return; ubT = setTimeout(() => { ubT = 0; updateBack(); }, 0); }).observe($('#app'), { subtree: true, attributes: true, attributeFilter: ['class'] });      // любое окно открылось или закрылось
   for (const [id, fn] of [['#st-back', back], ['#rk-back', back], ['#world-back', back], ['#ds-back', back], ['#bd-back', back], ['#forge-back', back], ['#achs-back', back], ['#lo-back', back], ['#shop-back', back]]) $(id).onclick = fn;
@@ -104,23 +117,22 @@ function setupNav() {
   $('#b-board').onclick = () => { sfx.unlock(); sfx.play('click'); menus.openBoard({ global: true }); updateBack(); };
   $('#b-settings').onclick = () => { sfx.unlock(); sfx.play('click'); menus.openSettings(); updateBack(); };
   $('#b-gems').onclick = () => { sfx.unlock(); sfx.play('select'); ctrl.openShop(); };
-  ctrl.applySettings = applySettings; ctrl.persist = persist; ctrl.resetProgress = resetProgress;
+  ctrl.applySettings = applySettings; ctrl.persist = persist;
   window.addEventListener('resize', () => { if (!$('#world').classList.contains('hidden')) menus.fitWorld(); });
   ctrl.openShop = () => { sfx.unlock(); sfx.play('click'); const draw = () => { persist(); renderShop(save, ctrl, draw); menus.buildTitle(); }; draw(); show('#shop'); updateBack(); Wallet.sync().then((w) => { if (w && !$('#shop').classList.contains('hidden')) renderShop(save, ctrl, draw); }); };
   ctrl.openForge = () => { sfx.unlock(); sfx.play('click'); const draw = () => renderForge(save, sfx, () => { persist(); draw(); menus.buildTitle(); if (!$('#world').classList.contains('hidden')) menus.buildWorld(); }, ctrl.openShop); ctrl.forgeDraw = draw; draw(); show('#forge'); updateBack(); };
   ctrl.openAchs = () => { sfx.unlock(); sfx.play('click'); renderAchs(save); show('#achs'); updateBack(); };
   ctrl.toggleSnd = () => { sfx.unlock(); sfx.setSfx(!sfx.sfxOn); save.sfx = sfx.sfxOn; persist(); sfx.play('click'); };
   ctrl.toggleMus = () => { sfx.unlock(); sfx.setMusic(!sfx.musOn); save.mus = sfx.musOn; persist(); };
-  ctrl.startLevel = (id, d) => prepareLevel(id, d); ctrl.startRun = startRunFlow;
+  ctrl.startLevel = (id, d) => prepareLevel(id, d); ctrl.startRun = startRunFlow; ctrl.ensureTypes = async (types) => { const all = [...new Set([...types, ...types.map((t) => D.ENEMIES[t] && D.ENEMIES[t].split).filter(Boolean)])]; await loadEnemyImgs(enemyFiles(all)); applyEnemySprites(all); }; ctrl.warm = (id) => { const L = D.MAPS.find((l) => l.id === id); if (L) ensureLevel(L); };
   ctrl.note = (text) => { const n = $('#note'); n.textContent = text; n.classList.add('show'); clearTimeout(ctrl._nt); ctrl._nt = setTimeout(() => n.classList.remove('show'), 2200); };
 }
 function persist() { TG.save(save); }
 function applySettings() {
   const st = save.set = { ...defaultSettings(), ...(save.set || {}) };
-  sfx.setVolumes(st.sfxVol, st.musVol); TG.hapticOn = st.haptic; TG.allowConfirm = st.confirm;
-  if (gore) gore.level = st.gore; if (renderer) renderer.floaters = st.dmg;
+  sfx.setVolumes(st.sfxVol, st.musVol); TG.allowConfirm = st.confirm;
+  if (gore) gore.level = 1; if (renderer) renderer.floaters = st.dmg;
 }
-function resetProgress() { save = defaultSave(); ctrl.save = save; TG.save(save); setTimeout(() => location.reload(), 150); }
 
 function setupOverlays() {
   $('#p-resume').onclick = () => setPause(false);
@@ -134,7 +146,6 @@ function setupOverlays() {
     if (run) { run.i++; openLoadoutFor(run.levels[run.i], RUN.diff); return; }
     const n = nextAfter(save, D.MAPS[levelIdx].id); goWorld(n ? n.id : D.MAPS[levelIdx].id);
   };
-  $('#e-endless').onclick = () => { hide('#endmenu'); sim.endless = true; sim.state = 'play'; sim.nextWaveT = 8; ending = null; sfx.play('horn'); };
   $('#end-verdict').onclick = () => { tally++; };       // касание пропускает анимацию подсчёта
 }
 function setPause(p) {
@@ -152,6 +163,15 @@ function recordRun(won) {
   persist();
 }
 const submitRun = (won) => Net.submit({ level: RUN.level, diff: RUN.diff, score: run.score, wave: run.waves, kills: run.kills, won, duration: run.time, lv: run.i + 1, loadout: (run.loadout || []).join(',') }).then((r) => { if (r && r.gems_drop) { Wallet.sync(); setTimeout(() => { sfx.play('win'); ctrl.note(`Награда забега: +${r.gems_drop} ${r.gems_drop === 1 ? 'кристалл' : 'кристалла'}`); }, 900); } return r; });
+// Игрок закрыл приложение посреди рубежа: лучшее, чего он достиг, всё равно уходит в таблицу (запрос с keepalive переживает закрытие страницы)
+function flushRun() {
+  if (!run || !running || run.done || !sim || sim.state !== 'play') return;
+  const wv = run.waves + sim.wave, score = run.score + sim.score, time = run.time + sim.time; if (wv < 1) return;
+  const sig = `${run.i}:${Math.round(score)}:${wv}`; if (run.sent === sig) return; run.sent = sig;
+  const r = save.rank ||= { lv: 0, score: 0, time: 0, fast: 0 }, cand = { lv: run.i + 1, score: Math.round(score), time: Math.round(time) };
+  if (betterRun(cand, r)) { r.lv = cand.lv; r.score = cand.score; r.time = cand.time; r.loadout = (run.loadout || []).join(','); persist(); }
+  Net.submit({ level: RUN.level, diff: RUN.diff, score, wave: wv, kills: run.kills + sim.stats.kills, won: false, duration: time, lv: run.i + 1, loadout: (run.loadout || []).join(',') }, { keepalive: true });
+}
 function abandonRun() {
   if (!run.done && sim && sim.state === 'play') { run.score += sim.score; run.time += sim.time; run.kills += sim.stats.kills; run.waves += sim.wave; run.done = true; recordRun(false); submitRun(false); }
   goTitle();
@@ -170,7 +190,7 @@ function setupGameUi() {
 }
 // Подготовка к уровню: окно выбора зданий по слотам (обучение и повтор уровня идут без него)
 function prepareLevel(levelId, diffIdx, again = false) {
-  const L = D.MAPS.find((l) => l.id === levelId);
+  const L = D.MAPS.find((l) => l.id === levelId); ensureLevel(L);
   if (L.tutorial) { startLevel(levelId, diffIdx, false, ['bolt', 'mine']); return; }
   if (again && save.loadout) { startLevel(levelId, diffIdx, false, getLoadout(save)); return; }
   menus.openLoadout({ title: L.name, slots: slotsOf(save), all: false, initial: getLoadout(save), boosts: true, lvl: L.lvl, diff: diffIdx,
@@ -182,12 +202,16 @@ function prepareLevel(levelId, diffIdx, again = false) {
   updateBack();
 }
 function openLoadoutFor(levelId, diffIdx) {                 // перед каждым уровнем забега: слоты и открытые здания игрока, как в обычной игре
-  const lv = D.MAPS.find((l) => l.id === levelId);
+  const lv = D.MAPS.find((l) => l.id === levelId); ensureLevel(lv);
   menus.openLoadout({ title: `${run.i + 1}/${run.levels.length} · ${lv.name}`, slots: slotsOf(save), all: false, initial: run.loadout || getLoadout(save), nobackBtn: run.i > 0,
     onGo: (list) => { run.loadout = list.slice(); startLevel(levelId, diffIdx, true, list); } });
   updateBack();
 }
-function startLevel(levelId, diffIdx, ranked, loadout, boosts = []) {
+let starting = false;
+async function startLevel(levelId, diffIdx, ranked, loadout, boosts = []) {
+  if (starting) return; starting = true;
+  const tm = setTimeout(() => busy(true), 160);
+  try { await ensureLevel(D.MAPS.find((l) => l.id === levelId)); } finally { clearTimeout(tm); busy(false); starting = false; }
   levelIdx = D.MAPS.findIndex((l) => l.id === levelId); diffI = diffIdx;
   const L = D.MAPS[levelIdx], tut = !!L.tutorial;
   hideAll(); show('#game'); tally++;
@@ -196,8 +220,13 @@ function startLevel(levelId, diffIdx, ranked, loadout, boosts = []) {
   sim = new Sim({ mapId: levelIdx, diffIdx, seed: (Math.random() * 1e9) | 0, perks: boostMods(perkMods(std ? save.perks : {}), boosts, diffIdx), locked: std ? lockedItems(save) : [],
     allowed: loadout, limits: tut ? { bolt: 1, mine: 1 } : null, gold: tut ? 110 : null, hold: tut });
   ctrl.sim = sim; if (location.search.includes('debug')) window.__bk = ctrl;
-  gore = new Gore(); ctrl.gore = gore; gore.level = (save.set || {}).gore ?? 2; gore.attach(sim); gore.onSound = (n, v) => sfx.play(n, v);
+  if (gore) gore.dispose();
+  gore = new Gore(); ctrl.gore = gore; gore.level = 1; gore.attach(sim); gore.onSound = (n, v) => sfx.play(n, v);
   attachSfx(sim, sfx);
+  for (const t of loadout || []) {                          // спрайты взятых зданий готовим заранее, чтобы в бою не было задержек
+    const lvs = [[1, null], [2, null], [3, null], [4, 'A'], [5, 'A'], [4, 'B'], [5, 'B']];
+    if (D.ECON[t]) for (let lv = 1; lv <= 5; lv++) A.econBody(t, lv); else for (const [lv, br] of lvs) { const at = A.artType(t); A.towerBody(at, lv, br); A.towerHead(at, lv, br); }
+  }
   renderer.setGame(sim, gore); ctrl.fit();
   view.selected = null; view.armed = null; view.hover = null; view.spell = null; view.hint = null;
   document.body.classList.toggle('ranked', ranked); $('#chip-time').classList.toggle('hidden', !ranked);
@@ -221,17 +250,17 @@ function startRunFlow() {
 function showAchToast(a) {
   const t = $('#achtoast'); t.innerHTML = `<img src="${iconUrl(glyphIcon('trophy', { size: 64, bg: PALETTE.ach }))}" alt=""><div>${a.name}<small>+${a.reward}</small></div>`;
   t.classList.add('show'); clearTimeout(showAchToast._t); showAchToast._t = setTimeout(() => t.classList.remove('show'), 3200);
-  sfx.play('upgrade'); TG.haptic.notify('success');
+  sfx.play('upgrade');
 }
 function onOver({ won }) {
   save.kills += sim.stats.kills; persist();
-  TG.haptic.notify(won ? 'success' : 'error');
   ending = { t: won ? 2.2 : 1.8, won, shown: false };
   if (D.MAPS[levelIdx].tutorial) return;                  // обучение в таблицу не уходит
   if (run) {                                              // копим результат забега; в таблицу уходит один итог
     run.score += sim.score; run.time += sim.time; run.kills += sim.stats.kills; run.waves += sim.wave;
     run.done = !won || run.i >= run.levels.length - 1;
     if (run.done) { recordRun(won); ending.submit = submitRun(won && run.i >= run.levels.length - 1); }
+    else { recordRun(false); submitRun(false); }              // прогресс забега сохраняется после каждого рубежа: даже если выйти, результат уже учтён
     return;
   }
   ending.submit = Net.submit({ level: sim.map.id, diff: diffI, score: sim.score, wave: sim.wave, kills: sim.stats.kills, won, duration: sim.time });
@@ -259,7 +288,7 @@ async function playVerdict(v, token) {
   }
   const sub = L('sub'); sub.classList.add('in'); await count(sub.querySelector('b'), 0, v.sub, 320);
   if (!cancelled()) await sleep(260);
-  const mul = L('mul'); mul.classList.add('in'); if (!cancelled()) { sfx.play('upgrade'); TG.haptic.impact('medium'); }
+  const mul = L('mul'); mul.classList.add('in'); if (!cancelled()) { sfx.play('upgrade'); }
   if (!cancelled()) await sleep(520);
   const tot = L('tot'); tot.classList.add('in');
   if (!cancelled()) sfx.play('horn');
@@ -291,7 +320,6 @@ function showEnd(won) {
   $('#end-rank').classList.add('hidden');
   const nxt = !run && won ? nextAfter(save, sim.map.id) : null;
   $('#e-next').classList.toggle('hidden', run ? !more : !nxt); $('#e-next').textContent = run ? 'Следующий рубеж' : 'Дальше';
-  $('#e-endless').classList.toggle('hidden', !!run || !won || tut);
   $('#e-again').textContent = run ? 'Новый забег' : 'Ещё раз'; $('#e-again').classList.toggle('hidden', more || (tut && won));
   $('#e-menu').textContent = run ? 'В меню' : tut ? 'В меню' : 'На карту';
   if (tut && won) { $('#e-next').classList.remove('hidden'); $('#e-next').textContent = 'К карте'; }
@@ -327,25 +355,41 @@ function frame(now) {
 function setupInput() {
   const cv = $('#cv'); let down = null;
   const cellOf = (p) => ({ c: Math.floor(p.x / D.CELL), r: Math.floor(p.y / D.CELL) });
+  const DRAG = 7;                                              // сдвиг пальца (px), после которого касание считается прокруткой карты
   cv.addEventListener('pointerdown', (e) => {
-    if (!running || paused || held) return; sfx.unlock(); e.preventDefault();
-    const p = renderer.toWorld(e.clientX, e.clientY); view.hoverPx = p; down = { id: e.pointerId, p, type: e.pointerType };
-    if (view.spell) return;
-    handleTap(p, e.pointerType);
+    if (!running || paused || held || down) return; sfx.unlock(); e.preventDefault();
+    try { cv.setPointerCapture(e.pointerId); } catch (err) { /* */ }
+    const p = renderer.toWorld(e.clientX, e.clientY); view.hoverPx = p; renderer.vx = renderer.vy = 0;
+    down = { id: e.pointerId, p, type: e.pointerType, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, t: performance.now(), lt: performance.now(), pan: false, vx: 0, vy: 0 };
   });
   cv.addEventListener('pointermove', (e) => {
     if (!running || paused || held) return;
+    if (down && down.id === e.pointerId && !view.spell) {                       // тянем карту
+      if (!down.pan && Math.hypot(e.clientX - down.x, e.clientY - down.y) > DRAG) down.pan = true;
+      if (down.pan) {
+        const now = performance.now(), dt = Math.max(1, now - down.lt) / 1000;
+        const dx = e.clientX - down.lx, dy = e.clientY - down.ly; down.lx = e.clientX; down.ly = e.clientY; down.lt = now;
+        renderer.panBy(-dx, -dy); needDraw = true;
+        down.vx = down.vx * 0.6 + (-dx / renderer.zoom / dt) * 0.4; down.vy = down.vy * 0.6 + (-dy / renderer.zoom / dt) * 0.4;
+        return;
+      }
+    }
     const p = renderer.toWorld(e.clientX, e.clientY);
     if (e.pointerType === 'mouse' || view.spell) view.hoverPx = p;
     if (e.pointerType === 'mouse' && view.armed) view.hover = cellOf(p);
   });
   cv.addEventListener('pointerup', (e) => {
-    if (down && view.spell && down.id === e.pointerId) {
-      const p = renderer.toWorld(e.clientX, e.clientY);
+    if (!down || down.id !== e.pointerId) return;
+    const d = down; down = null;
+    if (d.pan) { if (performance.now() - d.lt < 90) { renderer.vx = Math.max(-900, Math.min(900, d.vx)); renderer.vy = Math.max(-900, Math.min(900, d.vy)); } needDraw = true; return; }      // бросок: карта докатывается по инерции
+    if (!running || paused || held) return;
+    const p = renderer.toWorld(e.clientX, e.clientY);
+    if (view.spell) {
       const r = sim.castSpell(view.spell, Math.min(D.WORLD_W, Math.max(0, p.x)), Math.min(D.WORLD_H, Math.max(0, p.y)));
       if (r === true) { view.spell = null; ui.refreshCards(); } else ui.fail(r);
+      return;
     }
-    down = null;
+    handleTap(p, e.pointerType);
   });
   cv.addEventListener('pointercancel', () => { down = null; });
   cv.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') view.hover = null; });
@@ -357,13 +401,14 @@ function setupInput() {
     else if (/^[1-9]$/.test(e.key) && !held) { if (ui.cards[+e.key - 1]) ui.onCard(ui.cards[+e.key - 1]); }
     else if (e.key === 'n' || e.key === 'N') { const w = document.querySelector('.wcall:not(.hidden)'); if (w) w.click(); }
   });
-  TG.onVisibility((hidden) => { if (hidden && running && !paused && !held && ending === null && !location.search.includes('debug')) setPause(true); if (sfx.ctx) { if (hidden) sfx.ctx.suspend && sfx.ctx.suspend(); else sfx.ctx.resume && sfx.ctx.resume(); } });
+  window.addEventListener('pagehide', flushRun);
+  TG.onVisibility((hidden) => { if (hidden) flushRun(); if (hidden && running && !paused && !held && ending === null && !location.search.includes('debug')) setPause(true); if (sfx.ctx) { if (hidden) sfx.ctx.suspend && sfx.ctx.suspend(); else sfx.ctx.resume && sfx.ctx.resume(); } });
 }
 function handleTap(p, ptype) {
   if (ui.open) ui.setOpen(false);
   const bag = sim.bagAt(p.x, p.y);
-  if (bag) { sim.collectBag(bag, true); TG.haptic.impact('light'); return; }
-  if (sim.chestAt(p.x, p.y)) { sim.hitChest(); TG.haptic.impact('medium'); return; }
+  if (bag) { sim.collectBag(bag, true); return; }
+  if (sim.chestAt(p.x, p.y)) { sim.hitChest(); return; }
   const c = Math.floor(p.x / D.CELL), r = Math.floor(p.y / D.CELL);
   if (!sim.inBounds(c, r)) { ui.deselect(); if (ptype !== 'mouse') view.hover = null; return; }
   const b = sim.grid[r][c];

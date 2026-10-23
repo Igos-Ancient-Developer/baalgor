@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js';
+import * as D from './data.js?v=20261023142219';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -76,6 +76,7 @@ export class Sim {
     }
     this.decorCell = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
     for (const [c, r] of this.map.decor) this.decorCell[r][c] = true;
+    for (const [c, r] of this.map.block || []) this.decorCell[r][c] = true;      // у портала и ворот строить нельзя
     this.grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
     this.chest = null; this.placeChest();
 
@@ -85,7 +86,6 @@ export class Sim {
     this.wave = 0;
     this.nextWaveT = D.FIRST_WAVE_DELAY;
     this.tickT = 0;
-    this.endless = false;
     this.state = 'play';          // play | won | lost
     this.enemies = []; this.buildings = []; this.guards = [];
     this.projs = []; this.zones = []; this.bags = []; this.fx = [];
@@ -263,12 +263,7 @@ export class Sim {
   buildIdxMap() {
     if (this.map.waveList) { this.idxMap = Array.from({ length: this.total + 1 }, (_, n) => n); this.maxIdx = this.total; return; }
     if (this.map.lvl) { const m = [0]; for (let n = 1; n <= this.total; n++) m[n] = D.eqWave(this.map.lvl, n, this.total); this.idxMap = m; this.maxIdx = m[this.total]; return; }
-    const T = this.total, f = Math.pow(D.MAX_WAVE / T, 0.6), m = [0];
-    for (let n = 1; n <= T; n++) m[n] = Math.max(1, Math.round(n * f));
-    const maxI = m[T];
-    for (const b of [10, 20, 30]) if (maxI >= b) { const n = Math.min(T, Math.max(1, Math.round(b / f))); m[n] = b; if (n > 1 && m[n - 1] >= b) m[n - 1] = b - 1; }
-    for (let n = 2; n <= T; n++) if (m[n] < m[n - 1]) m[n] = m[n - 1];
-    this.idxMap = m; this.maxIdx = m[T];
+    this.idxMap = Array.from({ length: this.total + 1 }, (_, n) => n); this.maxIdx = this.total;
   }
   idx(n) { return n <= this.total ? this.idxMap[Math.max(1, n)] : this.maxIdx + (n - this.total); }
   // меньше монстров на экране ради плавности: крупные группы сокращаются, а каждый монстр крепче (hpm) и чуть быстрее — общая сила волны почти та же
@@ -283,14 +278,7 @@ export class Sim {
   waveDefRaw(n) {
     if (this.map.waveList) return this.map.waveList[Math.min(n, this.total) - 1];
     if (this.map.lvl && n <= this.total) return D.genWave(this.map.lvl, n, this.total);
-    const i = this.idx(n);
-    if (i <= D.MAX_WAVE) return D.WAVES[i - 1];
-    // бесконечный режим: циклим волны 11–29 с ростом, каждые 10 — босс
-    const k = i - D.MAX_WAVE; n = i;
-    const base = D.WAVES[10 + ((k - 1) % 19)];
-    const m = 1 + 0.06 * k;
-    const out = base.map(([t, c, i]) => [t, Math.round(c * m), Math.max(0.35, i * 0.95)]);
-    return out;
+    return D.genWave(this.map.lvl || 1, n, this.total);
   }
   // Вызов следующей волны раньше срока. Волны выстраиваются в очередь и идут друг за другом (не одновременно);
   // бонус золота — только за реально сэкономленное время, т.е. если предыдущая волна уже выпущена целиком.
@@ -304,9 +292,9 @@ export class Sim {
     this.emit('callwave', { bonus });
     return bonus || 1;
   }
-  callAllWaves() { let n = 0; while (this.canCallWave() && !this.endless) { this.callWave(true); n++; } return n; }
+  callAllWaves() { let n = 0; while (this.canCallWave()) { this.callWave(true); n++; } return n; }
   waveBonus() { return this.qi < this.queue.length ? 0 : Math.round(this.nextWaveT * (0.8 + 0.03 * this.idx(this.wave)) * (1 + this.D.gold)); }
-  canCallWave() { return this.state === 'play' && (this.endless || this.wave < this.total) && this.nextWaveT > 2; }
+  canCallWave() { return this.state === 'play' && this.wave < this.total && this.nextWaveT > 2; }
   startWave() {
     const n = ++this.wave;
     const def = this.waveDef(n);
@@ -554,7 +542,7 @@ export class Sim {
     this.updateCoins(dt);
     if (this.chest) { this.chest.born += dt; if (this.chest.shake > 0) this.chest.shake = Math.max(0, this.chest.shake - dt); }
     // волны
-    if ((this.endless || this.wave < this.total) && this.state === 'play') {
+    if (this.wave < this.total && this.state === 'play') {
       if (!this.hold && this.qi >= this.queue.length) this.nextWaveT -= dt;      // пауза идёт после выхода последнего врага волны (как в Kingdom Rush)
       if (this.nextWaveT <= 0) { this.startWave(); this.nextWaveT = D.waveGap(this.idx(this.wave)); }
     }
@@ -580,7 +568,7 @@ export class Sim {
     // чистка
     if (this.enemies.some((e) => e.dead)) this.enemies = this.enemies.filter((e) => !e.dead);
     // победа
-    if (this.state === 'play' && !this.endless && this.wave >= this.total && this.qi >= this.queue.length && this.enemies.length === 0) {
+    if (this.state === 'play' && this.wave >= this.total && this.qi >= this.queue.length && this.enemies.length === 0) {
       this.state = 'won'; this.finish(true); this.emit('over', { won: true });
     }
   }

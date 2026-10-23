@@ -1,6 +1,6 @@
 // Обучающий уровень: ведёт игрока по шагам сообщениями и подсветкой. Состояние берётся из симуляции и интерфейса,
 // поэтому порядок «сначала башня, потом рудник» или наоборот не важен, а лишние действия не ломают ход обучения.
-import * as D from './data.js';
+import * as D from './data.js?v=20261023142219';
 
 const $ = (s) => document.querySelector(s);
 
@@ -52,7 +52,11 @@ export class Tutorial {
   armedHint() {
     const v = this.c.view, a = v.armed;
     const key = a ? a.type + ':' + this.sim.buildings.length : '';
-    if (this._hk !== key) { this._hk = key; v.hint = a ? { cells: this.cells(a.kind === 'tower' ? 'tower' : 'mine') } : null; }      // клетки считаем один раз, а не каждый кадр
+    if (this._hk !== key) {
+      this._hk = key; v.hint = a ? { cells: this.cells(a.kind === 'tower' ? 'tower' : 'mine') } : null;      // клетки считаем один раз, а не каждый кадр
+      const R = this.c.renderer, h = v.hint && v.hint.cells[0];
+      if (R && h && !R.inView((h[0] + 0.5) * D.CELL, (h[1] + 0.5) * D.CELL, -40)) R.focus((h[0] + 0.5) * D.CELL, (h[1] + 0.5) * D.CELL);      // подсвеченная клетка вне экрана — показываем её
+    }
     const t = $('#tut .ttext'); const want = a ? 'Коснись подсвеченной клетки. На телефоне коснись дважды в одну и ту же клетку.' : null;
     if (want && t.textContent !== want) { this.armedText = true; t.textContent = want; }
     else if (!want && this.armedText) { this.armedText = false; this.show(this.steps[this.i]); }
