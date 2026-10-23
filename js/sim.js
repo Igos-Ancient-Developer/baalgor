@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261023142219';
+import * as D from './data.js?v=20261023150737';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -54,7 +54,7 @@ export class Sim {
     this.mapId = mapId;
     this.diffIdx = diffIdx; this.D = D.DIFFS[diffIdx]; this.total = this.map.waves; this.score = 0; this.buildIdxMap();
     this.lf = D.levelMult(this.map.lvl);                   // множитель глубины уровня
-    this.parts = { waves: 0, kills: 0, time: 0 }; this.verdict = null;
+    this.parts = { waves: 0, kills: 0, time: 0, leaks: 0 }; this.verdict = null;
     this.rng = mulberry32(seed);
     this.handlers = {};
     this.paths = this.map.paths.map((p) => new Path(p));
@@ -416,9 +416,15 @@ export class Sim {
     this.parts.waves += D.WAVE_PTS(this.idx(e.w)); this.rescore();
   }
   // очки: три части (волны, сильные враги, время) считаются с множителем глубины уровня и округляются до целых; сумма умножается на множитель сложности
-  partsNow() { const p = this.parts, lf = this.lf, w = Math.round(p.waves * lf), k = Math.round(p.kills * lf), t = Math.round(p.time * lf), sub = w + k + t; return { waves: w, kills: k, time: t, sub, total: Math.round(sub * this.D.score) }; }
+  // штраф за пропущенных: доля от того, что уровень мог дать за волны и время; хоть один пропуск — минус очко (в рейтинговом забеге одна жизнь, штрафа нет)
+  partsNow() {
+    const p = this.parts, lf = this.lf, w = Math.round(p.waves * lf), k = Math.round(p.kills * lf), t = Math.round(p.time * lf);
+    const l = p.leaks ? -Math.max(1, Math.round(p.leaks * lf)) : 0, sub = Math.max(0, w + k + t + l);
+    return { waves: w, kills: k, time: t, leaks: l, sub, total: Math.round(sub * this.D.score) };
+  }
   rescore() { this.score = this.partsNow().total; }
   // «обычное» время прохождения без досрочных вызовов волн; бонус за время растёт, чем быстрее игрок его побил
+  potential() { if (this._pot == null) { let w = D.TIME_PTS * this.total; for (let n = 1; n <= this.total; n++) w += D.WAVE_PTS(this.idx(n)); this._pot = w; } return this._pot; }
   parTime() { let t = D.FIRST_WAVE_DELAY + 40; for (let n = 1; n < this.total; n++) t += D.waveGap(this.idx(n)); return t; }
   timePts() { const r = this.time / this.parTime(); return D.TIME_PTS * this.total * Math.max(0, Math.min(1, (1.15 - r) / 0.7)); }
   finish(won) {
@@ -475,6 +481,7 @@ export class Sim {
   leak(e) {
     e.dead = true; this.waveDone(e);
     this.stats.leaks++;
+    if (this.D.lives !== 1) { this.parts.leaks += D.LEAK_FRAC * this.potential() * Math.min(this.lives, e.def.lives); this.rescore(); }
     this.lives = Math.max(0, this.lives - e.def.lives);
     if (e.engaged) { const h = e.engaged.holds; const i = h.indexOf(e); if (i >= 0) h.splice(i, 1); }
     this.emit('leak', { e, x: e.x, y: e.y });

@@ -1,5 +1,5 @@
 // Уровни кампании: секторы, раскладки, связи (after = открывается после прохождения ЛЮБОГО из перечисленных).
-import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261023142219';
+import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261023150737';
 
 export const SECTORS = [
   { id: 'grave', name: 'Проклятый погост', theme: 'grave', color: '#7fa86a' },
@@ -9,14 +9,14 @@ export const SECTORS = [
   { id: 'hell', name: 'Врата Ада', theme: 'lava', color: '#ff6a3a' },
 ];
 
-// Декор: только деревья и валуны (листы nature_* из assets/used). Здания и прочие постройки на картах не стоят.
+// Декор: только деревья, камни и статуи (плюс кусты, кактусы, папоротники как мелкая растительность); картинки берутся из листа темы (img/land). Здания и постройки на картах не стоят.
 export const DECOR_KINDS = {
-  grave: ['deadtree', 'boulder', 'deadtree', 'boulder', 'deadtree'],
-  slaughter: ['deadtree', 'boulder', 'boulder', 'deadtree'],
-  ice: ['snowspruce', 'snowspruce', 'boulder', 'snowspruce'],
-  forest: ['oak', 'spruce', 'oak', 'boulder', 'spruce', 'oak'],
-  desert: ['boulder', 'deadtree', 'boulder'],
-  lava: ['boulder', 'deadtree', 'boulder'],
+  grave: ['tree', 'rock', 'tree', 'statue', 'rock', 'tree', 'bush'],
+  slaughter: ['tree', 'rock', 'rock', 'tree', 'statue', 'bush'],
+  ice: ['tree', 'rock', 'tree', 'statue', 'bush', 'tree', 'rock'],
+  forest: ['tree', 'tree', 'rock', 'tree', 'bush', 'tree', 'statue', 'rock'],
+  desert: ['rock', 'tree', 'rock', 'bush', 'statue', 'tree', 'bush'],
+  lava: ['rock', 'tree', 'rock', 'statue', 'bush', 'tree'],
 };
 
 function rng(seed) { let a = seed | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }

@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261023142219';
-import { TOWERS } from './data.js?v=20261023142219';
+import { SPR, img } from './sprites.js?v=20261023150737';
+import { TOWERS } from './data.js?v=20261023150737';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -681,6 +681,21 @@ export function rotHead(type, lvl, br) {
 export function drawRotHead(g, hi, angle, x, y, rec = 0) {
   const dir = ((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8;
   g.drawImage(hi.im, dir * hi.cw, 0, hi.cw, hi.ch, x + hi.dx - hi.ax * hi.k - Math.cos(angle) * rec, y + hi.dy - hi.ay * hi.k - Math.sin(angle) * rec * 0.5, hi.cw * hi.k, hi.ch * hi.k);
+}
+// Белая обводка выбранного здания: силуэт каждой ячейки листа кольцом смещений (светлое кольцо с тёмной каймой снаружи). Строится один раз на картинку и живёт, пока жива она сама.
+const RINGS = new WeakMap();
+export function selRing(src, cw, ch, n, px) {
+  let r = RINGS.get(src); if (r) return r;
+  const k = cw / px, rl = 1.9 * k, rd = 3.1 * k, pad = Math.ceil(rd) + 1, W = cw + pad * 2, H = ch + pad * 2;
+  const c = document.createElement('canvas'); c.width = W * n; c.height = H; const g = c.getContext('2d');
+  const sil = document.createElement('canvas'); sil.width = cw; sil.height = ch; const sg = sil.getContext('2d');
+  for (let i = 0; i < n; i++) {
+    for (const [col, rr] of [['#150a0e', rd], ['#fff3d0', rl]]) {
+      sg.globalCompositeOperation = 'source-over'; sg.clearRect(0, 0, cw, ch); sg.drawImage(src, i * cw, 0, cw, ch, 0, 0, cw, ch); sg.globalCompositeOperation = 'source-in'; sg.fillStyle = col; sg.fillRect(0, 0, cw, ch);
+      for (const [q, m] of [[rr, 16], [rr * 0.55, 8]]) for (let j = 0; j < m; j++) { const a = (j / m) * Math.PI * 2 + (q === rr ? 0 : 0.4); g.drawImage(sil, i * W + pad + Math.cos(a) * q, pad + Math.sin(a) * q); }
+    }
+  }
+  sil.width = 0; r = { c, pad, W, H, k }; RINGS.set(src, r); return r;
 }
 // здание целиком (для иконок и подсказки при постановке): основание + голова, смотрящая на зрителя
 export function towerFull(type, lvl, br) {

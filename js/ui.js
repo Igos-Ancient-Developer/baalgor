@@ -1,10 +1,10 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261023142219';
-import * as A from './art.js?v=20261023142219';
-import { uiIcon } from './env.js?v=20261023142219';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261023142219';
-import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261023142219';
-import { TARGET_MODES } from './sim.js?v=20261023142219';
+import * as D from './data.js?v=20261023150737';
+import * as A from './art.js?v=20261023150737';
+import { uiIcon } from './env.js?v=20261023150737';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261023150737';
+import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261023150737';
+import { TARGET_MODES } from './sim.js?v=20261023150737';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -68,7 +68,7 @@ export class GameUI {
     this.cardSel = null; this.cards = []; this.loadout = []; this.open = false;
     this.last = {}; this.selB = null; this.upB = null; this.icons = new Map();
     for (const img of document.querySelectorAll('#game img[data-icon]')) img.src = ['tower', 'coins', 'horde', 'meteor', 'star'].includes(img.dataset.icon) ? bareGlyphUrl(img.dataset.icon, 22) : uiIcon(img.dataset.icon, 40);
-    $('#chip-score .sco').src = new URL('../img/ui/score.webp', import.meta.url).href; $('#chip-time .hg').src = bareGlyphUrl('hourglass', 22);
+    $('#chip-time .hg').src = bareGlyphUrl('hourglass', 22);
     $('#slotbtn .sb-ic').src = bareGlyphUrl('tower', 34);
     $('#um-cards').parentNode.querySelector('.cg').src = uiIcon('coin', 32); $('#sellmodal .cg').src = uiIcon('coin', 32);
     $('#slotbtn').onclick = () => { this.c.sfx.play('click'); if (this.cardSel) { this.disarm(); this.refreshCards(); } else this.setOpen(!this.open); };
@@ -335,8 +335,6 @@ export class GameUI {
     set('lives', '#v-lives', s.lives); set('gold', '#v-gold', Math.floor(s.gold));
     set('inc', '#v-inc', s.incomePerTick(), (v) => { $('#v-inc').textContent = v ? '+' + v : ''; });
     set('wave', '#v-wave', `${s.wave}/${s.total}`);
-    const run = this.c.run, tot = Math.floor(s.score + (run ? run.score : 0));      // в забеге плашка показывает очки всего забега
-    set('score', '#v-score', tot, (v) => { $('#v-score').textContent = v.toLocaleString('ru-RU'); });
     const can = s.canCallWave() && !s.hold;
     this.updateWaveCalls(can);
     L.cardT = (L.cardT || 0) - dt;

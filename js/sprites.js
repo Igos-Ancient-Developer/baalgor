@@ -2,7 +2,7 @@
 // Папка img/ собирается скриптами tools/build_*.py из листов в assets/.
 const ROOT = new URL('../img/', import.meta.url).href;
 
-export const SPR = { ok: false, towers: {}, enemies: {}, imgs: new Map() };
+export const SPR = { ok: false, towers: {}, enemies: {}, land: {}, imgs: new Map() };
 
 const loadJson = (p) => fetch(ROOT + p).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 // загрузка с повтором: в мобильной сети отдельные картинки могут не дойти с первого раза
@@ -19,10 +19,8 @@ function loadImg(path, tries = 3) {
   });
 }
 
-export const TILE_KINDS = ['grass', 'snow', 'sand', 'lava'];
-// декор карт: только деревья и валуны, портал и ворота, сундук (всё из assets/used)
-export const DECOR_IMGS = ['chest_loot', 'obj_gate', 'obj_portal', 'obj_chest', 'obj_chest_open',
-  ...[1, 2, 3, 4, 5].map((n) => 'nat_oak_' + n), 'nat_dead_1', 'nat_spruce_1', ...[1, 2, 3, 4, 5, 6, 7].map((n) => 'nat_rock_' + n)];
+// декор карт (деревья, камни, статуи), земля, дорога, портал и ворота лежат в img/land и грузятся по теме уровня (landFiles); тут — сундук и объекты поля
+export const DECOR_IMGS = ['chest_loot', 'obj_chest', 'obj_chest_open'];
 export const GIB_IMGS = ['gib_1', 'gib_2', 'gib_3', 'gib_4', 'heart', 'arm', 'leg', 'bones', 'skull'];
 export const PORTRAITS = ['imp', 'brute', 'succubus', 'pitlord', 'archdemon', 'skull'];
 export const UI_ICONS = ['skull', 'star', 'settings', 'map', 'sword', 'shield', 'potion', 'book', 'crown', 'medal', 'chest', 'exit'];
@@ -38,12 +36,11 @@ export const ICON_NAMES = [
 
 
 export async function loadSprites(onProgress = () => {}) {
-  const [tw, en] = await Promise.all([loadJson('towers/meta.json'), loadJson('enemies/meta.json')]);
+  const [tw, en, ld] = await Promise.all([loadJson('towers/meta.json'), loadJson('enemies/meta.json'), loadJson('land/meta.json')]);
   if (!tw || !en) return false;
-  SPR.towers = tw; SPR.enemies = en;
+  SPR.towers = tw; SPR.enemies = en; SPR.land = ld || {};
   const list = [];
   for (const [t, m] of Object.entries(tw)) { for (let i = 0; i < m.n; i++) list.push(`towers/${t}_${i}.webp`); if (m.head) list.push(`towers/${t}_head.webp`); }
-  for (const k of TILE_KINDS) for (let i = 0; i < 4; i++) list.push(`tiles/${k}_${i}.webp`);
   for (const k of DECOR_IMGS) list.push(`decor/${k}.webp`);
   for (const k of GIB_IMGS) list.push(`gibs/${k}.webp`);
   for (const k of PORTRAITS) list.push(`ui/portrait_${k}.webp`);
@@ -54,6 +51,17 @@ export async function loadSprites(onProgress = () => {}) {
   await Promise.all(list.map((p) => loadImg(p).then(() => onProgress(++done / list.length))));
   SPR.ok = true;
   return true;
+}
+
+// ландшафт темы грузим по требованию: земля, дорога, кромки, декор, панорамы, портал и ворота нужны только на время запекания фона карты (потом их можно выбросить), площадки — пока идёт бой
+const VARIANT = { ice: 'ice', lava: 'lava' };
+export const plotName = (theme) => ({ ice: 'plot_ice', lava: 'plot_lava', slaughter: 'plot_slaughter' }[theme] || 'plot');
+export const landFiles = (theme) => { const v = VARIANT[theme]; return [`ground_${theme}`, `road_${theme}`, `edge_${theme}`, `decor_${theme}`, `border_${theme}`, v ? `portal_${v}` : 'portal', v ? `gate_${v}` : 'gate'].map((n) => `land/${n}.webp`); };
+export const plotFiles = (theme) => [plotName(theme), 'plot_ok', 'plot_bad'].map((n) => `land/${n}.webp`);
+export function loadLand(theme) { return Promise.all([...landFiles(theme), ...plotFiles(theme)].filter((p) => !SPR.imgs.has(p)).map((p) => loadImg(p))); }
+export function dropLand(keepPlots) {          // keepPlots: тема, чьи площадки оставить (или null — всё)
+  const keep = new Set(keepPlots ? plotFiles(keepPlots) : []);
+  for (const p of [...SPR.imgs.keys()]) if (p.startsWith('land/') && !keep.has(p)) SPR.imgs.delete(p);
 }
 
 // листы врагов грузим по требованию: на уровне нужны только его виды (остальные не занимают память)

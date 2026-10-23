@@ -1,14 +1,14 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023142219';
-import * as A from './art.js?v=20261023142219';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, drawAnim, BLOOD } from './enemies.js?v=20261023142219';
-import { tile } from './iconmap.js?v=20261023142219';
-import { img } from './sprites.js?v=20261023142219';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, guardSprite, scorchSprite } from './env.js?v=20261023142219';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023150737';
+import * as A from './art.js?v=20261023150737';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, drawAnim, BLOOD, GAIT } from './enemies.js?v=20261023150737';
+import { tile } from './iconmap.js?v=20261023150737';
+import { img, plotName } from './sprites.js?v=20261023150737';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, guardSprite, scorchSprite } from './env.js?v=20261023150737';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const BUILD_K = 1.14;
+const BUILD_K = 1.24;
 
 const FACE0 = { bolt: 1, mortar: 1, flame: 1, harpoon: -1 };      // куда смотрит картинка башни по умолчанию: 1 вправо, -1 влево
 // масштаб карты: на экране видно VIEW_COLS клеток в ширину, остальное достаём пальцем
@@ -120,7 +120,7 @@ export class Renderer {
 
   // рисуем только видимый кусок запечённого фона
   drawBg(ctx) {
-    const bg = this.bg; if (!bg) return;
+    const bg = this.bg; if (!bg || !bg.width) return;                  // фон мог быть выброшен при переходе на другой уровень
     const sc = bg.width / bg.lw, v = this.vw, bx = -PAD.l, by = -PAD.t;
     const x0 = Math.max(v.x0, bx), y0 = Math.max(v.y0, by), x1 = Math.min(v.x1, bx + bg.lw), y1 = Math.min(v.y1, by + bg.lh);
     if (x1 <= x0 || y1 <= y0) return;
@@ -159,6 +159,19 @@ export class Renderer {
     }
     const lift = def.air ? 20 : (a.lift || 0);
     const bob = def.air ? Math.sin(t * 5 + e.id) * 2 : 0;
+    // походка: два касания земли за цикл шага (подскок и сжатие), тело качается с ноги на ногу; фаза идёт от пройденного пути, поэтому замедленный враг шагает медленнее
+    let gy = 0, gx = 0, gr = 0, gsy = 1, gsx = 1, gl = 0, leg = null;
+    const G = a.anims && !def.air && speed > 0 && animName !== 'attack' ? GAIT[e.type] : null;
+    if (G) {
+      const ph = ((((e.d / (36 * def.size)) % 1) + 1) % 1) * T2, sn = Math.sin(ph), cs = Math.cos(ph), s = G[4] ? 0.5 + 0.5 * Math.sin(ph * 2) : Math.abs(sn);
+      gy = -s * G[0]; gr = sn * G[1]; gsy = 1 + G[3] * (s - 0.5); gsx = 1 - (gsy - 1) * 0.6; gl = s;
+      if (e._dir !== 'R') gx = sn * G[2];
+      if (G[5]) {                                                       // ноги расходятся и сходятся; спереди и сзади — поочерёдно поднимаются
+        const A = G[5], side = e._dir === 'R';
+        leg = { split: (a.anims.ay - G[6] * (a.anims.ay - 8)) / a.anims.ch, lx: side ? -A * sn : 0, rx: side ? A * sn : 0, ly: -Math.max(0, side ? cs : sn) * A * 0.5, ry: -Math.max(0, side ? -cs : -sn) * A * 0.5 };
+      }
+    }
+    if (a.anims && !def.air) { ctx.save(); ctx.globalAlpha = 0.3 - gl * 0.08; ctx.fillStyle = '#000'; const sw = a.shadow * (1.05 - gl * 0.12); ctx.beginPath(); ctx.ellipse(e.x, e.y - 1, sw, sw * 0.36, 0, 0, T2); ctx.fill(); ctx.restore(); }     // тень под ногами сжимается, когда враг подпрыгивает
     if (!a.anims) { ctx.save(); ctx.globalAlpha = def.air ? 0.3 : 0.4; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(e.x, e.y + (def.air ? 9 : 1), a.shadow * (def.air ? 0.7 : 1), a.shadow * 0.38, 0, 0, T2); ctx.fill(); ctx.restore(); }     // у новых спрайтов тени нет
     if (e.elite) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.2 * Math.sin(t * 6 + e.id); const gw = a.shadow * 3.4; ctx.drawImage(glowSprite('#ffc828'), e.x - gw / 2, e.y - gw * 0.4, gw, gw * 0.7); ctx.restore(); }
     let lunge = 0;
@@ -167,8 +180,9 @@ export class Renderer {
     if (e.splitT > 0) { const s = 1 + e.splitT * 0.8; ctx.scale(s, 1 / s); }
     if (e.elite) ctx.scale(1.12, 1.12);
     if (a.raster && !a.anims && !def.air && speed > 0) { const ph = (fi / FRAMES) * T2; ctx.translate(0, -Math.abs(Math.sin(ph)) * 1.5); ctx.rotate(Math.sin(ph) * 0.035); }   // шаг: лёгкое покачивание
+    if (G) { ctx.translate(gx, gy); ctx.rotate(gr); ctx.scale(gsx, gsy); }
     if (mirror) ctx.scale(-1, 1);
-    if (a.anims) drawAnim(ctx, e.type, animName, fi); else ctx.drawImage(spr, -a.ax, -a.ay, spr.lw, spr.lh);
+    if (a.anims) drawAnim(ctx, e.type, animName, fi, leg); else ctx.drawImage(spr, -a.ax, -a.ay, spr.lw, spr.lh);
     // оверлеи статусов
     let tint = null;
     if (e.freezeT > 0) tint = ['#9fe0ff', 0.6];
@@ -234,14 +248,8 @@ export class Renderer {
     if (f < 1) { ctx.fillStyle = 'rgba(10,4,6,0.85)'; ctx.fillRect(g.x - 9, g.y - 40, 18, 3); ctx.fillStyle = '#4ac0ff'; ctx.fillRect(g.x - 8.5, g.y - 39.5, 17 * f, 2); }
   }
 
-  // овал постамента растровой башни (по рамке картинки), чтобы выделение совпадало со спрайтом
-  pedestal(b, y) {
-    let rx = 22;
-    const at = A.artType(b.prem || b.type); if (A.SPR.ok && A.SPR.towers[at]) { const g = A.towerGeo(at, b.level, b.branch); rx = Math.min(33, Math.max(20, (g.right - g.left) * 0.47)); }
-    const ry = rx * 0.46; return { rx, ry, cy: y + 4 - ry * 0.9 };
-  }
-
   drawBuilding(ctx, b, t, view) {
+    this.plot(ctx, plotName(this.sim.map.theme), b.c, b.r, 1, 1.32);                                  // здание стоит на каменной площадке, чуть шире основания
     ctx.save(); ctx.translate(b.x, b.y + 6); ctx.scale(BUILD_K, BUILD_K); ctx.translate(-b.x, -b.y - 6);      // здания крупнее: хорошо видны и не теряются на большой карте
     this.drawBuilding0(ctx, b, t, view);
     ctx.restore();
@@ -260,21 +268,22 @@ export class Renderer {
       if (Math.abs(cs) > 0.3) b._face = cs > 0 ? 1 : -1;
       sx = b._face * FACE0[b.type];
     }
+    const sel = view.selected === b;
     ctx.save(); ctx.translate(x, y); ctx.scale((1 - wob) * sx, 1 + wob);
+    if (sel) { const r = A.selRing(body, body.width, body.height, 1, A.TW_W); ctx.drawImage(r.c, 0, 0, r.W, r.H, -A.TW_AX - r.pad / r.k, -A.TW_AY - r.pad / r.k, r.W / r.k, r.H / r.k); }          // выбранное здание: белая обводка по силуэту
     ctx.drawImage(body, -A.TW_AX, -A.TW_AY, A.TW_W, A.TW_H);
     ctx.restore();
-    if (rh) { ctx.save(); ctx.imageSmoothingQuality = 'high'; A.drawRotHead(ctx, rh, b.angle || 0, x, y, (b.recoil || 0) * ({ mortar: 5, harpoon: 6, flame: 1 }[b.type] || 3)); ctx.restore(); }
+    if (rh) {
+      ctx.save(); ctx.imageSmoothingQuality = 'high'; const rec = (b.recoil || 0) * ({ mortar: 5, harpoon: 6, flame: 1 }[b.type] || 3);
+      if (sel) { const r = A.selRing(rh.im, rh.cw, rh.ch, 8, rh.cw * rh.k), d = ((Math.round((b.angle || 0) / (Math.PI / 4)) % 8) + 8) % 8, px = r.pad / r.k;
+        ctx.drawImage(r.c, d * r.W, 0, r.W, r.H, x + rh.dx - rh.ax * rh.k - Math.cos(b.angle || 0) * rec - px, y + rh.dy - rh.ay * rh.k - Math.sin(b.angle || 0) * rec * 0.5 - px, r.W / r.k, r.H / r.k); }
+      A.drawRotHead(ctx, rh, b.angle || 0, x, y, rec); ctx.restore();
+    }
     if (b.prem) { const col = TOWERS[b.prem].tint; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = col; for (let i = 0; i < 3; i++) { const ph = (t * 0.7 + i / 3 + b.id * 0.13) % 1, a2 = Math.sin(ph * Math.PI); const sx = x + Math.sin(i * 2.4 + b.id) * 18, sy = y - 6 - ph * 40; ctx.globalAlpha = a2 * 0.9; ctx.beginPath(); ctx.moveTo(sx, sy - 3.2 * a2); ctx.lineTo(sx + 1, sy - 1); ctx.lineTo(sx + 3.2 * a2, sy); ctx.lineTo(sx + 1, sy + 1); ctx.lineTo(sx, sy + 3.2 * a2); ctx.lineTo(sx - 1, sy + 1); ctx.lineTo(sx - 3.2 * a2, sy); ctx.lineTo(sx - 1, sy - 1); ctx.fill(); } ctx.restore(); }      // и искры
     if (b.kind === 'econ') this.dynEcon(ctx, b, t, x, y);
     else this.dynTower(ctx, b, t, x, y);
     // оглушён
     if (b.stunT > 0) { for (let i = 0; i < 3; i++) { const an = t * 5 + (i * T2) / 3; ctx.fillStyle = '#ffe27a'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('★', x + Math.cos(an) * 10, y - 56 + Math.sin(an) * 3); } }
-    // выбор
-    if (view.selected === b) {
-      const { rx, ry, cy } = this.pedestal(b, y);
-      ctx.save(); ctx.strokeStyle = `rgba(255,226,122,${0.75 + 0.25 * Math.sin(t * 6)})`; ctx.lineWidth = 2; ctx.shadowColor = 'rgba(255,200,60,.8)'; ctx.shadowBlur = 6;
-      ctx.beginPath(); ctx.ellipse(x, cy, rx, ry, 0, 0, T2); ctx.stroke(); ctx.restore();
-    }
     // точки уровня над зданием: первая золотая, 2-я и 3-я цвета выбранных улучшений (мощь красная, скорость жёлтая, особое зелёное), 4-я и 5-я — цвета ветки (A синяя, B красная)
     const n = b.level, at = A.artType(b.prem || b.type), top = (A.SPR.ok && A.SPR.towers[at]) ? y - A.TW_AY + A.towerGeo(at, b.level, b.branch).top - 5 : y - 50;
     const bc = b.branch === 'A' ? '#4aa8ff' : b.branch === 'B' ? '#ff4a4a' : '#ffd24a', pc = A.PICK_COLORS, pk = b.picks || [];
@@ -534,12 +543,20 @@ export class Renderer {
   }
 
   // ───── подсказки и интерфейсные оверлеи на поле ─────
+  // площадка под здание темы (плоская каменная плита по клетке); при постановке — на каждой свободной клетке
+  plot(ctx, kind, c, r, a = 1, k = 1.1) {
+    const im = img(`land/${kind}.webp`); if (!im) return false;
+    const w = CELL * k, h = w * im.naturalHeight / im.naturalWidth;
+    if (a < 1) ctx.globalAlpha = a;
+    ctx.drawImage(im, (c + 0.5) * CELL - w / 2, (r + 0.5) * CELL + CELL * 0.28 - h, w, h); if (a < 1) ctx.globalAlpha = 1; return true;
+  }
   drawPlaceHints(ctx, view, t) {
-    const sim = this.sim;
+    const sim = this.sim, pn = plotName(sim.map.theme);
     ctx.save();
     const v = this.vw, c0 = Math.max(0, Math.floor(v.x0 / CELL)), c1 = Math.min(COLS - 1, Math.floor(v.x1 / CELL)), r0 = Math.max(0, Math.floor(v.y0 / CELL)), r1 = Math.min(ROWS - 1, Math.floor(v.y1 / CELL));
     for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
       if (!sim.canBuild(c, r)) continue;
+      if (this.plot(ctx, pn, c, r, 0.92, 1.12)) continue;
       const x = c * CELL, y = r * CELL;
       ctx.fillStyle = 'rgba(120,255,160,0.07)'; ctx.fillRect(x + 1.5, y + 1.5, CELL - 3, CELL - 3);
       ctx.strokeStyle = 'rgba(160,255,190,0.28)'; ctx.lineWidth = 1; ctx.strokeRect(x + 2.5, y + 2.5, CELL - 5, CELL - 5);
@@ -549,9 +566,9 @@ export class Renderer {
   drawPortalGate(ctx, t) {
     // мерцание порталов у зева, откуда выходят враги
     for (const p of this.sim.map.paths) {
-      const x = (p[0][0] + 0.5) * CELL, y = (p[0][1] + 0.5) * CELL - 6;
+      const x = (p[0][0] + 0.5) * CELL, y = (p[0][1] + 0.5) * CELL - 4;
       if (!this.inView(x, y, 60)) continue;
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.4 + 0.18 * Math.sin(t * 3); ctx.drawImage(glowSprite('#ff4a6a'), x - 34, y - 30, 68, 56); ctx.restore();
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.3 + 0.12 * Math.sin(t * 3); ctx.drawImage(glowSprite(this.sim.map.theme === 'ice' ? '#4ad8ff' : this.sim.map.theme === 'lava' ? '#ff8a2a' : '#ff4a6a'), x - 30, y - 26, 60, 50); ctx.restore();
     }
   }
   drawOverlays(ctx, view, t) {
@@ -566,7 +583,7 @@ export class Renderer {
     if (view.armed && view.hover) {
       const { c, r } = view.hover; const ok = sim.canBuild(c, r);
       const x = (c + 0.5) * CELL, y = (r + 0.5) * CELL;
-      ctx.save(); ctx.fillStyle = ok ? 'rgba(120,255,160,0.25)' : 'rgba(255,60,60,0.3)'; ctx.fillRect(c * CELL, r * CELL, CELL, CELL); ctx.restore();
+      if (!this.plot(ctx, ok ? 'plot_ok' : 'plot_bad', c, r, 1, 1.18)) { ctx.save(); ctx.fillStyle = ok ? 'rgba(120,255,160,0.25)' : 'rgba(255,60,60,0.3)'; ctx.fillRect(c * CELL, r * CELL, CELL, CELL); ctx.restore(); }
       if (ok) {
         const { kind, type } = view.armed;
         const body = kind === 'econ' ? A.econBody(type, 1) : A.towerFull(A.artType(type), 1, null);

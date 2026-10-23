@@ -503,7 +503,7 @@ body.ranked #bossbar { top: 64px; }
 #end-verdict .vr.in { opacity: 1; transform: none; }
 #end-verdict .vr span { display: flex; align-items: center; gap: 7px; font-size: 14px; letter-spacing: .02em; } #end-verdict .vr span img { width: 22px; height: 22px; } #end-verdict .vr span small { color: #8a8f94; font-size: 10.5px; margin-left: 2px; }
 #end-verdict .vr b { font-weight: 700; font-size: 20px; color: #ffe9a8; min-width: 3ch; text-align: right; }
-#end-verdict .vr.sub { background: rgba(30,28,20,.85); border-color: #6a5a2a; } #end-verdict .vr.sub b { color: #fff; }
+#end-verdict .vr.neg { border-color: #6a2a2a; } #end-verdict .vr.neg b { color: #ff7a6a; } #end-verdict .vr.sub { background: rgba(30,28,20,.85); border-color: #6a5a2a; } #end-verdict .vr.sub b { color: #fff; }
 #end-verdict .vr.mul { background: linear-gradient(#5a1a18, #2a0a0a); border-color: #c8402a; transform: scale(1.5); } #end-verdict .vr.mul.in { animation: slam .55s cubic-bezier(.2,1.4,.3,1) both; }
 #end-verdict .vr.mul span { font-family: var(--gothic); text-transform: uppercase; color: #ffb09a; } #end-verdict .vr.mul b { font-size: 28px; color: #ff8a5a; text-shadow: 0 0 14px rgba(255,100,40,.8); }
 @keyframes slam { 0% { opacity: 0; transform: scale(2.4) rotate(-4deg); } 60% { opacity: 1; transform: scale(.94); } 100% { opacity: 1; transform: none; } }
@@ -558,7 +558,7 @@ body.ranked #bossbar { top: 64px; }
 .rinfo .rt { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-size: 16px; color: #e8e8dc; } .rinfo .rt img { width: 16px; height: 16px; display: inline; vertical-align: -2px; margin-right: 3px; } .rinfo .rt small { font-size: 10px; color: var(--muted); font-weight: 500; }
 
 /* ═════════ v7: кнопка вызова волны, компактные кнопки и плашки ═════════ */
-.wcall { --rc: #e24a3a; position: absolute; left: 10px; bottom: calc(22px + var(--sa-bottom)); z-index: 5; width: 58px; height: 58px;      /* внизу слева: сверху у портала, а карта теперь на весь экран */ border-radius: 50%; display: grid; place-items: center; }
+.wcall { --rc: #e24a3a; position: absolute; right: 10px; top: 8px; z-index: 5; width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; }
 .wcall.boss { --rc: #b070ff; }
 .wcall .wring { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(var(--rc) calc(var(--p, 0) * 1%), rgba(0,0,0,.6) 0); box-shadow: 0 0 0 2px #0b0c0c, 0 4px 12px rgba(0,0,0,.8); }
 .wcall .wface { position: absolute; inset: 6px; border-radius: 50%; overflow: hidden; background: #111; box-shadow: 0 0 0 2px #0b0c0c; }
@@ -708,7 +708,7 @@ body.ranked #bossbar { top: 64px; }
 
 /* v13: очки и общее время в верхней строке рядом с паузой */
 #hud { gap: 5px; }
-.chip.hscore b { color: #ffe9a8; } .chip.hscore img.sco, .chip.htime img.hg { width: 20px; height: 20px; border-radius: 4px; flex: none; }
+.chip.htime img.hg { width: 20px; height: 20px; border-radius: 4px; flex: none; }
 .chip.htime { border-color: #8a7ad8; }
 body.ranked #hud .chip { padding: 3px 8px 3px 5px; font-size: 15px; gap: 4px; } body.ranked #hud .chip.gold span { display: none; }
 .abtn.sell .ai { width: 38px; height: 38px; margin: 6px 0 0 -6px; }

@@ -1,9 +1,9 @@
 // Окружение: фон карт, пятна крови, иконки интерфейса. На картах стоят только деревья и валуны; портал и ворота — на концах дороги.
-import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023142219';
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261023142219';
-import { UI_IMG, inner } from './iconmap.js?v=20261023142219';
-import { BLOOD } from './enemies.js?v=20261023142219';
-import { SPR, img } from './sprites.js?v=20261023142219';
+import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023150737';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261023150737';
+import { UI_IMG, inner } from './iconmap.js?v=20261023150737';
+import { BLOOD } from './enemies.js?v=20261023150737';
+import { SPR, img } from './sprites.js?v=20261023150737';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -23,202 +23,136 @@ function mkS(w, h, s, fn) {
   const g = c.getContext('2d'); g.scale(s, s); g.lineJoin = 'round'; g.lineCap = 'round'; fn(g); c.lw = w; c.lh = h; return c;
 }
 
-// ───── деревья и валуны: картинки из листов nature_*; если их нет — рисуем кодом ─────
+// ───── запасной декор (рисуется кодом, если картинки темы не загрузились) ─────
 function groundShadow(g, x, y, rx, ry) { shadowEll(g, x + 2, y + 2, rx, ry, 0.45); }
 const blob = (g, x, y, r, c) => { circ(g, x, y, r); fillStroke(g, rad(g, x - r * 0.35, y - r * 0.4, r * 0.1, r * 1.25, [[0, shade(c, 0.4)], [0.55, c], [1, shade(c, -0.4)]]), 1.5); };
-const tier = (g, x, y, w, h, c) => { poly(g, [[x - w, y], [x - w * 0.15, y - h], [x + w * 0.15, y - h], [x + w, y]]); fillStroke(g, lin(g, x - w, 0, x + w, 0, [[0, shade(c, 0.35)], [0.5, c], [1, shade(c, -0.45)]]), 1.5); };
 export const DECOR = {
-  oak(g, x, y) { groundShadow(g, x, y + 12, 17, 6); tube(g, x, y + 13, x, y - 2, 6, '#7a5632', 1.2); blob(g, x - 9, y - 4, 10.5, '#5f8f46'); blob(g, x + 9, y - 5, 10.5, '#578840'); blob(g, x, y - 14, 13, '#6a9d4e'); },
-  spruce(g, x, y) { groundShadow(g, x, y + 12, 14, 5); tube(g, x, y + 13, x, y + 3, 5, '#6a4a2a', 1.2); for (let i = 0; i < 4; i++) tier(g, x, y + 7 - i * 9, 17 - i * 3.6, 15, i % 2 ? '#3f7a52' : '#357048'); },
-  snowspruce(g, x, y) { DECOR.spruce(g, x, y); },
-  deadtree(g, x, y) {
-    groundShadow(g, x, y + 12, 14, 5);
-    g.beginPath(); g.moveTo(x - 4, y + 12); g.quadraticCurveTo(x - 3, y - 2, x - 6, y - 10); g.lineTo(x + 5, y - 10); g.quadraticCurveTo(x + 2, y - 2, x + 5, y + 12); g.closePath(); fillStroke(g, lin(g, x - 6, 0, x + 6, 0, [[0, '#6e5a48'], [1, '#2e241c']]), 1.4);
-    for (const [x0, y0, x1, y1, w] of [[-3, -8, -14, -20, 3], [2, -8, 12, -22, 3], [0, -10, 1, -24, 2.4]]) tube(g, x + x0, y + y0, x + x1, y + y1, w, '#4a3a2c', 0.9);
-  },
-  boulder(g, x, y) {
+  tree(g, x, y) { groundShadow(g, x, y + 12, 17, 6); tube(g, x, y + 13, x, y - 2, 6, '#7a5632', 1.2); blob(g, x - 9, y - 4, 10.5, '#5f8f46'); blob(g, x + 9, y - 5, 10.5, '#578840'); blob(g, x, y - 14, 13, '#6a9d4e'); },
+  rock(g, x, y) {
     groundShadow(g, x, y + 12, 21, 7);
     const pts = [[-19, 10], [-21, -2], [-13, -15], [2, -20], [16, -14], [22, -1], [19, 10]];
     g.beginPath(); pts.forEach(([a, b], i) => (i ? g.lineTo(x + a, y + b) : g.moveTo(x + a, y + b))); g.closePath();
     fillStroke(g, lin(g, x - 20, y - 20, x + 20, y + 12, [[0, '#b4b8bf'], [0.55, '#868b94'], [1, '#4e525c']]), 1.8);
   },
 };
-// вид -> [набор картинок, сколько их, высота на карте]
-const NAT = { oak: ['oak', 5, 68], deadtree: ['dead', 1, 66], spruce: ['spruce', 1, 72], snowspruce: ['spruce', 1, 72], boulder: ['rock', 7, 44] };
-function natDecor(g, kind, x, y, key) {
-  const [grp, n, h0] = NAT[kind], im = img(`decor/nat_${grp}_${key % n + 1}.webp`); if (!im) return false;
-  let h = h0, w = h * im.naturalWidth / im.naturalHeight; if (w > 58) { w = 58; h = w * im.naturalHeight / im.naturalWidth; }
-  shadowEll(g, x, y + 12, w * 0.4, 5, 0.45); g.imageSmoothingQuality = 'high'; g.drawImage(im, x - w / 2, y + 14 - h, w, h); return true;
-}
+DECOR.statue = DECOR.rock; DECOR.bush = DECOR.rock;
 
-// ───── растровая земля (ассеты img/tiles) ─────
-const THEME_TILE = { grave: ['grass', 'rgba(14,18,40,0.24)'], forest: ['grass', 'rgba(0,18,10,0.10)'], desert: ['sand', null], ice: ['snow', null], lava: ['lava', null], slaughter: ['lava', 'rgba(40,6,6,0.26)'] };
-const THEME_LIFT = { grave: ['soft-light', 'rgba(210,225,150,0.55)'], forest: ['soft-light', 'rgba(190,235,150,0.5)'], desert: ['soft-light', 'rgba(255,230,160,0.35)'], ice: ['soft-light', 'rgba(220,240,255,0.35)'], lava: ['soft-light', 'rgba(255,170,110,0.3)'], slaughter: ['soft-light', 'rgba(255,170,130,0.3)'] };
-const TILE_PICK = { grass: 1, sand: 1, snow: 0, lava: 2 };
-// дорога: [тип тайла, номер, затемнение]
-const ROAD_TILE = { grave: ['sand', 1, 'rgba(38,32,58,0.40)'], forest: ['sand', 1, 'rgba(44,30,12,0.18)'], desert: ['sand', 3, 'rgba(70,36,12,0.14)'], ice: ['snow', 3, 'rgba(74,98,134,0.42)'], lava: ['lava', 0, 'rgba(10,6,6,0.05)'], slaughter: ['sand', 3, 'rgba(84,20,14,0.46)'] };
-const ROAD_W = CELL * 1.0;                              // дорога шире врагов: они идут по ней свободно
-// текстуры земли мягкие (96 px): чуть подчёркиваем резкость и контраст (шов бесшовный, поэтому края заворачиваем)
-const sharpCache = new Map();
-function sharpTile(im) {
-  if (!im) return im; let c = sharpCache.get(im); if (c) return c;
-  const w = im.naturalWidth, h = im.naturalHeight; c = document.createElement('canvas'); c.width = w; c.height = h;
-  const x = c.getContext('2d'); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, w, h), src = new Uint8ClampedArray(d.data), k = 0.4;
-  for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) for (let ch = 0; ch < 3; ch++) {
-    const i = (yy * w + xx) * 4 + ch, up = (((yy + h - 1) % h) * w + xx) * 4 + ch, dn = (((yy + 1) % h) * w + xx) * 4 + ch, lf = (yy * w + ((xx + w - 1) % w)) * 4 + ch, rt = (yy * w + ((xx + 1) % w)) * 4 + ch;
-    const v = src[i] * (1 + 4 * k) - k * (src[up] + src[dn] + src[lf] + src[rt]); d.data[i] = (v - 128) * 1.04 + 128;
-  }
-  x.putImageData(d, 0, 0); sharpCache.set(im, c); return c;
+// ───── ландшафт из img/land (листы собирает tools/build_landscape.py): земля, дорога, кромки, декор, панорамы, портал и ворота ─────
+const landImg = (n) => img(`land/${n}.webp`);
+function landSet(theme) {
+  const v = theme === 'ice' ? 'ice' : theme === 'lava' ? 'lava' : '', suf = v ? '_' + v : '';
+  const L = { ground: landImg('ground_' + theme), road: landImg('road_' + theme), edge: landImg('edge_' + theme), decor: landImg('decor_' + theme), border: landImg('border_' + theme),
+    portal: landImg('portal' + suf), gate: landImg('gate' + suf), m: SPR.land || {}, v: v || 'base', theme };
+  return L.ground && L.road && L.decor && L.m.road && L.m.decor ? L : null;
 }
-const BG_C0 = -1, BG_C1 = COLS, BG_R0 = -2, BG_R1 = ROWS + 3;     // клетки земли с запасом за краем поля (под фон карты)
-function groundTiles(g, theme) {
-  const [kind, tint] = THEME_TILE[theme] || THEME_TILE.grave;
-  const t0 = sharpTile(img(`tiles/${kind}_${TILE_PICK[kind]}.webp`));
-  if (!t0) return false;
-  g.imageSmoothingQuality = 'high';
-  for (let r = BG_R0; r <= BG_R1; r++) for (let c = BG_C0; c <= BG_C1; c++) {
-    const flip = ((c * 3 + r * 5) % 4 + 4) % 4;
-    g.save(); g.translate((c + 0.5) * CELL, (r + 0.5) * CELL); g.scale(flip & 1 ? -1 : 1, flip & 2 ? -1 : 1);
-    g.drawImage(t0, -CELL / 2 - 0.5, -CELL / 2 - 0.5, CELL + 1, CELL + 1); g.restore();
-  }
-  if (tint) { g.fillStyle = tint; g.fillRect(-PAD.l, -PAD.t, WORLD_W + PAD.l + PAD.r, WORLD_H + PAD.t + PAD.b); }
-  const lift = THEME_LIFT[theme];                                                  // подсветка и тёплый оттенок: земля светлее и ярче, враги и здания читаются лучше
-  if (lift) { g.save(); g.globalCompositeOperation = lift[0]; g.fillStyle = lift[1]; g.fillRect(-PAD.l, -PAD.t, WORLD_W + PAD.l + PAD.r, WORLD_H + PAD.t + PAD.b); g.restore(); }
-  return true;
+const ROAD_W = CELL;                                    // дорога в одну клетку: шире врагов, они идут по ней свободно
+const GROUND_W = CELL * 4;                              // кусок земли на экране: 4 клетки (текстура бесшовная)
+const GROUND_TINT = { lava: 'rgba(14,4,4,0.42)', slaughter: 'rgba(16,6,6,0.16)' };      // земля темнее дороги: дорога и враги на ней читаются лучше
+function groundTiles(g, L) {
+  const x0 = -PAD.l, y0 = -PAD.t, x1 = WORLD_W + PAD.r, y1 = WORLD_H + PAD.b; g.imageSmoothingQuality = 'high';
+  for (let y = Math.floor(y0 / GROUND_W) * GROUND_W; y < y1; y += GROUND_W) for (let x = Math.floor(x0 / GROUND_W) * GROUND_W; x < x1; x += GROUND_W) g.drawImage(L.ground, x, y, GROUND_W + 0.6, GROUND_W + 0.6);
+  const tint = GROUND_TINT[L.theme]; if (tint) { g.fillStyle = tint; g.fillRect(x0, y0, x1 - x0, y1 - y0); }
 }
-function roadTexture(g, map, bs) {
-  const [kind, idx, tint] = ROAD_TILE[map.theme] || ROAD_TILE.grave, t = sharpTile(img(`tiles/${kind}_${idx}.webp`));
-  if (!t) return false;
-  const BW = WORLD_W + PAD.l + PAD.r, BH = WORLD_H + PAD.t + PAD.b;
-  const tmp = mkS(BW, BH, bs, (h) => {
-    h.translate(PAD.l, PAD.t);
-    h.lineCap = 'round'; h.lineJoin = 'round'; h.strokeStyle = '#000'; h.lineWidth = ROAD_W;
-    for (const p of map.paths) { h.beginPath(); p.forEach(([c, r], i) => { const x = (c + 0.5) * CELL, y = (r + 0.5) * CELL; i ? h.lineTo(x, y) : h.moveTo(x, y); }); h.stroke(); }
-    h.globalCompositeOperation = 'source-in'; h.imageSmoothingQuality = 'high';
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const f = (c * 5 + r * 3) % 4; h.save(); h.translate((c + 0.5) * CELL, (r + 0.5) * CELL); h.scale(f & 1 ? -1 : 1, f & 2 ? -1 : 1); h.drawImage(t, -CELL / 2 - 0.5, -CELL / 2 - 0.5, CELL + 1, CELL + 1); h.restore(); }
-    h.fillStyle = tint; h.fillRect(-PAD.l, -PAD.t, BW, BH);
-  });
-  g.drawImage(tmp, -PAD.l, -PAD.t, BW, BH);
-  return true;
-}
-
-// ───── дорога: булыжник или колея, свечение магмы, травинки ─────
-const ROAD_STYLE = {
-  grave: { k: 'cobble', c: '#7b7d83', gap: 'rgba(6,6,10,.6)' }, forest: { k: 'dirt', c: '#7a6044', blade: '#4f7a3a' }, desert: { k: 'dirt', c: '#b98a4e' },
-  ice: { k: 'cobble', c: '#b9cad9', gap: 'rgba(40,70,110,.55)' }, lava: { k: 'cobble', c: '#37312f', gap: 'rgba(255,110,40,.55)', glow: true }, slaughter: { k: 'cobble', c: '#7a574d', gap: 'rgba(40,6,6,.75)' },
-};
-function roadDetail(g, map, R) {
-  const st = ROAD_STYLE[map.theme] || ROAD_STYLE.grave, Wd = ROAD_W * 0.94;
+// клетки дороги и в какую сторону идёт полоса через клетку (v: вдоль y; на поворотах — вдоль y)
+function roadCells(map) {
+  const cells = new Map();
   for (const p of map.paths) for (let i = 1; i < p.length; i++) {
-    const [c0, r0] = p[i - 1], [c1, r1] = p[i], x0 = (c0 + 0.5) * CELL, y0 = (r0 + 0.5) * CELL, x1 = (c1 + 0.5) * CELL, y1 = (r1 + 0.5) * CELL, L = Math.hypot(x1 - x0, y1 - y0);
-    const ux = (x1 - x0) / L, uy = (y1 - y0) / L, nx = -uy, ny = ux, ang = Math.atan2(uy, ux);
-    if (st.k === 'cobble') {
-      g.lineCap = 'butt'; g.strokeStyle = st.gap; g.lineWidth = Wd * 0.96; g.beginPath(); g.moveTo(x0 - ux * 5, y0 - uy * 5); g.lineTo(x1 + ux * 5, y1 + uy * 5); g.stroke();
-      const lanes = 4, lw = Wd / lanes;
-      for (let d = -5; d < L + 5; d += 9) for (let k = 0; k < lanes; k++) {
-        const off = (k - (lanes - 1) / 2) * lw, dd = d + (k % 2) * 4.5 + (R() - 0.5) * 1.6, px = x0 + ux * dd + nx * off, py = y0 + uy * dd + ny * off;
-        const sw = 7.6 + R() * 1.4, sh = lw * (0.84 + R() * 0.1);
-        g.save(); g.translate(px, py); g.rotate(ang + (R() - 0.5) * 0.1);
-        rrect(g, -sw / 2, -sh / 2, sw, sh, 2.3); g.fillStyle = shade(st.c, (R() - 0.5) * 0.22); g.fill();
-        g.fillStyle = 'rgba(255,255,255,.16)'; g.fillRect(-sw / 2 + 1, -sh / 2 + 0.6, sw - 2, 1.2);          // свет сверху
-        g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(-sw / 2 + 1, sh / 2 - 1.6, sw - 2, 1.2);                  // тень снизу
-        if (R() < 0.12) { g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 0.7; g.beginPath(); g.moveTo(-sw / 2 + 1.5, -sh / 4); g.lineTo(sw / 4, sh / 4); g.stroke(); }  // трещинка
-        g.restore();
-      }
-    } else {
-      for (const side of [-1, 1]) {                                                                          // колея
-        g.beginPath(); for (let t = 0; t <= L; t += 4) { const o = side * Wd * 0.22 + Math.sin(t * 0.17 + i * 2 + side) * 0.9; const x = x0 + ux * t + nx * o, y = y0 + uy * t + ny * o; t ? g.lineTo(x, y) : g.moveTo(x, y); }
-        g.lineCap = 'round'; g.strokeStyle = 'rgba(30,18,8,.30)'; g.lineWidth = 2.6; g.stroke();
-        g.beginPath(); for (let t = 0; t <= L; t += 4) { const o = side * Wd * 0.22 + 2 + Math.sin(t * 0.17 + i * 2 + side) * 0.9; const x = x0 + ux * t + nx * o, y = y0 + uy * t + ny * o; t ? g.lineTo(x, y) : g.moveTo(x, y); }
-        g.strokeStyle = 'rgba(255,240,200,.13)'; g.lineWidth = 1; g.stroke();
-      }
-      for (let t = 0; t < L; t += 5) {                                                                       // камешки, трава посередине
-        const o = (R() - 0.5) * Wd * 0.8, x = x0 + ux * t + nx * o, y = y0 + uy * t + ny * o;
-        if (R() < 0.55) { ell(g, x, y, 0.9 + R() * 1.4, 0.7 + R(), R() * 3); g.fillStyle = R() < 0.5 ? shade(st.c, 0.28) : 'rgba(0,0,0,.28)'; g.fill(); }
-        else if (st.blade && R() < 0.5) { g.strokeStyle = st.blade; g.lineWidth = 0.9; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 1, y - 3.5); g.moveTo(x + 1, y); g.lineTo(x + 1.5, y - 3); g.stroke(); }
-      }
-    }
+    const [c0, r0] = p[i - 1], [c1, r1] = p[i], vert = c0 === c1, dc = Math.sign(c1 - c0), dr = Math.sign(r1 - r0);
+    for (let c = c0, r = r0; ; c += dc, r += dr) { const k = c + ',' + r, o = cells.get(k); cells.set(k, { c, r, v: vert || !!(o && o.v) }); if (c === c1 && r === r1) break; }
+  }
+  return cells;
+}
+// дорога: текстура кладётся по клеткам вдоль направления движения (на горизонталях оси меняются местами), «полосы» центруются по оси дороги
+function roadFill(g, L, theme, cells) {
+  const t = L.road, rm = L.m.road[theme], tw = rm.tw, th = rm.th; g.imageSmoothingQuality = 'high';
+  for (const { c, r, v } of cells.values()) {
+    const x = c * CELL, y = r * CELL; g.save(); g.beginPath(); g.rect(x - 0.3, y - 0.3, CELL + 0.6, CELL + 0.6); g.clip();
+    const a0 = v ? x : y, b0 = v ? y : x;                                // a — поперёк дороги, b — вдоль
+    if (!v) g.transform(0, 1, 1, 0, 0, 0);
+    const oa = rm.strip ? a0 + CELL / 2 - tw / 2 : Math.floor(a0 / tw) * tw;
+    for (let bb = Math.floor(b0 / th) * th; bb < b0 + CELL; bb += th) for (let aa = oa; aa < a0 + CELL; aa += tw) g.drawImage(t, aa, bb, tw + 0.5, th + 0.5);
+    g.restore();
   }
 }
-// ───── земля: пятна света/тени и травинки (не мешают строить) ─────
-function groundDetail(g, map, theme, onPath, dec, R) {
-  const BW = WORLD_W + PAD.l + PAD.r, BH = WORLD_H + PAD.t + PAD.b;
-  for (let i = 0; i < 90; i++) {
-    const x = -PAD.l + R() * BW, y = -PAD.t + R() * BH, r = 26 + R() * 50, light = R() < 0.45;
-    g.fillStyle = rad(g, x, y, 0, r, [[0, light ? 'rgba(255,255,230,.07)' : 'rgba(0,0,0,.12)'], [1, 'rgba(0,0,0,0)']]); g.fillRect(x - r, y - r, r * 2, r * 2);
+// кромка дороги: куски полосы вдоль каждой стороны, за которой дороги нет (у портала и ворот кромки нет)
+function roadEdges(g, L, theme, cells, map, R) {
+  const e = L.edge, em = L.m.edge && L.m.edge[theme]; if (!e || !em) return;
+  const th = em.th, k = e.width / em.tw, has = (c, r) => cells.has(c + ',' + r), skip = new Set();
+  for (const p of map.paths) { skip.add(p[0][0] + ',' + (p[0][1] - 1)); const q = p[p.length - 1]; skip.add(q[0] + ',' + (q[1] + 1)); }
+  const free = (c, r) => !has(c, r) && !skip.has(c + ',' + r);
+  const piece = (x, y, len, horiz) => {
+    const sw = Math.min(e.width, len * k), sx = Math.floor(R() * Math.max(1, e.width - sw));
+    g.save(); g.translate(x, y); if (!horiz) g.transform(0, 1, 1, 0, 0, 0);
+    g.drawImage(e, sx, 0, sw, e.height, 0, 0, len, th); g.restore();
+  };
+  g.save(); g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 3; g.shadowOffsetY = 1.2; g.imageSmoothingQuality = 'high';
+  const o = th * 0.85, i = th * 0.15;
+  for (const { c, r } of cells.values()) {
+    const x = c * CELL, y = r * CELL, lN = !has(c - 1, r), rN = !has(c + 1, r), tN = !has(c, r - 1), bN = !has(c, r + 1);
+    const hx = x - (lN ? o : 0), hl = CELL + (lN ? o : 0) + (rN ? o : 0);
+    if (free(c, r - 1)) piece(hx, y - o, hl, true);
+    if (free(c, r + 1)) piece(hx, y + CELL - i, hl, true);
+    if (free(c - 1, r)) piece(x - o, y, CELL, false);
+    if (free(c + 1, r)) piece(x + CELL - i, y, CELL, false);
   }
-  const th = THEMES[theme];
-  for (let r = BG_R0; r <= BG_R1; r++) for (let c = BG_C0; c <= BG_C1; c++) {
-    if (onPath.has(c + ',' + r) || dec.has(c + ',' + r)) continue;
-    const n = R() < 0.55 ? 1 + (R() < 0.35 ? 1 : 0) : 0;
-    for (let k = 0; k < n; k++) {
-      const x = (c + 0.15 + R() * 0.7) * CELL, y = (r + 0.2 + R() * 0.7) * CELL, q = R();
-      if (q < 0.6 && theme !== 'lava') {                                                                    // травинки / снежные бугорки
-        if (theme === 'ice') { ell(g, x, y, 3 + R() * 3, 1.4 + R(), 0); g.fillStyle = 'rgba(255,255,255,.55)'; g.fill(); }
-        else if (theme === 'desert') { ell(g, x, y, 2 + R() * 2, 1 + R(), R() * 3); g.fillStyle = 'rgba(90,55,20,.35)'; g.fill(); }
-        else { g.strokeStyle = th.tuft; g.lineWidth = 1; g.beginPath(); for (let b = -1; b <= 1; b++) { g.moveTo(x + b * 2, y); g.lineTo(x + b * 3 + (R() - 0.5) * 2, y - 4 - R() * 3); } g.stroke(); }
-      } else if (theme === 'lava') { glow(g, x, y, 5 + R() * 4, '#ff7a2a', 0.45); }
-    }
-  }
+  g.restore();
+}
+// панорама по верхнему краю карты (лес, дюны, горы, частокол) и тень внизу: фон не обрывается пустой землёй
+function borders(g, L, theme) {
+  const b = L.border, bm = L.m.border && L.m.border[theme]; if (!b || !bm) return;
+  const BW = WORLD_W + PAD.l + PAD.r, h = BW * bm.h / bm.w; g.imageSmoothingQuality = 'high';
+  g.drawImage(b, -PAD.l, -6 - h, BW, h);
+  g.fillStyle = lin(g, 0, WORLD_H + 10, 0, WORLD_H + PAD.b, [[0, 'rgba(8,2,6,0)'], [1, 'rgba(8,2,6,0.6)']]); g.fillRect(-PAD.l, WORLD_H + 10, BW, PAD.b - 10);       // внизу карта уходит в тень, под панелью зданий
+}
+// декор: деревья, камни, статуи, кусты из листа темы; размер уже посчитан сборщиком (px мира)
+function natDecor(g, L, kind, x, y, key) {
+  const list = L.m.decor[L.theme] && L.m.decor[L.theme][kind]; if (!list || !list.length) return false;
+  const q = list[key % list.length];
+  shadowEll(g, x, y + 13, q.ww * 0.36, Math.min(6, 2.5 + q.ww * 0.05), 0.4); g.imageSmoothingQuality = 'high'; g.drawImage(L.decor, q.x, q.y, q.w, q.h, x - q.ww / 2, y + 15 - q.wh, q.ww, q.wh); return true;
 }
 
 // ───── портал врагов и ворота крепости ─────
 // портал: зев в центре клетки, откуда выходят враги; ворота: проём у нижнего края дороги, где враги исчезают
-export const PORTAL = { w: 88, mouth: 0.55 };
-export const GATE = { w: 92, floor: 0.88 };
-function drawPortal(g, x, y) {
-  const im = img('decor/obj_portal.webp'); if (!im) return;
-  const w = PORTAL.w, h = w * im.naturalHeight / im.naturalWidth, top = y - 4 - h * PORTAL.mouth;
-  shadowEll(g, x, top + h - 4, w * 0.42, 6, 0.45); g.imageSmoothingQuality = 'high'; g.drawImage(im, x - w / 2, top, w, h);
+export const PORTAL = { w: 96 };
+export const GATE = { w: 104 };
+function drawPortal(g, L, x, y) {
+  const pm = L.m.portal && L.m.portal[L.v]; if (!L.portal || !pm) return;
+  const w = PORTAL.w, h = w * pm.h / pm.w, top = y - 4 - h * pm.my, left = x - w * pm.mx;
+  shadowEll(g, x, top + h - 7, w * 0.4, 6, 0.45); g.imageSmoothingQuality = 'high'; g.drawImage(L.portal, left, top, w, h);
 }
-function drawGate(g, x, y) {
-  const im = img('decor/obj_gate.webp'); if (!im) return;
-  const w = GATE.w, h = w * im.naturalHeight / im.naturalWidth, top = y - h * GATE.floor;
-  shadowEll(g, x, top + h - 4, w * 0.46, 7, 0.5); g.imageSmoothingQuality = 'high'; g.drawImage(im, x - w / 2, top, w, h);
+function drawGate(g, L, x, y) {
+  const gm = L.m.gate && L.m.gate[L.v]; if (!L.gate || !gm) return;
+  const w = GATE.w, h = w * gm.h / gm.w, top = y - h * gm.dy, left = x - w * gm.dx;
+  shadowEll(g, x, top + h - 5, w * 0.42, 7, 0.5); g.imageSmoothingQuality = 'high'; g.drawImage(L.gate, left, top, w, h);
 }
 
 export function bakeMap(map, scale = S) {
   const th = THEMES[map.theme], R = rng(map.id.length * 7919 + 13), bs = clamp(scale, 1.5, 2.25);
   const BW = WORLD_W + PAD.l + PAD.r, BH = WORLD_H + PAD.t + PAD.b;
-  const sp = SPR.ok;
+  const L = SPR.ok ? landSet(map.theme) : null, cells = roadCells(map);
   const c = mkS(BW, BH, bs, (g) => {
     g.translate(PAD.l, PAD.t);
-    // основа
-    if (!(sp && groundTiles(g, map.theme))) {
+    if (L) { groundTiles(g, L); roadFill(g, L, map.theme, cells); roadEdges(g, L, map.theme, cells, map, R); }
+    else {                                                                                  // картинки темы не загрузились: рисуем кодом
       g.fillStyle = lin(g, 0, -PAD.t, 0, WORLD_H + PAD.b, [[0, th.base], [1, th.base2]]); g.fillRect(-PAD.l, -PAD.t, BW, BH);
       for (let i = 0; i < 900; i++) { const x = -PAD.l + R() * BW, y = -PAD.t + R() * BH; ell(g, x, y, 2 + R() * 9, 1 + R() * 5, R() * 3); g.fillStyle = R() < 0.5 ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.045)'; g.fill(); }
+      const strokePaths = (w, col) => { g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = col; g.lineWidth = w; for (const p of map.paths) { g.beginPath(); p.forEach(([cc, r], i) => { const x = (cc + 0.5) * CELL, y = (r + 0.5) * CELL; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); } };
+      strokePaths(ROAD_W * 1.06, th.edge); strokePaths(ROAD_W * 0.92, th.path); strokePaths(ROAD_W * 0.62, th.pathHi);
     }
-    // дорога: тёмный бордюр с мягкой тенью, затем текстура и детали
-    const strokePaths = (w, col) => { g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = col; g.lineWidth = w; for (const p of map.paths) { g.beginPath(); p.forEach(([cc, r], i) => { const x = (cc + 0.5) * CELL, y = (r + 0.5) * CELL; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); } };
-    if (sp) { g.save(); g.shadowColor = 'rgba(0,0,0,.65)'; g.shadowBlur = 10; strokePaths(ROAD_W * 1.1, th.edge); g.restore(); } else strokePaths(ROAD_W * 1.06, th.edge);
-    if (sp && roadTexture(g, map, bs)) roadDetail(g, map, R);
-    else { strokePaths(ROAD_W * 0.92, th.path); strokePaths(ROAD_W * 0.62, th.pathHi); g.globalAlpha = 0.5; strokePaths(ROAD_W * 0.4, th.path); g.globalAlpha = 1; }
-    // камушки по краям дороги
-    for (const p of map.paths) {
-      for (let i = 1; i < p.length; i++) {
-        const [c0, r0] = p[i - 1], [c1, r1] = p[i];
-        const x0 = (c0 + 0.5) * CELL, y0 = (r0 + 0.5) * CELL, x1 = (c1 + 0.5) * CELL, y1 = (r1 + 0.5) * CELL, L = Math.hypot(x1 - x0, y1 - y0);
-        const nx = -(y1 - y0) / L, ny = (x1 - x0) / L;
-        for (let d = 0; d < L; d += 7) {
-          const bx = x0 + ((x1 - x0) * d) / L, by = y0 + ((y1 - y0) * d) / L;
-          for (const side of [-1, 1]) if (R() < 0.8) { const o = side * (ROAD_W * 0.5 + (R() - 0.5) * 4); ell(g, bx + nx * o, by + ny * o, 1.9 + R() * 1.9, 1.4 + R() * 1.2, R() * 3); fillStroke(g, shade(th.stone, -0.32 + (R() - 0.5) * 0.2), 0.8); }
-        }
-      }
-    }
-    // занятые клетки: дорога, декор, места у портала и ворот
-    const onPath = new Set();
-    for (const p of map.paths) for (let i = 1; i < p.length; i++) { const [c0, r0] = p[i - 1], [c1, r1] = p[i]; let cc = c0, r = r0; const dc = Math.sign(c1 - c0), dr = Math.sign(r1 - r0); for (;;) { onPath.add(cc + ',' + r); if (cc === c1 && r === r1) break; cc += dc; r += dr; } }
-    const dec = new Set(map.decor.map(([cc, r]) => cc + ',' + r));
-    if (sp) groundDetail(g, map, map.theme, onPath, dec, R);
-    // деревья и валуны по рядам (сверху вниз)
-    [...map.decor].sort((a, b) => a[1] - b[1]).forEach(([cc, r, kind]) => { if (!(sp && natDecor(g, kind, (cc + 0.5) * CELL, (r + 0.5) * CELL, cc * 5 + r * 3 + map.index))) DECOR[kind](g, (cc + 0.5) * CELL, (r + 0.5) * CELL); });
+    // занятые клетки: дорога и декор
+    const onPath = new Set(cells.keys()), dec = new Set(map.decor.map(([cc, r]) => cc + ',' + r));
+    if (L) borders(g, L, map.theme);
+    // деревья, камни и статуи по рядам (сверху вниз)
+    [...map.decor].sort((a, b) => a[1] - b[1]).forEach(([cc, r, kind]) => { if (!(L && natDecor(g, L, kind, (cc + 0.5) * CELL, (r + 0.5) * CELL, cc * 5 + r * 3 + map.index))) DECOR[kind](g, (cc + 0.5) * CELL, (r + 0.5) * CELL); });
     // портал в начале каждой дороги, ворота в конце
-    for (const p of map.paths) drawPortal(g, (p[0][0] + 0.5) * CELL, (p[0][1] + 0.5) * CELL);
-    const gates = new Set();
-    for (const p of map.paths) { const e = p[p.length - 1], k = e + ''; if (!gates.has(k)) { gates.add(k); drawGate(g, (e[0] + 0.5) * CELL, (e[1] + 0.5) * CELL); } }
+    if (L) {
+      for (const p of map.paths) drawPortal(g, L, (p[0][0] + 0.5) * CELL, (p[0][1] + 0.5) * CELL);
+      const gates = new Set();
+      for (const p of map.paths) { const e = p[p.length - 1], k = e + ''; if (!gates.has(k)) { gates.add(k); drawGate(g, L, (e[0] + 0.5) * CELL, (e[1] + 0.5) * CELL); } }
+    }
     // лёгкая дымка и тонкая рамка по краю: фон не обрывается резко
     g.fillStyle = th.sky; g.fillRect(-PAD.l, -PAD.t, BW, BH);
-    for (const [x0, y0, x1, y1, rx, ry, rw, rh] of [[-PAD.l, 0, -PAD.l + 22, 0, -PAD.l, -PAD.t, 22, BH], [WORLD_W + PAD.r, 0, WORLD_W + PAD.r - 22, 0, WORLD_W + PAD.r - 22, -PAD.t, 22, BH], [0, -PAD.t, 0, -PAD.t + 22, -PAD.l, -PAD.t, BW, 22], [0, WORLD_H + PAD.b, 0, WORLD_H + PAD.b - 22, -PAD.l, WORLD_H + PAD.b - 22, BW, 22]]) {
+    for (const [x0, y0, x1, y1, rx, ry, rw, rh] of [[-PAD.l, 0, -PAD.l + 22, 0, -PAD.l, -PAD.t, 22, BH], [WORLD_W + PAD.r, 0, WORLD_W + PAD.r - 22, 0, WORLD_W + PAD.r - 22, -PAD.t, 22, BH]]) {
       g.fillStyle = lin(g, x0, y0, x1, y1, [[0, 'rgba(8,2,6,0.5)'], [1, 'rgba(8,2,6,0)']]); g.fillRect(rx, ry, rw, rh);
     }
   });

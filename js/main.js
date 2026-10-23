@@ -1,25 +1,25 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261023142219';
-import * as A from './art.js?v=20261023142219';
-import { Sim } from './sim.js?v=20261023142219';
-import { Gore } from './gore.js?v=20261023142219';
-import { Renderer } from './render.js?v=20261023142219';
-import { GameUI } from './ui.js?v=20261023142219';
-import { Tutorial } from './tutorial.js?v=20261023142219';
-import { Sfx, attachSfx } from './audio.js?v=20261023142219';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023142219';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023142219';
-import { loadSprites, loadEnemyImgs } from './sprites.js?v=20261023142219';
-import { mapBG, releaseBG } from './env.js?v=20261023142219';
-import { levelSpec, MENU_SPEC } from './music.js?v=20261023142219';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023142219';
-import { renderForge, renderAchs } from './screens.js?v=20261023142219';
-import { renderShop } from './shop.js?v=20261023142219';
-import { Wallet } from './wallet.js?v=20261023142219';
-import { initLang, pickLang } from './i18n.js?v=20261023142219';
-import { Menus, RUN, clock } from './menus.js?v=20261023142219';
-import { Net } from './net.js?v=20261023142219';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023142219';
+import * as D from './data.js?v=20261023150737';
+import * as A from './art.js?v=20261023150737';
+import { Sim } from './sim.js?v=20261023150737';
+import { Gore } from './gore.js?v=20261023150737';
+import { Renderer } from './render.js?v=20261023150737';
+import { GameUI } from './ui.js?v=20261023150737';
+import { Tutorial } from './tutorial.js?v=20261023150737';
+import { Sfx, attachSfx } from './audio.js?v=20261023150737';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023150737';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023150737';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261023150737';
+import { mapBG, releaseBG } from './env.js?v=20261023150737';
+import { levelSpec, MENU_SPEC } from './music.js?v=20261023150737';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023150737';
+import { renderForge, renderAchs } from './screens.js?v=20261023150737';
+import { renderShop } from './shop.js?v=20261023150737';
+import { Wallet } from './wallet.js?v=20261023150737';
+import { initLang, pickLang } from './i18n.js?v=20261023150737';
+import { Menus, RUN, clock } from './menus.js?v=20261023150737';
+import { Net } from './net.js?v=20261023150737';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023150737';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -47,7 +47,7 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023142219').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023150737').then((m) => m.enemyDemo(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
@@ -72,7 +72,7 @@ function ensureLevel(L) {
   warmP = (async () => {
     await loadEnemyImgs(enemyFiles(types));
     applyEnemySprites(types); releaseEnemies(types);
-    mapBG(L);
+    await loadLand(L.theme); mapBG(L); dropLand(L.theme);                      // фон запекаем один раз и сразу выбрасываем из памяти исходные картинки земли, дороги и декора
   })().catch((e) => { console.error(e); });
   return warmP;
 }
@@ -80,7 +80,7 @@ function releaseLevel() {
   warmId = null; warmP = null;
   if (renderer) renderer.release();
   if (gore) { gore.dispose(); gore = null; ctrl.gore = null; }
-  releaseBG(); releaseEnemies([]); sim = null; ctrl.sim = null;
+  releaseBG(); dropLand(null); releaseEnemies([]); sim = null; ctrl.sim = null;
 }
 function busy(on) { $('#busy').classList.toggle('hidden', !on); }
 
@@ -281,10 +281,10 @@ async function playVerdict(v, token) {
     const t0 = performance.now();
     await new Promise((res) => { const tick = () => { if (cancelled()) { el.textContent = pre + fmt(to); res(); return; } const f = Math.min(1, (performance.now() - t0) / ms); el.textContent = pre + fmt(from + (to - from) * f); if (f < 1) requestAnimationFrame(tick); else res(); }; tick(); });
   };
-  const rows = [['waves', v.waves], ['kills', v.kills], ['time', v.time]];
+  const rows = [['waves', v.waves], ['kills', v.kills], ['time', v.time], ...(v.leaks ? [['leaks', v.leaks]] : [])];
   for (const [k, val] of rows) {
-    const r = L(k); r.classList.add('in'); if (!cancelled()) sfx.play('click');
-    await count(r.querySelector('b'), 0, val, val ? 380 : 120, '+'); if (!cancelled()) await sleep(110);
+    const r = L(k); r.classList.add('in'); if (!cancelled()) sfx.play(val < 0 ? 'error' : 'click');
+    await count(r.querySelector('b'), 0, val, val ? 380 : 120, val < 0 ? '' : '+'); if (!cancelled()) await sleep(110);
   }
   const sub = L('sub'); sub.classList.add('in'); await count(sub.querySelector('b'), 0, v.sub, 320);
   if (!cancelled()) await sleep(260);
@@ -307,6 +307,7 @@ function showEnd(won) {
     <div class="vr" data-k="waves"><span><img src="${L('flag', 22)}" alt="">Волны</span><b>+0</b></div>
     <div class="vr" data-k="kills"><span><img src="${L('skull', 22)}" alt="">Сильные враги</span><b>+0</b></div>
     <div class="vr" data-k="time"><span><img src="${L('hourglass', 22)}" alt="">Время ${clock(v.t)}<small>${won ? 'норма ' + par : 'бонус только за победу'}</small></span><b>+0</b></div>
+    ${v.leaks ? `<div class="vr neg" data-k="leaks"><span><img src="${L('heart', 22)}" alt="">Пропущено врагов<small>${s.leaks}</small></span><b>0</b></div>` : ''}
     <div class="vr sub" data-k="sub"><span>Сумма</span><b>0</b></div>
     <div class="vr mul" data-k="mul"><span>${dl.name}</span><b>×${String(Math.round(dl.score * 100) / 100).replace('.', ',')}</b></div>
     <div class="vr tot" data-k="tot"><span><img class="sc" src="${SCORE_ICON}" alt=""></span><b>0</b></div>`;
