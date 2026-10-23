@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023153351';
-import * as A from './art.js?v=20261023153351';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, drawAnim, BLOOD } from './enemies.js?v=20261023153351';
-import { tile } from './iconmap.js?v=20261023153351';
-import { img } from './sprites.js?v=20261023153351';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, guardSprite, scorchSprite } from './env.js?v=20261023153351';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023154623';
+import * as A from './art.js?v=20261023154623';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, drawAnim, BLOOD } from './enemies.js?v=20261023154623';
+import { tile } from './iconmap.js?v=20261023154623';
+import { img } from './sprites.js?v=20261023154623';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, guardSprite, scorchSprite } from './env.js?v=20261023154623';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -81,7 +81,7 @@ export class Renderer {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#0b0609'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     const k = this.dpr * this.zoom;
-    ctx.setTransform(k, 0, 0, k, this.dpr * this.ox, this.dpr * this.oy);
+    ctx.setTransform(k, 0, 0, k, Math.round(this.dpr * this.ox), Math.round(this.dpr * this.oy));          // сдвиг камеры только целыми пикселями экрана: фон и спрайты двигаются как одно целое, без дрожания
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     this.drawBg(ctx);
     gore.drawBlood(ctx);
@@ -122,10 +122,7 @@ export class Renderer {
   // рисуем только видимый кусок запечённого фона
   drawBg(ctx) {
     const bg = this.bg; if (!bg || !bg.width) return;                  // фон мог быть выброшен при переходе на другой уровень
-    const sc = bg.width / bg.lw, v = this.vw, bx = -PAD.l, by = -PAD.t;
-    const x0 = Math.max(v.x0, bx), y0 = Math.max(v.y0, by), x1 = Math.min(v.x1, bx + bg.lw), y1 = Math.min(v.y1, by + bg.lh);
-    if (x1 <= x0 || y1 <= y0) return;
-    ctx.drawImage(bg, (x0 - bx) * sc, (y0 - by) * sc, (x1 - x0) * sc, (y1 - y0) * sc, x0, y0, x1 - x0, y1 - y0);
+    ctx.drawImage(bg, -PAD.l, -PAD.t, bg.lw, bg.lh);                  // целиком, без вырезки куска: вырезка с дробными границами даёт дрожание фона относительно спрайтов
   }
 
   // ───── сущности ─────

@@ -1,25 +1,25 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261023153351';
-import * as A from './art.js?v=20261023153351';
-import { Sim } from './sim.js?v=20261023153351';
-import { Gore } from './gore.js?v=20261023153351';
-import { Renderer } from './render.js?v=20261023153351';
-import { GameUI } from './ui.js?v=20261023153351';
-import { Tutorial } from './tutorial.js?v=20261023153351';
-import { Sfx, attachSfx } from './audio.js?v=20261023153351';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023153351';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023153351';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261023153351';
-import { mapBG, releaseBG } from './env.js?v=20261023153351';
-import { levelSpec, MENU_SPEC } from './music.js?v=20261023153351';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023153351';
-import { renderForge, renderAchs } from './screens.js?v=20261023153351';
-import { renderShop } from './shop.js?v=20261023153351';
-import { Wallet } from './wallet.js?v=20261023153351';
-import { initLang, pickLang } from './i18n.js?v=20261023153351';
-import { Menus, RUN, clock } from './menus.js?v=20261023153351';
-import { Net } from './net.js?v=20261023153351';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023153351';
+import * as D from './data.js?v=20261023154623';
+import * as A from './art.js?v=20261023154623';
+import { Sim } from './sim.js?v=20261023154623';
+import { Gore } from './gore.js?v=20261023154623';
+import { Renderer } from './render.js?v=20261023154623';
+import { GameUI } from './ui.js?v=20261023154623';
+import { Tutorial } from './tutorial.js?v=20261023154623';
+import { Sfx, attachSfx } from './audio.js?v=20261023154623';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023154623';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023154623';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261023154623';
+import { mapBG, releaseBG } from './env.js?v=20261023154623';
+import { levelSpec, MENU_SPEC } from './music.js?v=20261023154623';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023154623';
+import { renderForge, renderAchs } from './screens.js?v=20261023154623';
+import { renderShop } from './shop.js?v=20261023154623';
+import { Wallet } from './wallet.js?v=20261023154623';
+import { initLang, pickLang } from './i18n.js?v=20261023154623';
+import { Menus, RUN, clock } from './menus.js?v=20261023154623';
+import { Net } from './net.js?v=20261023154623';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023154623';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -38,6 +38,7 @@ let renderer, gore, ui, sim, meta, menus, tutorial, pollT = 0;
 let run = null;   // состояние рейтингового забега (null — обычная игра)
 let wasFrozen = false, needDraw = false, drawAcc = 0;
 const DRAW_MIN = TG.isMobile ? 0.029 : 0;
+let panning = false;
 let running = false, paused = false, held = false, acc = 0, ending = null, last = 0, diffI = 1, levelIdx = 0, lastHud = '', tally = 0;
 
 // ───────── загрузка ─────────
@@ -47,7 +48,7 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023153351').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023154623').then((m) => m.enemyDemo(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
@@ -347,7 +348,8 @@ function frame(now) {
   }
   if (!paused && tutorial) tutorial.update(dt);
   drawAcc += dt;
-  if (drawAcc >= DRAW_MIN && (!frozen || !wasFrozen || needDraw)) { renderer.render(frozen ? 0 : Math.min(drawAcc, 0.1), view); needDraw = false; drawAcc = 0; }     // на паузе и в окнах холст не перерисовывается; на телефоне рисуем не чаще ~30 к/с, расчёт при этом идёт 60 раз в секунду
+  const camMove = panning || renderer.vx || renderer.vy || renderer.goal;                        // карта едет — рисуем каждый кадр, иначе прокрутка идёт рывками
+  if ((drawAcc >= DRAW_MIN || camMove) && (!frozen || !wasFrozen || needDraw)) { renderer.render(frozen ? 0 : Math.min(drawAcc, 0.1), view); needDraw = false; drawAcc = 0; }     // на паузе и в окнах холст не перерисовывается; на телефоне рисуем не чаще ~30 к/с, расчёт при этом идёт 60 раз в секунду
   wasFrozen = frozen;
   ui.update(frozen ? 0 : dt); updateRunHud();
 }
@@ -368,6 +370,7 @@ function setupInput() {
     if (down && down.id === e.pointerId && !view.spell) {                       // тянем карту
       if (!down.pan && Math.hypot(e.clientX - down.x, e.clientY - down.y) > DRAG) down.pan = true;
       if (down.pan) {
+        panning = true;
         const now = performance.now(), dt = Math.max(1, now - down.lt) / 1000;
         const dx = e.clientX - down.lx, dy = e.clientY - down.ly; down.lx = e.clientX; down.ly = e.clientY; down.lt = now;
         renderer.panBy(-dx, -dy); needDraw = true;
@@ -381,7 +384,7 @@ function setupInput() {
   });
   cv.addEventListener('pointerup', (e) => {
     if (!down || down.id !== e.pointerId) return;
-    const d = down; down = null;
+    const d = down; down = null; panning = false;
     if (d.pan) { if (performance.now() - d.lt < 90) { renderer.vx = Math.max(-900, Math.min(900, d.vx)); renderer.vy = Math.max(-900, Math.min(900, d.vy)); } needDraw = true; return; }      // бросок: карта докатывается по инерции
     if (!running || paused || held) return;
     const p = renderer.toWorld(e.clientX, e.clientY);
@@ -392,7 +395,7 @@ function setupInput() {
     }
     handleTap(p, e.pointerType);
   });
-  cv.addEventListener('pointercancel', () => { down = null; });
+  cv.addEventListener('pointercancel', () => { down = null; panning = false; });
   cv.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') view.hover = null; });
   cv.addEventListener('contextmenu', (e) => { e.preventDefault(); ui.disarm(); ui.deselect(); ui.setOpen(false); view.spell = null; });
   window.addEventListener('keydown', (e) => {
