@@ -1,16 +1,18 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023171212';
-import * as A from './art.js?v=20261023171212';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, drawAnim, BLOOD } from './enemies.js?v=20261023171212';
-import { tile } from './iconmap.js?v=20261023171212';
-import { img } from './sprites.js?v=20261023171212';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, guardSprite, scorchSprite } from './env.js?v=20261023171212';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023175722';
+import * as A from './art.js?v=20261023175722';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261023175722';
+import { tile } from './iconmap.js?v=20261023175722';
+import { img } from './sprites.js?v=20261023175722';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, guardSprite, scorchSprite } from './env.js?v=20261023175722';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const BUILD_K = 1.2, FIT_W = CELL * 0.98;           // здания крупнее среднего монстра и декора-статуй, но основание всегда помещается в свою клетку (не заходит на дорогу и соседей)
 function buildK(at, level, br) { if (!(A.SPR.ok && A.SPR.towers[at])) return 1; const g = A.towerGeo(at, level, br); return Math.min(BUILD_K, FIT_W / Math.max(1, g.right - g.left)); }
 
+// взмахов крыльев в секунду: раньше цикл из 8 кадров проходил за 0.1 с (кадры мелькали быстрее экрана и моргали); теперь у каждого свой неторопливый ритм
+const FLAP = { bat: 2.2, gargoyle: 1.6, reaper: 1.4 };
 const FACE0 = { bolt: 1, mortar: 1, flame: 1, harpoon: -1 };      // куда смотрит картинка башни по умолчанию: 1 вправо, -1 влево
 // масштаб карты: на экране видно VIEW_COLS клеток в ширину, остальное достаём пальцем
 const zoomFor = (cssW) => clamp(cssW / (VIEW_COLS * CELL), 1, 1.7);
@@ -147,7 +149,7 @@ export class Renderer {
       if (e.engaged && !e.engaged.dead && rows.attack && dir === 'R') { animName = 'attack'; fi = Math.floor((t * 11 + e.id) % rows.attack.n); }     // удар нарисован только сбоку
       else {
         animName = 'walk' + (def.air && dir === 'D' ? 'U' : dir); const n = rows[animName].n;                                  // у мыши нет вида спереди: берём вид сверху-сзади, он симметричный
-        fi = def.air ? Math.floor(((t * 10 + e.id) % 1 + 1) % 1 * n) % n : speed > 0 ? Math.floor((((e.d / (36 * def.size)) % 1) + 1) % 1 * n) % n : 0;
+        fi = def.air ? Math.floor((((t * (FLAP[e.type] || 2) + e.id * 0.37) % 1) + 1) % 1 * n) % n : speed > 0 ? Math.floor((((e.d / (36 * def.size)) % 1) + 1) % 1 * n) % n : 0;
       }
       mirror = mirror && (animName === 'walkR' || animName === 'attack');
     } else {
@@ -158,7 +160,7 @@ export class Renderer {
     const lift = def.air ? 20 : (a.lift || 0);
     const bob = def.air ? Math.sin(t * 5 + e.id) * 2 : 0;
     if (!a.anims) { ctx.save(); ctx.globalAlpha = def.air ? 0.3 : 0.4; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(e.x, e.y + (def.air ? 9 : 1), a.shadow * (def.air ? 0.7 : 1), a.shadow * 0.38, 0, 0, T2); ctx.fill(); ctx.restore(); }     // у новых спрайтов тени нет
-    if (e.elite) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.2 * Math.sin(t * 6 + e.id); const gw = a.shadow * 3.4; ctx.drawImage(glowSprite('#ffc828'), e.x - gw / 2, e.y - gw * 0.4, gw, gw * 0.7); ctx.restore(); }
+    if (e.elite) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.2 * Math.sin(t * 6 + e.id); const gw = a.shadow * 3.4; ctx.drawImage(glowSprite('#ff3a2a'), e.x - gw / 2, e.y - gw * 0.4, gw, gw * 0.7); ctx.restore(); }
     let lunge = 0;
     if (e.engaged && !e.engaged.dead) lunge = Math.max(0, Math.sin(e.t * 10)) * 4 * e.face;
     ctx.save(); ctx.translate(e.x + lunge, e.y - lift + bob);
@@ -166,7 +168,7 @@ export class Renderer {
     if (e.elite) ctx.scale(1.12, 1.12);
     if (a.raster && !a.anims && !def.air && speed > 0) { const ph = (fi / FRAMES) * T2; ctx.translate(0, -Math.abs(Math.sin(ph)) * 1.5); ctx.rotate(Math.sin(ph) * 0.035); }   // шаг: лёгкое покачивание
     if (mirror) ctx.scale(-1, 1);
-    if (a.anims) drawAnim(ctx, e.type, animName, fi); else ctx.drawImage(spr, -a.ax, -a.ay, spr.lw, spr.lh);
+    if (a.anims) { const ef = e.elite && eliteFrame(e.type, animName, fi); if (ef) ctx.drawImage(ef, -a.ax, -a.ay, ef.lw, ef.lh); else drawAnim(ctx, e.type, animName, fi); } else ctx.drawImage(spr, -a.ax, -a.ay, spr.lw, spr.lh);
     // оверлеи статусов
     let tint = null;
     if (e.freezeT > 0) tint = ['#9fe0ff', 0.6];
@@ -218,6 +220,7 @@ export class Renderer {
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.45 + 0.2 * Math.sin(t * 3.2) + (ch.shake > 0 ? 0.25 : 0); ctx.drawImage(glowSprite('#ffffff'), ch.x - 34, y - 52, 68, 50); ctx.restore();
     ctx.save(); ctx.translate(x, y); ctx.rotate(sh * 0.012); ctx.imageSmoothingQuality = 'high'; ctx.drawImage(im, -w / 2, -w * ar * 0.92, w, w * ar); ctx.restore();
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = '#fffbe0'; for (let i = 0; i < 3; i++) { const ph = (t * 0.8 + i / 3) % 1, a = Math.sin(ph * Math.PI); ctx.globalAlpha = a * 0.85; const sx = ch.x - 8 + i * 8, sy = y - 24 - ph * 18; ctx.beginPath(); ctx.arc(sx, sy, 1.4 + a, 0, T2); ctx.fill(); } ctx.restore();
+    if (ch.behind && this.bg && this.bg.trees) { const tr = this.bg.trees.get(ch.behind); if (tr && tr.c.width) { ctx.imageSmoothingQuality = 'high'; ctx.drawImage(tr.c, tr.x, tr.y, tr.w, tr.h); } }      // сундук за деревом: крона и ствол поверх него
     if (ch.hits > 0) for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(ch.x + (i - 1) * 9, y - 46, 3.2, 0, T2); ctx.fillStyle = i < ch.hits ? '#ffe27a' : 'rgba(0,0,0,.55)'; ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = '#140a04'; ctx.stroke(); }
   }
 

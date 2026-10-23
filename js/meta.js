@@ -1,6 +1,7 @@
 // Мета-прогресс: души, дары кузницы, открытие башен, достижения. Не зависит от DOM (можно тестировать в Node).
-import * as D from './data.js?v=20261023171212';
+import * as D from './data.js?v=20261023175722';
 
+export const SOUL_K = 0.5;                  // общий множитель душ: души дают прокачку, поэтому капают вдвое скупее прежнего
 export const DIFF_SOULS = [0.7, 1, 1.8];   // множитель душ по сложности (индекс как в DIFFS)
 
 // ───── Дары кузницы ─────
@@ -114,7 +115,7 @@ export const ACH = [
   { id: 'arsenal', name: 'Арсенал', desc: 'Открой все башни в Кузнице душ', goal: 1, val: (c) => (lockedTowers(c.save).length === 0 ? 1 : 0), reward: 30 },
   { id: 'tempered', name: 'Закалённый', desc: 'Прокачай любой дар Кузницы до максимума', goal: 1, val: (c) => (PERKS.some((p) => (c.save.perks[p.id] || 0) >= p.max) ? 1 : 0), reward: 25 },
 ];
-for (const a of ACH) a.reward = Math.max(1, Math.round(a.reward * 0.4));      // награды душами скромные: прокачка идёт неспешно
+for (const a of ACH) a.reward = Math.max(1, Math.round(a.reward * 0.4 * SOUL_K * 1.5));      // награды душами скромные: прокачка идёт неспешно
 
 
 export function newLife() { return { kills: 0, decaps: 0, sawKills: 0, shatters: 0, airKills: 0, burnKills: 0, bagsTapped: 0, bosses: {}, bestWave: 0, wins: 0, hellWin: 0, flawless: 0, noEconWin: 0, hardcoreWin: 0, mapWins: {}, levels: 0 }; }
@@ -131,7 +132,7 @@ export class Meta {
       maxTowerLvl: 0, bothBranches: 0, earlyCalls: 0, econUsed: false, souls: 0, soulsF: 0, newAch: [], startLives: sim.lives, score: 0 };
     const tut = !!sim.map.tutorial;                     // обучение наград не раздаёт: только подарок за прохождение
     this.tut = tut;
-    const award = (x) => { if (tut) return; run.soulsF += x * dm; const w = Math.floor(run.soulsF); if (w > 0) { run.soulsF -= w; run.souls += w; save.souls += w; } };
+    const award = (x) => { if (tut) return; run.soulsF += x * dm * SOUL_K; const w = Math.floor(run.soulsF); if (w > 0) { run.soulsF -= w; run.souls += w; save.souls += w; } };
     this.award = award;
     let burst = { t: -9, n: 0 };
     sim.on('kill', (d) => {

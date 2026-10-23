@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261023171212';
+import { COLS, ROWS } from './layouts.js?v=20261023175722';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD = 80;
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261023171212';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261023175722';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -517,5 +517,6 @@ export const BOOSTS = {
   lives: { name: 'Запас жизней',  short: '+5 жизней (не действует на Хардкоре)', base: 5 },
   souls: { name: 'Свиток душ',    short: 'Души за уровень ×1,5', base: 6 },
 };
+export const REVIVE = { lives: 5 };                                                       // возрождение у ворот: столько жизней за цену усилителя «Запас жизней» (цену считает сервер)
 export const BOOST_ORDER = ['gold', 'lives', 'souls'];
 export const boostPrice = (id, lvl) => Math.ceil(BOOSTS[id].base * (1 + 0.1 * Math.max(0, lvl - 1)));      // чем дальше уровень, тем дороже

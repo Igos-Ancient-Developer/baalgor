@@ -1,9 +1,9 @@
 // Окружение: фон карт, пятна крови, иконки интерфейса. На картах стоят только деревья и валуны; портал и ворота — на концах дороги.
-import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023171212';
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261023171212';
-import { UI_IMG, inner } from './iconmap.js?v=20261023171212';
-import { BLOOD } from './enemies.js?v=20261023171212';
-import { SPR, img } from './sprites.js?v=20261023171212';
+import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023175722';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261023175722';
+import { UI_IMG, inner } from './iconmap.js?v=20261023175722';
+import { BLOOD } from './enemies.js?v=20261023175722';
+import { SPR, img } from './sprites.js?v=20261023175722';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -108,7 +108,7 @@ const DECOR_SCALE = { statue: 0.78, tree: 0.9, rock: 0.9 };            // дек
 function natDecor(g, L, kind, x, y, key) {
   const list = L.m.decor[L.theme] && L.m.decor[L.theme][kind]; if (!list || !list.length) return false;
   const q = list[key % list.length], ds = DECOR_SCALE[kind] || 1, ww = q.ww * ds, wh = q.wh * ds;
-  shadowEll(g, x, y + 13, ww * 0.36, Math.min(6, 2.5 + ww * 0.05), 0.4); g.imageSmoothingQuality = 'high'; g.drawImage(L.decor, q.x, q.y, q.w, q.h, x - ww / 2, y + 15 - wh, ww, wh); return true;
+  shadowEll(g, x, y + 13, ww * 0.36, Math.min(6, 2.5 + ww * 0.05), 0.4); g.imageSmoothingQuality = 'high'; g.drawImage(L.decor, q.x, q.y, q.w, q.h, x - ww / 2, y + 15 - wh, ww, wh); return { q, ww, wh, x: x - ww / 2, y: y + 15 - wh };
 }
 
 // ───── портал врагов и ворота крепости ─────
@@ -128,7 +128,7 @@ function drawGate(g, x, y) {
 export function bakeMap(map, scale = S) {
   const th = THEMES[map.theme], R = rng(map.id.length * 7919 + 13), bs = clamp(scale, 1.5, 2.25);
   const BW = WORLD_W + PAD.l + PAD.r, BH = WORLD_H + PAD.t + PAD.b;
-  const L = SPR.ok ? landSet(map.theme) : null, cells = roadCells(map);
+  const L = SPR.ok ? landSet(map.theme) : null, cells = roadCells(map), trees = new Map();
   const c = mkS(BW, BH, bs, (g) => {
     g.translate(PAD.l, PAD.t);
     if (L) { groundTiles(g, L); roadFill(g, L, map.theme, cells); roadEdges(g, L, map.theme, cells, map, R); }
@@ -142,7 +142,14 @@ export function bakeMap(map, scale = S) {
     const onPath = new Set(cells.keys()), dec = new Set(map.decor.map(([cc, r]) => cc + ',' + r));
     if (L) borders(g, L, map.theme);
     // деревья, камни и статуи по рядам (сверху вниз)
-    [...map.decor].sort((a, b) => a[1] - b[1]).forEach(([cc, r, kind]) => { if (!(L && natDecor(g, L, kind, (cc + 0.5) * CELL, (r + 0.5) * CELL, cc * 5 + r * 3 + map.index))) DECOR[kind](g, (cc + 0.5) * CELL, (r + 0.5) * CELL); });
+    [...map.decor].sort((a, b) => a[1] - b[1]).forEach(([cc, r, kind]) => {
+      const d = L && natDecor(g, L, kind, (cc + 0.5) * CELL, (r + 0.5) * CELL, cc * 5 + r * 3 + map.index);
+      if (!d) { DECOR[kind](g, (cc + 0.5) * CELL, (r + 0.5) * CELL); return; }
+      if (kind === 'tree') {                                                              // копия дерева: сундук, спрятанный за деревом, дорисовывается им поверх
+        const sp = mkS(d.ww, d.wh, bs, (g2) => { g2.imageSmoothingQuality = 'high'; g2.drawImage(L.decor, d.q.x, d.q.y, d.q.w, d.q.h, 0, 0, d.ww, d.wh); });
+        trees.set(cc + ',' + r, { c: sp, x: d.x, y: d.y, w: d.ww, h: d.wh });
+      }
+    });
     // портал в начале каждой дороги, ворота в конце
     if (L) {
       for (const p of map.paths) drawPortal(g, L, (p[0][0] + 0.5) * CELL, (p[0][1] + 0.5) * CELL);
@@ -155,6 +162,7 @@ export function bakeMap(map, scale = S) {
       g.fillStyle = lin(g, x0, y0, x1, y1, [[0, 'rgba(8,2,6,0.5)'], [1, 'rgba(8,2,6,0)']]); g.fillRect(rx, ry, rw, rh);
     }
   });
+  c.trees = trees;
   return c;
 }
 
@@ -164,7 +172,7 @@ export function mapBG(map, scale) {
   if (bgCache && bgCache.id === map.id) return bgCache.c;
   releaseBG(); bgCache = { id: map.id, c: bakeMap(map, scale) }; return bgCache.c;
 }
-export function releaseBG() { if (bgCache) { bgCache.c.width = 0; bgCache = null; } }
+export function releaseBG() { if (bgCache) { if (bgCache.c.trees) for (const t of bgCache.c.trees.values()) t.c.width = 0; bgCache.c.width = 0; bgCache = null; } }
 
 // ───── кровь ─────
 // kind: ключ BLOOD; возвращает спрайты пятен

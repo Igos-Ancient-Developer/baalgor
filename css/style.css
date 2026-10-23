@@ -77,8 +77,8 @@ img[data-icon] { width: 20px; height: 20px; display: block; pointer-events: none
 #end-stats div { padding: 8px; border-radius: 10px; background: #1c0e13; border: 1px solid var(--edge); text-align: center; font-size: 11px; color: var(--muted); }
 #end-stats b { display: block; font-family: var(--font); font-size: 22px; color: var(--bone); font-weight: 700; }
 .embers { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.embers::before, .embers::after { content: ''; position: absolute; left: 0; right: 0; bottom: -20px; height: 100%; background-image: radial-gradient(circle, #ff7a2a 0 1.5px, transparent 2px), radial-gradient(circle, #ffb04a 0 1px, transparent 1.5px); background-size: 90px 110px, 140px 170px; background-position: 10px 0, 60px 40px; opacity: .5; animation: rise 9s linear infinite; }
-.embers::after { background-size: 120px 140px, 70px 90px; animation-duration: 14s; opacity: .35; }
+.embers::before, .embers::after { content: ''; position: absolute; left: 0; right: 0; bottom: -20px; height: 100%; background-image: radial-gradient(circle, #ff7a2a 0 1.5px, transparent 2px), radial-gradient(circle, #ffb04a 0 1px, transparent 1.5px); background-size: 90px 110px, 140px 170px; background-position: 10px 0, 60px 40px; opacity: .5; animation: rise 9s steps(90) infinite; }
+.embers::after { background-size: 120px 140px, 70px 90px; animation-duration: 14s; animation-timing-function: steps(105); opacity: .35; }      /* угольки двигаются 10 раз в секунду: медленный подъём выглядит так же, а телефон не греется */
 @keyframes rise { from { transform: translateY(20px); } to { transform: translateY(-140px); } }
 
 @media (max-height: 720px) {
@@ -167,7 +167,7 @@ img[data-icon] { width: 20px; height: 20px; display: block; pointer-events: none
 .brow .av { width: 34px; height: 34px; } .brow .nm { font-size: 14px; }
 #bd-me { position: sticky; bottom: 0; width: min(100%, 520px); margin: 0 auto; padding: 8px 12px calc(8px + var(--sa-bottom)); background: linear-gradient(transparent, #0b0609 40%); } #bd-me .brow { border-color: var(--gold); background: linear-gradient(#3a2a12, #1c1408); }
 .empty-state { text-align: center; padding: 40px 10px; color: var(--muted); font-family: var(--font); font-size: 16px; } .empty-state img { width: 64px; height: 64px; opacity: .5; display: block; margin: 0 auto 8px; }
-.skel { height: 36px; border-radius: 10px; background: linear-gradient(90deg, #1c0e13, #2a1a20, #1c0e13); background-size: 200% 100%; animation: skel 1.2s linear infinite; } @keyframes skel { to { background-position: -200% 0; } }
+.skel { height: 36px; border-radius: 10px; background: linear-gradient(90deg, #1c0e13, #2a1a20, #1c0e13); background-size: 200% 100%; animation: skel 1.2s linear 6; } @keyframes skel { to { background-position: -200% 0; } }
 
 /* ───── конец партии ───── */
 #end-score { text-align: center; font-family: var(--font); font-weight: 700; font-size: 52px; line-height: 1; color: #ffe9a8; text-shadow: 0 3px 0 #5a3a08, 0 0 18px rgba(245,192,74,.5); display: flex; justify-content: center; align-items: center; gap: 8px; } #end-score img { width: 40px; height: 40px; }
@@ -805,3 +805,24 @@ body.tgback #world.screen.sub { padding-top: var(--sa-top); }
 
 /* пока открыто любое окно поверх главного экрана, искры на заднем плане не анимируются */
 body.menuopen .embers::before, body.menuopen .embers::after { animation: none; }
+
+/* магазин: никаких размытых теней и фильтров на каждой кнопке и карточке (на телефоне это постоянная нагрузка на видеочип при прокрутке) */
+#shop .btn, #shop .stn { filter: none !important; }
+#shop .sh-card, #shop .pcard, #shop .krow { box-shadow: 0 0 0 2px #0b0c0c !important; }
+#shop .sh-card.starter { box-shadow: 0 0 0 2px #0b0c0c, 0 0 0 4px #d8a82a !important; }
+#shop .pcard { box-shadow: 0 0 0 2px #0b0c0c, 0 0 0 3.5px var(--c) !important; }
+
+/* возрождение у ворот: бой замер, экран темнеет, игроку предлагают вернуть жизни за кристаллы */
+#revive { position: absolute; inset: 0; z-index: 44; display: grid; place-items: center; padding: 16px; background: rgba(6,2,4,.78); animation: fadein .2s ease-out; }
+.rv-box { width: min(100%, 340px); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 16px 14px; border-radius: 18px; background: var(--slab); box-shadow: 0 0 0 2px #0b0c0c, 0 0 0 4px #c8402a, 0 12px 30px rgba(0,0,0,.85); text-align: center; }
+.rv-ic { width: 64px; height: 64px; border-radius: 14px; margin-top: -4px; filter: drop-shadow(0 0 10px rgba(255,60,60,.6)); }
+.rv-t { font-family: var(--gothic); font-size: 26px; color: #ff6a5a; text-shadow: 0 2px 0 #000; }
+.rv-s { font-size: 14px; line-height: 1.35; color: #d8d8cc; }
+.rv-bal { display: flex; align-items: center; justify-content: center; gap: 6px; font-family: var(--font); font-weight: 700; font-size: 15px; color: #e0d0ff; }
+#revive .btn { width: 100%; }
+#revive .btn b { margin-left: 4px; }
+.rv-no { padding: 6px 14px; font-size: 13px; color: #9a9f94; text-decoration: underline; }
+/* пауза: текущие очки */
+#p-score { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: -2px 0 6px; font-family: var(--font); color: #ffe27a; }
+#p-score .ps-v { display: flex; align-items: center; gap: 6px; font-size: 30px; font-weight: 700; text-shadow: 0 2px 0 #5a3a08; } #p-score .ps-v img { width: 30px; height: 30px; }
+#p-score small { font-size: 12px; color: #b8bcb0; letter-spacing: .04em; }

@@ -1,12 +1,12 @@
 // Экраны меню: Кузница душ и Достижения (иконки в стиле WC3).
-import * as D from './data.js?v=20261023171212';
-import { uiIcon } from './env.js?v=20261023171212';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261023171212';
-import { towerIcon, econIcon } from './ui.js?v=20261023171212';
-import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261023171212';
-import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261023171212';
-import { ACH_IMG } from './iconmap.js?v=20261023171212';
-import { Wallet } from './wallet.js?v=20261023171212';
+import * as D from './data.js?v=20261023175722';
+import { uiIcon } from './env.js?v=20261023175722';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261023175722';
+import { towerIcon, econIcon } from './ui.js?v=20261023175722';
+import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261023175722';
+import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261023175722';
+import { ACH_IMG } from './iconmap.js?v=20261023175722';
+import { Wallet } from './wallet.js?v=20261023175722';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -57,9 +57,9 @@ export function renderForge(save, sfx, onChange, openShop) {
     }
     ub.appendChild(row);
   }
-  // пополнение донат-монет: платёж через Telegram Stars подключается на стороне бота
-  const top = el('div', 'frow'); top.innerHTML = `<img class="fi" src="${bareGlyphUrl('gem', 40)}" alt=""><div class="ft"><div class="fn">Донат-кристаллы</div><div class="fd">Открывают закрытые башни, здания и слоты сразу. Покупаются за ⭐ Telegram Stars</div></div>`;
-  const tb = el('button', 'fbuy gem', 'Купить'); tb.onclick = () => { sfx.play('click'); openShop && openShop(); }; top.appendChild(tb); ub.prepend(top);
+  // кристаллы: платёж через Telegram Stars; здесь они нужны для того, что игрок получит сразу
+  const top = el('div', 'frow'); top.innerHTML = `<img class="fi" src="${bareGlyphUrl('gem', 40)}" alt=""><div class="ft"><div class="fn">Кристаллы</div><div class="fd">Любая башня, слот или усиление — сразу, без долгого гринда душ</div></div>`;
+  const tb = el('button', 'fbuy gem', 'Пополнить'); tb.onclick = () => { sfx.play('click'); openShop && openShop(); }; top.appendChild(tb); ub.prepend(top);
   // премиум-башни: только за кристаллы
   const pb = $('#premium'); pb.innerHTML = '';
   for (const id of D.PREMIUM_ORDER) {

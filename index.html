@@ -36,8 +36,8 @@ img:not([src]),img[src=""]{visibility:hidden}
 @font-face{font-family:'Oswald';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/oswald-latin-5.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 </style>
 <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="css/style.css?v=20261023171212" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="css/style.css?v=20261023171212"></noscript>
+<link rel="stylesheet" href="css/style.css?v=20261023175722" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="css/style.css?v=20261023175722"></noscript>
 </head>
 <body>
 <div id="app">
@@ -70,6 +70,15 @@ img:not([src]),img[src=""]{visibility:hidden}
       <div id="sel" class="hidden"></div>
     </div>
 
+    <div id="revive" class="hidden"><div class="rv-box">
+      <img class="rv-ic" id="rv-ic" alt="">
+      <div class="rv-t">Крепость пала!</div>
+      <div class="rv-s" id="rv-sub"></div>
+      <div class="rv-bal" id="rv-bal"></div>
+      <button class="btn big" id="rv-buy"></button>
+      <button class="btn" id="rv-shop">Пополнить кристаллы</button>
+      <button class="rv-no" id="rv-no">Сдаться</button>
+    </div></div>
     <div id="sellmodal" class="hidden"><div class="sm-box"><div class="sm-top"><img id="sm-ic" alt=""><div class="sm-v"><img class="cg" alt=""><b id="sm-v">0</b></div></div><div class="sm-q">Продать здание?</div><div class="sm-b"><button id="sm-yes" aria-label="Продать">✓</button><button id="sm-no" aria-label="Отмена">✕</button></div></div></div>
 
     <div id="upmodal" class="hidden">
@@ -178,6 +187,7 @@ img:not([src]),img[src=""]{visibility:hidden}
   <div id="pausemenu" class="screen overlay hidden">
     <div class="modal">
       <h2>Пауза</h2>
+      <div id="p-score"></div>
       <button class="btn big" id="p-resume">Продолжить</button>
       <button class="btn" id="p-settings">Настройки</button>
       <button class="btn" id="p-restart">Заново</button>
@@ -203,6 +213,6 @@ img:not([src]),img[src=""]{visibility:hidden}
   </div>
 
 </div>
-<script type="module" src="js/main.js?v=20261023171212"></script>
+<script type="module" src="js/main.js?v=20261023175722"></script>
 </body>
 </html>

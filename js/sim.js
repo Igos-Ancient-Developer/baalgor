@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261023171212';
+import * as D from './data.js?v=20261023175722';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -87,6 +87,8 @@ export class Sim {
     this.nextWaveT = D.FIRST_WAVE_DELAY;
     this.tickT = 0;
     this.state = 'play';          // play | won | lost
+    this.revive = { on: false, used: 0, max: 2 };      // возрождение за кристаллы (включает main: обычная игра, не Хардкор и не рейтинговый забег)
+    this.limbo = false;           // враг прошёл в ворота на последней жизни: бой замер, ждём решения игрока
     this.enemies = []; this.buildings = []; this.guards = [];
     this.projs = []; this.zones = []; this.bags = []; this.fx = [];
     this.queue = []; this.qi = 0;
@@ -107,12 +109,23 @@ export class Sim {
   inBounds(c, r) { return c >= 0 && c < COLS && r >= 0 && r < ROWS; }
   canBuild(c, r) { return this.inBounds(c, r) && !this.pathCell[r][c] && !this.decorCell[r][c] && !this.grid[r][c] && !(this.chest && this.chest.c === c && this.chest.r === r); }
   // ───── сундук-сюрприз ─────
+  // Сундук появляется не только на видных местах: у краёв и в углах карты (куда надо докрутить) и за деревьями (из-за ствола виден лишь кусок).
   placeChest() {
     if (this.map.tutorial || this.xrng() >= D.CHEST_CHANCE) return;
-    const cells = []; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (!this.pathCell[r][c] && !this.decorCell[r][c]) cells.push([c, r]);
-    if (!cells.length) return;
-    const [c, r] = cells[Math.floor(this.xrng() * cells.length)];
-    this.chest = { c, r, x: (c + 0.5) * CELL, y: (r + 0.5) * CELL, hits: 0, shake: 0, born: 0 };
+    const spots = [];
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      if (this.pathCell[r][c] || this.decorCell[r][c]) continue;
+      const edge = c === 0 || c === COLS - 1, vedge = r === 0 || r === ROWS - 1;
+      spots.push({ c, r, w: 1 + (edge ? 3 : 0) + (vedge ? 2 : 0) + (edge && vedge ? 3 : 0), x: (c + 0.5) * CELL, y: (r + 0.5) * CELL });
+    }
+    for (const [c, r, kind] of this.map.decor) if (kind === 'tree') {
+      const side = this.xrng() < 0.5 ? -1 : 1;
+      spots.push({ c, r, w: 12, x: (c + 0.5) * CELL + side * 11, y: (r + 0.5) * CELL + 3, behind: c + ',' + r });
+    }
+    if (!spots.length) return;
+    let t = this.xrng() * spots.reduce((s2, q) => s2 + q.w, 0), sp = spots[spots.length - 1];
+    for (const q of spots) { t -= q.w; if (t <= 0) { sp = q; break; } }
+    this.chest = { c: sp.c, r: sp.r, x: sp.x, y: sp.y, hits: 0, shake: 0, born: 0, behind: sp.behind || null };
   }
   chestAt(x, y) { const ch = this.chest; return !!ch && Math.abs(x - ch.x) <= 28 && Math.abs(y - (ch.y - 8)) <= 28; }
   // касание сундука: он вздрагивает; после последнего касания взрывается, монеты сыплются на его место
@@ -485,8 +498,14 @@ export class Sim {
     this.lives = Math.max(0, this.lives - e.def.lives);
     if (e.engaged) { const h = e.engaged.holds; const i = h.indexOf(e); if (i >= 0) h.splice(i, 1); }
     this.emit('leak', { e, x: e.x, y: e.y });
-    if (this.lives <= 0 && this.state === 'play') { this.state = 'lost'; this.finish(false); this.emit('over', { won: false }); }
+    if (this.lives <= 0 && this.state === 'play' && !this.limbo) {
+      if (this.revive.on && this.revive.used < this.revive.max) { this.limbo = true; this.emit('limbo', { used: this.revive.used }); }
+      else { this.state = 'lost'; this.finish(false); this.emit('over', { won: false }); }
+    }
   }
+  // решение игрока в момент гибели: вернуть жизни (бой идёт дальше) или сдаться
+  reviveWith(n) { if (!this.limbo) return; this.limbo = false; this.revive.used++; this.lives = n; this.emit('revived', { n }); }
+  giveUp() { if (!this.limbo) return; this.limbo = false; if (this.state === 'play') { this.state = 'lost'; this.finish(false); this.emit('over', { won: false }); } }
 
   // ───── заклинания ─────
   castSpell(id, x, y) {
@@ -543,6 +562,7 @@ export class Sim {
 
   // ───── главный апдейт ─────
   update(dt) {
+    if (this.limbo) return;
     if (this.state !== 'play' && this.state !== 'won') return;
     if (this.state === 'lost') return;
     this.time += dt;
@@ -570,7 +590,7 @@ export class Sim {
     this.updateFx(dt);
     for (let i = this.bags.length - 1; i >= 0; i--) {
       const bg = this.bags[i]; bg.t += dt;
-      if (bg.t >= bg.life) { this.bags.splice(i, 1); this.emit('coinlost', bg); }          // не успел собрать — монета пропала
+      if (bg.t >= bg.life) { bg.amt = Math.max(1, Math.round(bg.amt * 0.5)); this.collectBag(bg, false); }          // не успел тапнуть — рудник отдаёт половину сам
     }
     // чистка
     if (this.enemies.some((e) => e.dead)) this.enemies = this.enemies.filter((e) => !e.dead);

@@ -1,25 +1,26 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261023171212';
-import * as A from './art.js?v=20261023171212';
-import { Sim } from './sim.js?v=20261023171212';
-import { Gore } from './gore.js?v=20261023171212';
-import { Renderer } from './render.js?v=20261023171212';
-import { GameUI } from './ui.js?v=20261023171212';
-import { Tutorial } from './tutorial.js?v=20261023171212';
-import { Sfx, attachSfx } from './audio.js?v=20261023171212';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023171212';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023171212';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261023171212';
-import { mapBG, releaseBG } from './env.js?v=20261023171212';
-import { levelSpec, MENU_SPEC } from './music.js?v=20261023171212';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023171212';
-import { renderForge, renderAchs } from './screens.js?v=20261023171212';
-import { renderShop } from './shop.js?v=20261023171212';
-import { Wallet } from './wallet.js?v=20261023171212';
-import { initLang, pickLang } from './i18n.js?v=20261023171212';
-import { Menus, RUN, clock } from './menus.js?v=20261023171212';
-import { Net } from './net.js?v=20261023171212';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023171212';
+import * as D from './data.js?v=20261023175722';
+import * as A from './art.js?v=20261023175722';
+import { Sim } from './sim.js?v=20261023175722';
+import { Gore } from './gore.js?v=20261023175722';
+import { Renderer } from './render.js?v=20261023175722';
+import { GameUI } from './ui.js?v=20261023175722';
+import { Tutorial } from './tutorial.js?v=20261023175722';
+import { Sfx, attachSfx } from './audio.js?v=20261023175722';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023175722';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023175722';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261023175722';
+import { mapBG, releaseBG } from './env.js?v=20261023175722';
+import { levelSpec, MENU_SPEC } from './music.js?v=20261023175722';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023175722';
+import { renderForge, renderAchs } from './screens.js?v=20261023175722';
+import { renderShop } from './shop.js?v=20261023175722';
+import { Wallet } from './wallet.js?v=20261023175722';
+import { initLang, pickLang } from './i18n.js?v=20261023175722';
+import { Menus, RUN, clock } from './menus.js?v=20261023175722';
+import { Net } from './net.js?v=20261023175722';
+import { gemIc } from './res.js?v=20261023175722';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023175722';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -48,7 +49,7 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023171212').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023175722').then((m) => m.enemyDemo(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
@@ -56,10 +57,10 @@ async function boot() {
   await loadSprites((f) => { $('#loadfill').style.width = Math.round(f * 100) + '%'; });
   menus = new Menus(ctrl); ctrl.menus = menus;
   $('#loadfill').style.width = '100%';
-  setupGameUi(); setupInput(); setupOverlays(); setupNav();
+  setupGameUi(); setupInput(); setupOverlays(); setupRevive(); setupNav();
   Wallet.init(save, () => { persist(); }); Wallet.sync().then(() => { if (!$('#title').classList.contains('hidden')) menus.buildTitle(); });
   hide('#loading'); goTitle();
-  last = performance.now(); requestAnimationFrame(frame);
+  last = performance.now();
 }
 
 // ───────── ресурсы уровня ─────────
@@ -90,13 +91,14 @@ const SCREENS = ['#title', '#world', '#game'], OVERLAYS = ['#shop', '#settings',
 function hideAll() { for (const id of [...SCREENS, ...OVERLAYS]) hide(id); }
 function goTitle() { hideAll(); stopPlay(); releaseLevel(); menus.buildTitle(); show('#title'); sfx.startMusic(MENU_SPEC); updateBack(); }
 function goWorld(focus) { hideAll(); stopPlay(); releaseLevel(); menus.buildWorld(focus); show('#world'); sfx.startMusic(MENU_SPEC); updateBack(); }
-function stopPlay() { running = false; paused = false; held = false; run = null; ctrl.run = null; document.body.classList.remove('ranked'); TG.closingConfirm(false); if (tutorial) tutorial.detach(); if (ui) ui.closeUpgrade(true); tally++; }
+function stopPlay() { running = false; paused = false; held = false; reviveOpen = false; hide('#revive'); run = null; ctrl.run = null; document.body.classList.remove('ranked'); TG.closingConfirm(false); if (tutorial) tutorial.detach(); if (ui) ui.closeUpgrade(true); tally++; }
 function top() { for (const id of ['#shop', '#settings', '#board', '#forge', '#achs', '#loadout', '#rankedsheet', '#diffsheet']) if (!$(id).classList.contains('hidden')) return id; return null; }
 function back() {
   const t = top();
+  if (!t && reviveOpen) { sfx.play('error'); return; }              // у ворот назад пути нет: либо вернуть жизни, либо сдаться
   if (t) {
     if (t === '#loadout' && run && run.i > 0) { sfx.play('error'); return; }             // посреди забега назад пути нет
-    hide(t); if (t === '#forge' || t === '#achs' || t === '#shop') { menus.buildTitle(); if (!$('#world').classList.contains('hidden')) menus.buildWorld(); if (!$('#loadout').classList.contains('hidden')) menus.refreshLoadout(); if (t === '#shop' && ctrl.forgeDraw && !$('#forge').classList.contains('hidden')) ctrl.forgeDraw(); }
+    hide(t); if (t === '#forge' || t === '#achs' || t === '#shop') { menus.buildTitle(); if (!$('#world').classList.contains('hidden')) menus.buildWorld(); if (!$('#loadout').classList.contains('hidden')) menus.refreshLoadout(); if (t === '#shop' && ctrl.forgeDraw && !$('#forge').classList.contains('hidden')) ctrl.forgeDraw(); if (t === '#shop' && reviveOpen) { renderRevive(); show('#revive'); } }
     sfx.play('click'); updateBack(); return;
   }
   if (!$('#world').classList.contains('hidden')) { sfx.play('click'); goTitle(); return; }
@@ -149,9 +151,43 @@ function setupOverlays() {
   };
   $('#end-verdict').onclick = () => { tally++; };       // касание пропускает анимацию подсчёта
 }
+// ───────── возрождение у ворот ─────
+// Враг прошёл в ворота на последней жизни: бой замирает, экран темнеет, игроку предлагают вернуть жизни за кристаллы.
+// Не хватает кристаллов — «Пополнить» открывает магазин, после покупки пакета окно возвращается с новым балансом и жизни покупаются в один тап.
+let reviveOpen = false, reviveBusy = false;
+const revivePrice = () => D.boostPrice('lives', D.MAPS[levelIdx].lvl);
+function renderRevive() {
+  const price = revivePrice(), have = save.gems || 0, enough = have >= price, left = sim.revive.max - sim.revive.used - 1;
+  $('#rv-ic').src = bareGlyphUrl('heart', 128);
+  $('#rv-sub').textContent = enough ? 'Последний враг прорвался в ворота. Верни жизни и продолжи бой с этого же места.' : 'Последний враг прорвался в ворота. Пополни кристаллы, верни жизни и продолжи бой с этого же места.';
+  $('#rv-bal').innerHTML = `У тебя: ${gemIc(18)} ${fmt(have)}` + (left > 0 ? ` · ещё возрождений: ${left}` : '');
+  $('#rv-buy').innerHTML = `+${D.REVIVE.lives} жизней · ${gemIc(18)} ${price}`;
+  $('#rv-buy').classList.toggle('hidden', !enough); $('#rv-shop').classList.toggle('hidden', enough);
+}
+function openRevive() { reviveOpen = true; held = true; sfx.play('error'); renderRevive(); show('#revive'); }
+function closeRevive() { reviveOpen = false; held = false; hide('#revive'); }
+function setupRevive() {
+  $('#rv-buy').onclick = async () => {
+    if (reviveBusy || !reviveOpen) return; reviveBusy = true;
+    const r = await Wallet.spend('boost', 'lives', revivePrice(), D.MAPS[levelIdx].lvl); reviveBusy = false;
+    if (!reviveOpen || !sim) return;
+    if (r && r.ok) { persist(); closeRevive(); sim.reviveWith(D.REVIVE.lives); sfx.play('win'); ctrl.note(`+${D.REVIVE.lives} жизней`); }
+    else { sfx.play('error'); if (r && r.error === 'gems') renderRevive(); else ctrl.note('Не получилось, попробуй ещё раз'); }
+  };
+  $('#rv-shop').onclick = () => { hide('#revive'); ctrl.openShop(); };            // окно возрождения прячется под магазин и возвращается, когда его закроют
+  $('#rv-no').onclick = () => { if (!reviveOpen || !sim) return; closeRevive(); sim.giveUp(); };
+}
+// текущие очки в меню паузы (в рейтинговом забеге — за весь забег и время)
+function renderPauseScore() {
+  const box = $('#p-score'); if (!sim || D.MAPS[levelIdx].tutorial) { box.innerHTML = ''; return; }
+  const sc = Math.round(sim.score), img = `<img src="${SCORE_ICON}" alt="">`;
+  box.innerHTML = run
+    ? `<div class="ps-v">${img}${fmt(run.score + sim.score)}</div><small>Рубеж ${run.i + 1} из ${run.levels.length} · время ${clock(run.time + sim.time)} · за этот рубеж +${fmt(sc)}</small>`
+    : `<div class="ps-v">${img}${fmt(sc)}</div><small>Очки за уровень · волна ${sim.wave} из ${sim.total}</small>`;
+}
 function setPause(p) {
   if (!running) return; paused = p; sfx.play('click');
-  if (p) show('#pausemenu'); else hide('#pausemenu');
+  if (p) { renderPauseScore(); show('#pausemenu'); } else hide('#pausemenu');
   $('#p-restart').classList.toggle('hidden', !!run); $('#p-quit').textContent = run ? 'Завершить забег' : D.MAPS[levelIdx].tutorial ? 'В меню' : 'На карту';
   $('#b-pause').classList.toggle('on', p);
 }
@@ -233,9 +269,11 @@ async function startLevel(levelId, diffIdx, ranked, loadout, boosts = []) {
   document.body.classList.toggle('ranked', ranked); $('#chip-time').classList.toggle('hidden', !ranked);
   ui.attachSim(sim, loadout);
   meta = new Meta(save, { persist, onUnlock: showAchToast }); meta.attach(sim, diffIdx, levelIdx, { soulMult: boosts.includes('souls') ? 1.5 : 1 }); pollT = 0;
+  sim.revive.on = !ranked && !tut && diffIdx !== 4;           // возрождение за кристаллы: только обычная игра (не обучение, не Хардкор и не рейтинговый забег)
+  sim.on('limbo', () => openRevive());
   sim.on('over', (d) => onOver(d));
   $('#b-pause').classList.remove('on');
-  running = true; paused = false; held = false; acc = 0; ending = null; lastHud = '';
+  reviveOpen = false; hide('#revive'); running = true; paused = false; held = false; acc = 0; ending = null; lastHud = ''; kick();
   save.plays++; save.last = { level: levelId, diff: diffIdx }; if (!ranked && !tut) (save.lastDiff ||= {})[levelId] = diffIdx; persist();
   TG.closingConfirm(true); updateBack();
   sfx.unlock(); sfx.startMusic(levelSpec(L, ranked));
@@ -332,10 +370,13 @@ function showEnd(won) {
 }
 
 // ───────── цикл ─────────
+// Цикл кадров крутится только пока идёт бой: в меню и магазине он не будит телефон 60 раз в секунду (раньше пустой цикл работал всегда).
+let rafId = 0;
+function kick() { cancelAnimationFrame(rafId); last = performance.now(); rafId = requestAnimationFrame(frame); }       // при каждом старте уровня цикл перезапускается заново
 function frame(now) {
-  requestAnimationFrame(frame);
-  let dt = (now - last) / 1000; last = now; dt = Math.min(dt, 0.1);
   if (!running) return;
+  rafId = requestAnimationFrame(frame);
+  let dt = (now - last) / 1000; last = now; dt = Math.min(dt, 0.1);
   const frozen = paused || held;
   if (!frozen) {
     acc += dt; let n = 0;

@@ -1,6 +1,6 @@
 // Процедурные спрайты врагов (кадры ходьбы) и кусков тел для расчленёнки.
-import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261023171212';
-import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023171212';
+import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261023175722';
+import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023175722';
 
 export const FRAMES = 8;
 const T2 = Math.PI * 2;
@@ -390,6 +390,7 @@ const SPRITE_ENEMIES = {
 };
 const FALLBACK = { ...ENEMY_ART };                                // запасные рисованные враги (если лист не загрузился)
 const ENEMY_K = 0.95;                                              // общий масштаб врагов; у каждого вида свой размер (ref листа × scale): гоблин ~36 px, шаман ~42, зомби и скелет ~42, рыцарь ~46, мясник ~53, огр ~58, владыка ~70 (клетка 48)
+const ELITE_RIM = '#e3141f';                                        // усиленные враги обводятся красным
 const RIM = { dark: '#1f1014', px: 0.85, boost: 0.08 };           // тонкая тёмная обводка; px — толщина в мировых пикселях; лёгкая подсветка листа
 // Лист с обводкой: силуэт кольцом смещений (два кольца, чтобы не было зубцов), поверх — сам лист чуть светлее. Поля между кадрами (5+ px) обводка не пересекает.
 function outlineAtlas(im, k) {
@@ -458,6 +459,18 @@ export function animFrame(type, anim, i) {
   const a = ENEMY_ART[type]; if (!a.anims || !a.anims.rows[anim]) return null;
   const k = Math.min(a.anims.rows[anim].n - 1, Math.max(0, i | 0));
   return cached(`af:${type}:${anim}:${k}`, () => mk(a.size, a.size, (g) => drawCell(g, a, anim, k)));
+}
+// Усиленный враг: тот же кадр, но обведён красным вместо тёмного. Кадры собираются при первой встрече и кэшируются (отдельный лист не нужен).
+export function eliteFrame(type, anim, i) {
+  const a = ENEMY_ART[type]; if (!a.anims || !a.anims.rows[anim]) return null;
+  const k = Math.min(a.anims.rows[anim].n - 1, Math.max(0, i | 0));
+  return cached(`el:${type}:${anim}:${k}`, () => {
+    const base = animFrame(type, anim, k), red = tintCanvas(base, `el:${type}:${anim}:${k}`, ELITE_RIM, 1), r = RIM.px * 1.25;
+    return mk(a.size, a.size, (g) => {
+      for (const [rr, n] of [[r, 16], [r * 0.6, 10]]) for (let j = 0; j < n; j++) { const an = (j / n) * T2 + (rr === r ? 0 : 0.3); g.drawImage(red, Math.cos(an) * rr, Math.sin(an) * rr, a.size, a.size); }
+      g.drawImage(base, 0, 0, a.size, a.size);
+    });
+  });
 }
 export function tintCanvas(src, key, color, alpha) {
   return cached(`tc:${key}:${color}:${alpha}`, () => {
