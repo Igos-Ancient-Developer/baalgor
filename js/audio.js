@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261023190843';
+import { createTrack, MENU_SPEC } from './music.js?v=20261023194025';
 export class Sfx {
   constructor() {
     this.ctx = null; this.sfxOn = true; this.musOn = true;
@@ -26,7 +26,7 @@ export class Sfx {
     const comp = this.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.knee.value = 12; comp.ratio.value = 5; comp.attack.value = 0.004; comp.release.value = 0.2;
     this.master.connect(comp); comp.connect(this.ctx.destination);
     this.sfxBus = this.ctx.createGain(); this.sfxBus.gain.value = 1.9 * (this.volS ?? 1); this.sfxBus.connect(this.master);
-    this.musBus = this.ctx.createGain(); this.musBus.gain.value = 2.6 * (this.volM ?? 0.8); this.musBus.connect(this.master);
+    this.musBus = this.ctx.createGain(); this.musBus.gain.value = 2.0 * (this.volM ?? 0.8); this.musBus.connect(this.master);
     // шумовой буфер
     const len = this.ctx.sampleRate * 1.5, buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
@@ -35,13 +35,13 @@ export class Sfx {
     this.delay = this.ctx.createDelay(1.2); this.delay.delayTime.value = 0.42; const fb = this.ctx.createGain(); fb.gain.value = 0.38; const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800;
     this.delay.connect(lp); lp.connect(fb); fb.connect(this.delay); lp.connect(this.musBus);
     // реверберация для музыки: затухающий шум 2.8 с
-    const rl = Math.floor(this.ctx.sampleRate * 2.8), ir = this.ctx.createBuffer(2, rl, this.ctx.sampleRate);
-    for (let ch = 0; ch < 2; ch++) { const d2 = ir.getChannelData(ch); for (let i = 0; i < rl; i++) d2[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / rl, 2.6); }
+    const rl = Math.floor(this.ctx.sampleRate * 1.3), ir = this.ctx.createBuffer(1, rl, this.ctx.sampleRate);
+    for (let ch = 0; ch < 1; ch++) { const d2 = ir.getChannelData(ch); for (let i = 0; i < rl; i++) d2[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / rl, 2.6); }
     const cv = this.ctx.createConvolver(); cv.buffer = ir; const rg = this.ctx.createGain(); rg.gain.value = 0.6; cv.connect(rg); rg.connect(this.musBus); this.rev = cv;
     if (this.musOn && this.wantMusic) this.startMusic();
   }
   setSfx(on) { this.sfxOn = on; }
-  setVolumes(sfx, mus) { this.volS = sfx; this.volM = mus; if (this.ctx) { this.sfxBus.gain.value = 1.9 * sfx; this.musBus.gain.value = 2.6 * mus; } }
+  setVolumes(sfx, mus) { this.volS = sfx; this.volM = mus; if (this.ctx) { this.sfxBus.gain.value = 1.9 * sfx; this.musBus.gain.value = 2.0 * mus; } }
   setMusic(on) { this.musOn = on; if (!this.ctx) return; if (on) this.startMusic(); else this.stopMusic(); }
   gate(name, gap) { if (!this.ctx) return false; const t = this.ctx.currentTime; if (this.last[name] && t - this.last[name] < gap) return false; this.last[name] = t; return true; }
 
@@ -158,6 +158,7 @@ export class Sfx {
     this.wantMusic = false;
     if (this.track) { this.track.stop(); this.track = null; this.trackKey = null; }
   }
+  stinger() { if (this.track && this.track.stinger) this.track.stinger(); }
   setTension(v) { this.tension = Math.max(0, Math.min(1, v)); if (this.track) this.track.setTension(this.tension); }
 }
 
@@ -174,7 +175,7 @@ export function attachSfx(sim, sfx) {
   sim.on('build', () => sfx.play('build')); sim.on('upgrade', () => sfx.play('upgrade')); sim.on('sell', () => sfx.play('sell'));
   sim.on('chest', (d) => { if (d.kind === 'hit') sfx.play('select', 0.9); else { sfx.play('win', 0.6); sfx.play('bag'); setTimeout(() => sfx.play('sparkle'), 150); setTimeout(() => sfx.play('coin'), 120); } });
   sim.on('bag', (d) => sfx.play(d.tapped ? 'bag' : 'coin', 0.8));
-  sim.on('wave', (d) => sfx.play('horn'));
+  sim.on('wave', (d) => { sfx.play('horn'); sfx.stinger(); });
   sim.on('leak', () => sfx.play('leak'));
   sim.on('freeze', () => sfx.play('freeze', 0.5));
   sim.on('stomp', () => sfx.play('stomp'));

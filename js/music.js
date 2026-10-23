@@ -21,10 +21,11 @@ const LEVEL_SPEC = {
 };
 export const MENU_SPEC = { theme: 'menu', root: 33, mode: 'aeolian', density: 0.8, seed: 7 };
 // у каждого уровня своя «песня»: темп, ход аккордов, мотив и ритм считаются из зерна уровня, так что мелодия и пульс у всех 19 уровней разные
+const BPM = { grave: [84, 100], forest: [100, 116], desert: [104, 120], ice: [94, 108], lava: [116, 132], slaughter: [126, 142] };
 const PROGS = [[0, 5, 3, 4], [0, 3, 5, 4], [0, 6, 4, 3], [0, 2, 5, 3], [0, 4, 5, 3], [0, 5, 2, 4], [0, 3, 6, 4], [0, 1, 5, 4]];
 export function levelSpec(level, ranked = false) {
   const t = LEVEL_SPEC[level && level.id] || LEVEL_SPEC.g1, seed = t[4];
-  return { theme: t[0], root: t[1], mode: t[2], density: t[3] * (ranked ? 1.15 : 1), seed, bpm: 50 + ((seed * 13) % 27) + (ranked ? 6 : 0), prog: PROGS[seed % PROGS.length], voice: seed % 2 };
+  return { theme: t[0], root: t[1], mode: t[2], density: t[3] * (ranked ? 1.15 : 1), seed, bpm: ((BPM[t[0]] || [90, 110])[0] + ((seed * 7) % ((BPM[t[0]] || [90, 110])[1] - (BPM[t[0]] || [90, 110])[0] + 1))) + (ranked ? 6 : 0), prog: PROGS[seed % PROGS.length], voice: seed % 2 };
 }
 
 export function createTrack(sfx, spec) {
@@ -142,73 +143,120 @@ export function createTrack(sfx, spec) {
     },
   };
 
-  // ── песня уровня: аккорды-подушка, бас, мотив на голосе сектора и свой ритм ──
-  const song = () => {
-    const beat = 60 / spec.bpm, bar = beat * 4, step = beat / 2, RM = rng(spec.seed * 31 + 7), RD = rng(spec.seed * 57 + 3);
-    const prog = spec.prog || [0, 5, 3, 4], theme = spec.theme, voice = spec.voice || 0;
-    // мотив: 8 восьмых; контур — случайное блуждание по ладу, пауз около трети
-    const motif = []; let d = 2 + ((RM() * 4) | 0);
-    for (let i = 0; i < 8; i++) { if (i > 0 && RM() < 0.38) { motif.push(null); continue; } d = Math.max(0, Math.min(9, d + pick([-2, -1, -1, 0, 1, 1, 2]))); motif.push(d); }
-    motif[0] = motif[0] ?? 3;
-    // ритм: 8 восьмых; сильная доля всегда, остальные удары — из зерна уровня
-    const kick = Array.from({ length: 8 }, (_, i) => i === 0 || (i === 4 && RD() < 0.7) || (i % 2 === 0 && RD() < 0.22));
-    const hat = Array.from({ length: 8 }, (_, i) => i % 2 === 1 && RD() < 0.5);
-    const pad = (midi, t, dur, gain, type = 'sawtooth', lp = 600) => {
-      for (const dt of [-7, 0, 7]) {
-        const o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain(); o.type = type; o.frequency.value = mtof(midi); o.detune.value = dt;
-        f.type = 'lowpass'; f.frequency.setValueAtTime(lp * 0.5, t); f.frequency.linearRampToValueAtTime(lp, t + dur * 0.5); f.frequency.linearRampToValueAtTime(lp * 0.6, t + dur);
-        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain / 3, t + dur * 0.35); g.gain.linearRampToValueAtTime(0.0001, t + dur);
-        o.connect(f); f.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05);
-      }
-    };
-    const flute = (midi, t, dur, gain) => {
-      const f = mtof(midi), o = c.createOscillator(), o2 = c.createOscillator(), l = c.createOscillator(), lg = c.createGain(), g = c.createGain();
-      o.type = 'sine'; o2.type = 'triangle'; o.frequency.value = f; o2.frequency.value = f * 2; l.frequency.value = 5; lg.gain.value = f * 0.006; l.connect(lg); lg.connect(o.frequency);
-      env(g, t, 0.07, gain, dur); o.connect(g); o2.connect(g); g.connect(out); [o, o2, l].forEach((n) => { n.start(t); n.stop(t + dur + 0.05); });
-      burst('bandpass', f * 3, f * 3, t, 0.08, gain * 0.25, 4);
-    };
-    const brass = (midi, t, dur, gain) => {
-      const f = mtof(midi), o = c.createOscillator(), fl = c.createBiquadFilter(), g = c.createGain(); o.type = 'sawtooth'; o.frequency.value = f;
-      fl.type = 'lowpass'; fl.frequency.setValueAtTime(f * 1.5, t); fl.frequency.linearRampToValueAtTime(f * 5, t + dur * 0.3); fl.frequency.linearRampToValueAtTime(f * 1.5, t + dur);
-      env(g, t, 0.12, gain, dur); o.connect(fl); fl.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05);
-    };
-    const celesta = (midi, t, gain) => { const f = mtof(midi); tone('sine', f, f, t, 1.8, gain, 0.004); tone('sine', f * 4, f * 4, t, 0.5, gain * 0.35, 0.003); tone('sine', f * 2.01, f * 2.01, t, 1.0, gain * 0.2, 0.003); };
-    const metal = (midi, t, gain) => { const f = mtof(midi); tone('square', f, f * 0.99, t, 0.9, gain * 0.5, 0.004); tone('square', f * 1.414, f * 1.4, t, 0.7, gain * 0.35, 0.004); };
-    const lead = {
-      grave: (m, t, dur, g) => (voice ? pad(m, t, dur * 1.4, g * 1.6, 'triangle', 1200) : bell(m, t, g * 1.2, 3.6)),
-      forest: (m, t, dur, g) => (voice ? pluck(m, t, g * 1.2) : flute(m, t, dur, g * 1.4)),
-      desert: (m, t, dur, g) => (voice ? flute(m, t, dur, g * 1.3) : pluck(m, t, g * 1.4)),
-      ice: (m, t, dur, g) => (voice ? bell(m, t, g, 4) : celesta(m, t, g * 1.3)),
-      lava: (m, t, dur, g) => (voice ? metal(m, t, g * 1.2) : brass(m, t, dur * 1.2, g * 1.2)),
-      slaughter: (m, t, dur, g) => (voice ? brass(m, t, dur, g) : metal(m, t, g * 1.3)),
-    }[theme] || ((m, t, dur, g) => bell(m, t, g, 3));
-    const drums = { desert: 1, lava: 1, slaughter: 1, forest: 0.6, grave: 0.45, ice: 0.25 }[theme] ?? 0.5;
-    let nb = now0 + 1.2, bi = 0;
-    return (now, T) => {
-      while (nb < now + 0.8) {
-        const t0 = nb, ch = prog[bi % 4], q = Math.floor(bi / 4) % 2;
-        pad(degree(ch, 1), t0, bar * 1.04, 0.05 * (0.8 + D * 0.2), theme === 'ice' ? 'triangle' : 'sawtooth', theme === 'lava' || theme === 'slaughter' ? 520 : 380);
-        pad(degree(ch + 2, 1), t0, bar * 1.04, 0.035, 'triangle', 700); pad(degree(ch + 4, 1), t0, bar * 1.04, 0.03, 'triangle', 800);
-        tone('sine', mtof(degree(ch, -1)), mtof(degree(ch, -1)) * 0.995, t0, beat * 3.4, 0.16, 0.03);                         // бас на сильную долю
-        if (D > 0.95 || T > 0.3) tone('sine', mtof(degree(ch + 4, -1)), mtof(degree(ch + 4, -1)), t0 + beat * 2, beat * 1.6, 0.1, 0.03);
-        if (bi % 2 === 0 || T > 0.5) motif.forEach((m, i) => { if (m !== null && (i < 6 || RM() < 0.5)) lead(degree(m + (q ? 2 : 0) + ch, 2), t0 + i * step + (RM() * 0.02), step * 1.8, 0.05 * (0.85 + D * 0.15)); });
-        else if (RM() < 0.5) lead(degree(ch + 4, 2), t0 + beat * 2, bar / 2, 0.045);
-        for (let i = 0; i < 8; i++) {
-          if (drums > 0.3 && kick[i] && (drums >= 0.6 || bi % 2 === 0)) thump(t0 + i * step, 80 + drums * 20, 34, 0.1 + 0.16 * drums * (0.7 + T * 0.5), 0.3);
-          if (drums >= 0.6 && hat[i]) burst('highpass', 6000, 5000, t0 + i * step, 0.04, 0.03 * drums * (0.6 + T), 1);
-          if (drums >= 1 && i === 4) { burst('bandpass', 1800, 900, t0 + i * step, 0.12, 0.07 * (0.6 + T), 1.5); }
-        }
-        bi++; nb += bar;
+  // ── тихая «подложка» сектора под песней уровня: пара нот-дронов и шум (ветер, огонь, сверчки) — совсем лёгкая, чтобы не грузить телефон ──
+  const texture = () => {
+    const th = spec.theme;
+    osc('sine', mtof(spec.root - 12), 0.05); osc('triangle', mtof(spec.root), 0.022, { lp: 300, lfo: 0.05 });
+    if (th === 'grave') noiseLoop('bandpass', 420, 0.8, 0.03, { lfo: 0.06, lfoDepth: 200, gainLfo: 0.1 });
+    else if (th === 'forest') noiseLoop('bandpass', 1900, 0.5, 0.008, { lfo: 0.13, lfoDepth: 600, gainLfo: 0.2 });
+    else if (th === 'desert') noiseLoop('bandpass', 900, 0.7, 0.035, { lfo: 0.09, lfoDepth: 450, gainLfo: 0.13 });
+    else if (th === 'ice') noiseLoop('bandpass', 600, 0.9, 0.04, { lfo: 0.05, lfoDepth: 400, gainLfo: 0.09 });
+    else if (th === 'lava') noiseLoop('lowpass', 260, 0.6, 0.05, { lfo: 0.03, lfoDepth: 90, gainLfo: 0.08 });
+    else noiseLoop('bandpass', 140, 1, 0.035, { gainLfo: 0.1 });
+    let nc = now0 + 1;
+    return (now) => {
+      while (nc < now + 0.8) {
+        if (th === 'forest') { const f = 3900 + R() * 600; for (let i = 0; i < 3; i++) tone('sine', f, f, nc + i * 0.075, 0.05, 0.012, 0.004); nc += 1 + R() * 2.5; }
+        else if (th === 'lava') { burst('highpass', 3000 + R() * 3000, 2500, nc, 0.03 + R() * 0.04, 0.02, 1); nc += 0.2 + R() * 0.5; }
+        else nc += 9;
       }
     };
   };
-  const base = (worlds[spec.theme] || worlds.menu)(), sg = spec.bpm ? song() : null;
-  const tick = (now, T) => { base(now, T); if (sg) sg(now, T); };
+
+  // ── песня уровня: динамичная, как ретро-хоррор на Nintendo и Diablo 1 ──
+  // Слои включаются по напряжению T (0…1), которое игра считает по ходу боя: до первой волны — мрачный дрон, щипки и сердцебиение;
+  // с первой волной входят бас-галоп, ударные и арпеджио, дальше — лидирующий мотив, удвоения и быстрые хэты. Темп, ход аккордов, бас, арпеджио, мотив и барабаны — свои у каждого уровня.
+  const song = () => {
+    const spd = spec.bpm, st = 60 / spd / 4, th = spec.theme, voice = spec.voice || 0, prog = spec.prog || [0, 5, 3, 4];
+    const RM = rng(spec.seed * 31 + 7), RD = rng(spec.seed * 57 + 3), RB = rng(spec.seed * 91 + 11);
+    const BASS_T = [[1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 2, 0], [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 2, 0], [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 2, 0], [1, 0, 0, 0, 1, 0, 2, 0, 1, 0, 0, 0, 1, 0, 2, 1]];
+    const ARP_T = [[0, 1, 2, 3, 2, 1, 2, 1, 0, 1, 2, 3, 2, 1, 2, 3], [0, 2, 1, 2, 3, 2, 1, 2, 0, 2, 1, 2, 3, 2, 1, 0], [0, 1, 2, 1, 3, 2, 1, 2, 0, 1, 2, 1, 3, 2, 3, 2], [2, 1, 0, 1, 3, 2, 1, 2, 2, 1, 0, 1, 3, 2, 3, 1]];
+    const bass = BASS_T[(spec.seed + RB() * 3) % BASS_T.length | 0], arp = ARP_T[(spec.seed >> 1) % ARP_T.length];
+    // мотив на 2 такта (32 шестнадцатых): ноты начинаются на «сильных» шагах, длины 2–6 шагов, контур — блуждание по ладу
+    const mk = (shift) => { const m = new Array(32).fill(null); let d = 4 + shift, i = 0; while (i < 32) { const len = pick([2, 2, 3, 4, 4, 6]); if (i > 0 && RM() < 0.25) { i += len; continue; } d = Math.max(0, Math.min(11, d + pick([-2, -1, -1, 0, 1, 1, 2, 3]))); m[i] = [d, len]; i += len; } m[0] = m[0] || [4 + shift, 4]; return m; };
+    const mA = mk(0), mB = mk(2);
+    const drumSet = { grave: 0.6, forest: 0.7, desert: 1, ice: 0.5, lava: 1.1, slaughter: 1.2 }[th] ?? 0.7;
+    const kickP = [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0].map((v, i) => (RD() < 0.2 && i % 4 ? 1 : v));      // у каждого уровня своя «рваность» баса-барабана
+    const pad = (midi, t, dur, gain, type = 'sawtooth', lp = 600) => {
+      for (const dt of [-6, 6]) {
+        const o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain(); o.type = type; o.frequency.value = mtof(midi); o.detune.value = dt;
+        f.type = 'lowpass'; f.frequency.setValueAtTime(lp * 0.5, t); f.frequency.linearRampToValueAtTime(lp, t + dur * 0.5); f.frequency.linearRampToValueAtTime(lp * 0.6, t + dur);
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain / 2, t + dur * 0.3); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+        o.connect(f); f.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05);
+      }
+    };
+    const sq = (midi, t, dur, gain, type = 'square', lp = 3000) => {                                         // «нинтендовский» голос: прямоугольная волна с быстрым затуханием (без фильтра — дёшево для телефона)
+      const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = mtof(midi);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      if (type === 'sawtooth') { const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp; o.connect(f); f.connect(g); } else o.connect(g);
+      g.connect(out); o.start(t); o.stop(t + dur + 0.03);
+    };
+    const organ = (midi, t, dur, gain) => { const f = mtof(midi); [[1, 1], [2, 0.5], [3, 0.3], [4, 0.15]].forEach(([k, a]) => { const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = f * k; env(g, t, 0.04, gain * a, dur); o.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05); }); };
+    const flute = (midi, t, dur, gain) => { const f = mtof(midi), o = c.createOscillator(), g = c.createGain(), l = c.createOscillator(), lg = c.createGain(); o.type = 'triangle'; o.frequency.value = f; l.frequency.value = 5.5; lg.gain.value = f * 0.007; l.connect(lg); lg.connect(o.frequency); env(g, t, 0.05, gain, dur); o.connect(g); g.connect(out); o.start(t); l.start(t); o.stop(t + dur + 0.05); l.stop(t + dur + 0.05); };
+    const brass = (midi, t, dur, gain) => { const f = mtof(midi), o = c.createOscillator(), fl = c.createBiquadFilter(), g = c.createGain(); o.type = 'sawtooth'; o.frequency.value = f; fl.type = 'lowpass'; fl.frequency.setValueAtTime(f * 1.4, t); fl.frequency.linearRampToValueAtTime(f * 4.5, t + dur * 0.25); fl.frequency.linearRampToValueAtTime(f * 1.6, t + dur); env(g, t, 0.05, gain, dur); o.connect(fl); fl.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05); };
+    const celesta = (midi, t, dur, gain) => { const f = mtof(midi); tone('sine', f, f, t, Math.max(0.4, dur), gain, 0.004); tone('sine', f * 4, f * 4, t, 0.4, gain * 0.3, 0.003); };
+    const lead = {
+      grave: (m, t, d, g) => (voice ? organ(m, t, d, g * 1.1) : bell(m, t, g * 1.3, 2.4)),
+      forest: (m, t, d, g) => (voice ? pluck(m, t, g * 1.2) : flute(m, t, d, g * 1.3)),
+      desert: (m, t, d, g) => (voice ? flute(m, t, d, g * 1.2) : pluck(m, t, g * 1.5)),
+      ice: (m, t, d, g) => (voice ? bell(m, t, g * 1.1, 2.6) : celesta(m, t, d, g * 1.4)),
+      lava: (m, t, d, g) => (voice ? sq(m, t, d, g * 0.9, 'sawtooth', 2400) : brass(m, t, d, g * 1.2)),
+      slaughter: (m, t, d, g) => (voice ? brass(m, t, d, g) : sq(m, t, d, g, 'square', 2600)),
+    }[th] || ((m, t, d, g) => bell(m, t, g, 2.4));
+    // барабаны — готовые короткие сэмплы, посчитанные один раз: удар = один узел воспроизведения вместо цепочки генератор-фильтр-усилитель
+    const mk1 = (dur, fn) => { const n = (c.sampleRate * dur) | 0, b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0); fn(d, c.sampleRate, n); return b; };
+    const DR = sfx._drums && sfx._drums.sr === c.sampleRate ? sfx._drums : (sfx._drums = {
+      sr: c.sampleRate,
+      kick: mk1(0.26, (d, sr, n) => { let ph = 0; for (let i = 0; i < n; i++) { const t = i / sr; ph += (2 * Math.PI * (42 + 120 * Math.exp(-t * 30))) / sr; d[i] = Math.sin(ph) * Math.exp(-t * 13); } }),
+      snare: mk1(0.2, (d, sr, n) => { let p = 0; for (let i = 0; i < n; i++) { const t = i / sr, x = Math.random() * 2 - 1; d[i] = ((x - p * 0.6) * 0.7 * Math.exp(-t * 26)) + Math.sin(2 * Math.PI * 190 * t) * 0.5 * Math.exp(-t * 32); p = x; } }),
+      hat: mk1(0.07, (d, sr, n) => { let p = 0; for (let i = 0; i < n; i++) { const t = i / sr, x = Math.random() * 2 - 1; d[i] = (x - p) * 0.6 * Math.exp(-t * 85); p = x; } }),
+      tom: mk1(0.24, (d, sr, n) => { let ph = 0; for (let i = 0; i < n; i++) { const t = i / sr; ph += (2 * Math.PI * (95 + 90 * Math.exp(-t * 18))) / sr; d[i] = Math.sin(ph) * Math.exp(-t * 11); } }),
+      crash: mk1(1.3, (d, sr, n) => { let p = 0; for (let i = 0; i < n; i++) { const t = i / sr, x = Math.random() * 2 - 1; d[i] = (x - p * 0.8) * 0.5 * Math.exp(-t * 3.2); p = x; } }),
+    });
+    const hit = (buf, t, g, rate = 1) => { const s2 = c.createBufferSource(), gn = c.createGain(); s2.buffer = buf; s2.playbackRate.value = rate; gn.gain.value = g; s2.connect(gn); gn.connect(out); s2.start(t); };
+    const kickD = (t, g) => hit(DR.kick, t, g * 0.8), snareD = (t, g) => hit(DR.snare, t, g * 0.9), hatD = (t, g) => hit(DR.hat, t, g * 1.1), tomD = (t, f, g) => hit(DR.tom, t, g * 0.8, f / 150);
+    let ns = now0 + 0.6, step = 0, Ts = 0, lastT = 0;
+    const api = {
+      stinger() { const t = c.currentTime + 0.02, r = mtof(spec.root); hit(DR.crash, t, 0.2); hit(DR.kick, t, 0.5, 0.6); [1, 1.5, 2].forEach((k) => brass(spec.root + 12 + (k === 1.5 ? 7 : k === 2 ? 12 : 0), t, 0.8, 0.07)); tone('sawtooth', r * 2, r * 8, t, 0.9, 0.025, 0.5); },
+    };
+    const run = (now, T) => {
+      Ts += (T - Ts) * (T > Ts ? 0.4 : 0.1); lastT = Ts; const Tn = Ts;
+      while (ns < now + 0.8) {
+        const bar = (step / 16) | 0, i = step % 16, ch = prog[bar % 4], t = ns, ph = step % 32;
+        const bi = (n) => degree(ch + n, 0), chordTone = (k, oct) => degree(ch + [0, 2, 4, 7][k], oct);
+        // подушка и дрон: раз в такт; до первой волны — единственное, что слышно кроме щипков и сердцебиения
+        if (i === 0) {
+          pad(degree(ch, 1), t, st * 16.5, 0.04, th === 'ice' ? 'triangle' : 'sawtooth', th === 'lava' || th === 'slaughter' ? 500 : 360);
+          pad(degree(ch + 2, 1), t, st * 16.5, 0.03, 'triangle', 700); pad(degree(ch + 4, 1), t, st * 16.5, 0.026, 'triangle', 800);
+        }
+        // сердцебиение (всегда), редкие щипки мотива (тихо, до волны)
+        if (i % 8 === 0 || (i % 8 === 2 && Tn < 0.5)) hit(DR.kick, t, i % 8 === 0 ? 0.2 : 0.09, 0.8);
+        if (Tn < 0.45 && mA[ph] && (ph % 4 === 0) && (bar % 2 === 0 || RM() < 0.4)) pluck(degree(mA[ph][0] + ch, 1), t, 0.055);
+        // слой 1 (с первой волны): бас-галоп и шумовые хэты
+        if (Tn >= 0.25 && bass[i]) sq(degree(ch, -1 + (bass[i] - 1)), t, st * 1.6, 0.11 * Math.min(1, Tn * 1.6), th === 'lava' || th === 'slaughter' ? 'sawtooth' : 'triangle', 900);
+        if (Tn >= 0.3 && i % 2 === 0) hatD(t, 0.022 + 0.03 * Tn);
+        // слой 2: арпеджио прямоугольной волной и удары барабана
+        if (Tn >= 0.42 && i % 2 === 0 && arp[i] !== null) sq(chordTone(arp[i], 2 + (Tn > 0.8 && i % 4 === 0 ? 1 : 0)), t, st * 1.4, 0.03 + 0.018 * Tn);
+        if (Tn >= 0.5 && drumSet > 0.3) { if (kickP[i]) kickD(t, 0.2 + 0.16 * drumSet * Tn); if (i === 8 || (i === 4 && Tn > 0.78)) snareD(t, 0.08 + 0.07 * Tn * drumSet); }
+        // слой 3: лидирующий мотив и ударные потяжелее
+        if (Tn >= 0.62) { const m = (bar % 4 < 2 ? mA : mB)[ph]; if (m) lead(degree(m[0] + (bar % 4 === 3 ? 2 : 0) + ch, 2), t, st * m[1] * 0.95, 0.06); }
+        if (Tn >= 0.72 && drumSet > 0.5) { if (i % 4 === 2) hatD(t, 0.03); if (i === 14 && bar % 4 === 3) { tomD(t, 190, 0.2); tomD(t + st * 0.5, 150, 0.18); tomD(t + st, 120, 0.2); } }
+        // слой 4: двойной темп хэтов, удвоение мотива терцией и сирена-стингер в конце фразы
+        if (Tn >= 0.86) { if (i % 2 === 1) hatD(t, 0.022); const m = (bar % 4 < 2 ? mA : mB)[ph]; if (m && th !== 'ice') lead(degree(m[0] + 2 + ch, 2), t + 0.005, st * m[1] * 0.9, 0.035); }
+        step++; ns += st;
+      }
+    };
+    api.tick = run; api.level = () => lastT;
+    return api;
+  };
+  const base = spec.bpm ? texture() : (worlds[spec.theme] || worlds.menu)(), sg = spec.bpm ? song() : null;
+  const tick = (now, T) => { base(now, T); if (sg) sg.tick(now, T); };
   const timer = setInterval(() => { try { tick(c.currentTime, tension); } catch (e) { /* ignore */ } }, 250);
   tick(c.currentTime, 0);
   return {
     _tick: tick,                                   // для офлайн-проверки громкости (tools/)
     setTension(v) { tension = v; },
+    stinger() { if (sg) sg.stinger(); },
     stop(fade = 0.9) {
       clearInterval(timer);
       const t = c.currentTime; out.gain.cancelScheduledValues(t); out.gain.setValueAtTime(out.gain.value, t); out.gain.linearRampToValueAtTime(0.0001, t + fade);

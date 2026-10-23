@@ -1,5 +1,5 @@
 // Уровни кампании: секторы, раскладки, связи (after = открывается после прохождения ЛЮБОГО из перечисленных).
-import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261023190843';
+import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261023194025';
 
 export const SECTORS = [
   { id: 'grave', name: 'Проклятый погост', theme: 'grave', color: '#7fa86a' },
@@ -66,6 +66,9 @@ function autoDecor(paths, theme, seed, lvl = 1) {
   return out;
 }
 
+// Больше 15 волн на уровне не бывает: долгие уровни грели телефон. В SPEC «волн» — задуманная длина: уровень сжимается до 15, а каждая волна
+// получает силу той, что стояла бы на этом месте в полной версии (genWave берёт wavesFull), так что рост сложности не теряется.
+export const MAX_WAVES = 15;
 // [id, имя, сектор, раскладка, тема, волн, множитель здоровья, after, позиция на карте мира]
 // Множители здоровья подобраны так, чтобы общая «масса» врагов уровня строго росла от рубежа к рубежу (шаг не меньше ~12%), без провалов;
 // при смене волн или врагов пересчитай: node tools/curve.mjs
@@ -78,22 +81,22 @@ const SPEC = [
   ['f2a', 'Гнилые топи', 'forest', 'wave', 'forest', 12, 0.73, ['f1'], [107, 320]],
   ['f2b', 'Волчья тропа', 'forest', 'dhook', 'forest', 12, 0.67, ['f1'], [300, 397]],
   ['f3', 'Сердце чащи', 'forest', 'merge', 'forest', 13, 0.61, ['f2a', 'f2b'], [467, 467]],
-  ['d1', 'Караванный путь', 'desert', 'zigzag', 'desert', 14, 0.67, ['f3'], [647, 469]],
-  ['d2a', 'Дюны костей', 'desert', 'stairs', 'desert', 15, 0.60, ['d1'], [820, 560]],
-  ['d2b', 'Пересохшее русло', 'desert', 'saw', 'desert', 15, 0.65, ['d1'], [980, 423]],
-  ['d3', 'Храм песков', 'desert', 'trap', 'desert', 16, 0.55, ['d2a', 'd2b'], [900, 331]],
+  ['d1', 'Караванный путь', 'desert', 'zigzag', 'desert', 14, 0.64, ['f3'], [647, 469]],
+  ['d2a', 'Дюны костей', 'desert', 'stairs', 'desert', 15, 0.57, ['d1'], [820, 560]],
+  ['d2b', 'Пересохшее русло', 'desert', 'saw', 'desert', 15, 0.59, ['d1'], [980, 423]],
+  ['d3', 'Храм песков', 'desert', 'trap', 'desert', 16, 0.53, ['d2a', 'd2b'], [900, 331]],
   ['i1', 'Замёрзший перевал', 'ice', 'organ', 'ice', 17, 0.57, ['d3'], [696, 300]],
-  ['i2a', 'Ледяной перекрёсток', 'ice', 'cross', 'ice', 18, 0.50, ['i1'], [440, 251]],
-  ['i2b', 'Метель', 'ice', 'poker', 'ice', 18, 0.48, ['i1'], [329, 129]],
-  ['i3', 'Ледяной трон', 'ice', 'snail', 'ice', 19, 0.48, ['i2a', 'i2b'], [573, 133]],
-  ['h1', 'Врата Ада', 'hell', 'triple', 'lava', 20, 0.41, ['i3'], [840, 200]],
-  ['h2', 'Река огня', 'hell', 'lanes', 'lava', 21, 0.49, ['h1'], [997, 160]],
-  ['h3', 'Скотобойня', 'hell', 'spiral', 'slaughter', 22, 0.45, ['h2'], [1117, 80]],
+  ['i2a', 'Ледяной перекрёсток', 'ice', 'cross', 'ice', 18, 0.53, ['i1'], [440, 251]],
+  ['i2b', 'Метель', 'ice', 'poker', 'ice', 18, 0.51, ['i1'], [329, 129]],
+  ['i3', 'Ледяной трон', 'ice', 'snail', 'ice', 19, 0.51, ['i2a', 'i2b'], [573, 133]],
+  ['h1', 'Врата Ада', 'hell', 'triple', 'lava', 20, 0.47, ['i3'], [840, 200]],
+  ['h2', 'Река огня', 'hell', 'lanes', 'lava', 21, 0.48, ['h1'], [997, 160]],
+  ['h3', 'Скотобойня', 'hell', 'spiral', 'slaughter', 22, 0.46, ['h2'], [1117, 80]],
 ];
 
 export const LEVELS = SPEC.map(([id, name, sector, layout, theme, waves, hp, after, pos], i) => {
   const paths = LAYOUTS[layout];
-  return { id, name, sector, theme, layout, paths, block: blockCells(paths), decor: autoDecor(paths, theme, i + 1, i + 1), waves, hp, after, pos, index: i, lvl: i + 1 };
+  return { id, name, sector, theme, layout, paths, block: blockCells(paths), decor: autoDecor(paths, theme, i + 1, i + 1), waves: Math.min(waves, MAX_WAVES), wavesFull: waves, hp, after, pos, index: i, lvl: i + 1 };
 });
 // Обучение: самая простая карта, 3 волны из простых врагов. Стоит в конце массива, чтобы не сдвигать номера остальных уровней.
 {
