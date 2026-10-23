@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261023175825';
+import * as D from './data.js?v=20261023180731';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -89,7 +89,7 @@ export class Sim {
     this.state = 'play';          // play | won | lost
     this.revive = { on: false, used: 0, max: 2 };      // возрождение за кристаллы (включает main: обычная игра, не Хардкор и не рейтинговый забег)
     this.limbo = false;           // враг прошёл в ворота на последней жизни: бой замер, ждём решения игрока
-    this.enemies = []; this.buildings = []; this.guards = [];
+    this.enemies = []; this.buildings = [];
     this.projs = []; this.zones = []; this.bags = []; this.fx = [];
     this.queue = []; this.qi = 0;
     this.eid = 0; this.bid = 0;
@@ -163,7 +163,6 @@ export class Sim {
     this.refreshStats(b);
     this.grid[r][c] = b; this.buildings.push(b);
     this.stats.built++;
-    if (type === 'barracks') this.syncGuards(b);
     this.emit('build', b);
     return b;
   }
@@ -191,7 +190,6 @@ export class Sim {
     this.gold -= o.cost; b.invested += o.cost; b.level = o.level; b.age = 0;
     if (b.kind === 'tower') { b.branch = o.branch; b.picks = o.picks.slice(); }
     this.refreshStats(b);
-    if (b.type === 'barracks') this.syncGuards(b, true);
     this.emit('upgrade', b);
     return b;
   }
@@ -201,12 +199,6 @@ export class Sim {
     this.gold += v;
     this.grid[b.r][b.c] = null;
     this.buildings.splice(this.buildings.indexOf(b), 1);
-    if (b.type === 'barracks') {
-      this.guards = this.guards.filter((g) => {
-        if (g.owner !== b) return true;
-        this.releaseGuard(g); return false;
-      });
-    }
     this.emit('sell', { b, value: v });
     return v;
   }
@@ -341,7 +333,7 @@ export class Sim {
       bounty: 0, elite, spdMult: this.D.spd * (elite ? 1.15 : 1) * (o.spdK || 1),
       dead: false, t: this.rng() * 5, slowF: 0, slowT: 0, stunT: 0, freezeT: 0, brittle: 0, shatter: 0,
       poison: [], poisonSrc: null, plague: 0, burnDps: 0, burnT: 0, shred: 0, shredT: 0, mark: 0, markT: 0,
-      engaged: null, atkT: 0.5, healCd: 2 + this.rng() * 2, blinkCd: 2 + this.rng() * 2, summonCd: 5, stompCd: 6,
+      healCd: 2 + this.rng() * 2, blinkCd: 2 + this.rng() * 2, summonCd: 5, stompCd: 6,
       air: !!def.air, sent: !!o.sent, spawnT: this.time, hurtT: 0, w: o.w || 0,
     };
     path.at(e.d, e); e.x = path.at(e.d).x; e.y = path.at(e.d).y;
@@ -352,7 +344,7 @@ export class Sim {
 
   // ───── статусы / урон ─────
   curSpeed(e) {
-    if (e.freezeT > 0 || e.stunT > 0 || e.engaged || e.pullLeft > 0) return 0;
+    if (e.freezeT > 0 || e.stunT > 0 || e.pullLeft > 0) return 0;
     let s = e.def.spd * e.spdMult;
     if (e.def.enrage) s *= 1 + (1 - e.hp / e.maxHp) * 0.9;
     return s * (1 - e.slowF);
@@ -461,8 +453,6 @@ export class Sim {
       this.gold += g; this.stats.earned += g;
     }
     { const pt = (e.def.pts || 0) + (e.elite ? 0.02 : 0); if (pt) { this.parts.kills += pt; this.rescore(); } }
-    if (e.engaged) { const h = e.engaged.holds; const i = h.indexOf(e); if (i >= 0) h.splice(i, 1); e.engaged = null; }
-    if (src.heal && src.guard) src.guard.hp = Math.min(src.guard.maxHp, src.guard.hp + src.guard.maxHp * src.heal);
     this.emit('kill', { e, how, over, crit: !!src.crit, x: e.x, y: e.y, dx: src.dx || 0, dy: src.dy || 0, gold: g, pts: 0, frozen: e.freezeT > 0 });
     // эффекты смерти
     if (e.def.split) {
@@ -496,7 +486,6 @@ export class Sim {
     this.stats.leaks++;
     if (this.D.lives !== 1) { this.parts.leaks += D.LEAK_FRAC * this.potential() * Math.min(this.lives, e.def.lives); this.rescore(); }
     this.lives = Math.max(0, this.lives - e.def.lives);
-    if (e.engaged) { const h = e.engaged.holds; const i = h.indexOf(e); if (i >= 0) h.splice(i, 1); }
     this.emit('leak', { e, x: e.x, y: e.y });
     if (this.lives <= 0 && this.state === 'play' && !this.limbo) {
       if (this.revive.on && this.revive.used < this.revive.max) { this.limbo = true; this.emit('limbo', { used: this.revive.used }); }
@@ -527,38 +516,6 @@ export class Sim {
     return true;
   }
 
-  // ───── казарма: стража ─────
-  guardSpot(b) {
-    const R = b.st.range * CELL;
-    let best = null, bd = Infinity;
-    for (let pi = 0; pi < this.paths.length; pi++) {
-      const p = this.paths[pi];
-      for (let d = 10; d < p.total - 10; d += 8) {
-        const q = p.at(d);
-        const dist = Math.hypot(q.x - b.x, q.y - b.y);
-        if (dist <= R && dist < bd) { bd = dist; best = { pi, d }; }
-      }
-    }
-    return best;
-  }
-  syncGuards(b, refill) {
-    const st = b.st;
-    const mine = this.guards.filter((g) => g.owner === b);
-    const spot = this.guardSpot(b);
-    while (mine.length < st.guards) {
-      const g = { owner: b, hp: st.ghp, maxHp: st.ghp, x: b.x, y: b.y, atkT: 0, holds: [], dead: false, respawnT: 0, id: ++this.bid, anim: 0 };
-      this.guards.push(g); mine.push(g);
-    }
-    mine.forEach((g, i) => {
-      g.maxHp = st.ghp; if (refill) g.hp = g.maxHp;
-      if (spot) {
-        const p = this.paths[spot.pi].at(spot.d + (i - (mine.length - 1) / 2) * 20);
-        g.hx = p.x; g.hy = p.y;
-      } else { g.hx = b.x; g.hy = b.y + 18; }
-      if (!g.dead) { g.x = g.hx; g.y = g.hy; }
-    });
-  }
-  releaseGuard(g) { for (const e of g.holds) e.engaged = null; g.holds.length = 0; }
 
   // ───── главный апдейт ─────
   update(dt) {
@@ -584,7 +541,6 @@ export class Sim {
     this.updateAuras(dt);
     this.updateEnemies(dt);
     for (const b of this.buildings) { b.age += dt; if (b.altarFlash > 0) b.altarFlash -= dt; if (b.kind === 'tower') this.updateTower(b, dt); }
-    this.updateGuards(dt);
     this.updateProjs(dt);
     this.updateZones(dt);
     this.updateFx(dt);
@@ -687,7 +643,7 @@ export class Sim {
           if (any) this.emit('heal', { x: e.x, y: e.y });
         }
       }
-      if (def.blink && e.freezeT <= 0 && e.stunT <= 0 && !e.engaged) {
+      if (def.blink && e.freezeT <= 0 && e.stunT <= 0) {
         e.blinkCd -= dt;
         if (e.blinkCd <= 0) {
           e.blinkCd = def.blink;
@@ -704,7 +660,6 @@ export class Sim {
           for (const b of this.buildings) {
             if (b.kind === 'tower' && Math.hypot(b.x - e.x, b.y - e.y) < 2.3 * CELL) { b.stunT = 3; }
           }
-          for (const g of this.guards) if (!g.dead && Math.hypot(g.x - e.x, g.y - e.y) < 2.3 * CELL) g.hp -= g.maxHp * 0.3;
           this.emit('stomp', { x: e.x, y: e.y, e });
         }
       }
@@ -716,23 +671,8 @@ export class Sim {
           this.emit('summon', { x: e.x, y: e.y, e });
         }
       }
-      // бой со стражей
-      if (e.engaged) {
-        const g = e.engaged;
-        if (g.dead) { e.engaged = null; }
-        else {
-          e.atkT -= dt;
-          if (e.atkT <= 0) {
-            e.atkT = 0.9;
-            const dmg = def.atk * (1 + 0.1 * n) * (1 - (g.owner.st.garmor || 0));
-            g.hp -= dmg; g.hurtT = 0.15;
-            this.emit('guardhit', { g, e });
-            if (g.hp <= 0) this.guardDie(g);
-          }
-        }
-      }
       // движение
-      if (e.pullLeft > 0) { const m = Math.min(e.pullLeft, 420 * dt); e.d = Math.max(0, e.d - m); e.pullLeft -= m; if (e.engaged) { const h = e.engaged.holds; const i = h.indexOf(e); if (i >= 0) h.splice(i, 1); e.engaged = null; } }
+      if (e.pullLeft > 0) { const m = Math.min(e.pullLeft, 420 * dt); e.d = Math.max(0, e.d - m); e.pullLeft -= m }
       const sp = this.curSpeed(e);
       if (sp > 0) {
         e.d += sp * dt;
@@ -742,51 +682,6 @@ export class Sim {
       e.x = p.x; e.y = p.y; e.dx = p.dx; e.dy = p.dy;
     }
   }
-  guardDie(g) {
-    g.dead = true; g.respawnT = g.owner.st.respawn; this.releaseGuard(g);
-    this.emit('guarddie', g);
-  }
-  updateGuards(dt) {
-    for (const g of this.guards) {
-      if (g.hurtT > 0) g.hurtT -= dt;
-      if (g.dead) {
-        g.respawnT -= dt;
-        if (g.respawnT <= 0) { g.dead = false; g.hp = g.maxHp = g.owner.st.ghp; g.x = g.hx; g.y = g.hy; this.emit('guardspawn', g); }
-        continue;
-      }
-      g.atkT -= dt;
-      // захват врагов
-      if (g.holds.length < 2) {
-        for (const e of this.enemies) {
-          if (e.dead || e.air || e.engaged) continue;
-          if (Math.hypot(e.x - g.hx, e.y - g.hy) < 26) {
-            e.engaged = g; g.holds.push(e); e.atkT = 0.4;
-            if (g.holds.length >= 2) break;
-          }
-        }
-      }
-      if (g.holds.length && g.atkT <= 0) {
-        const st = g.owner.st;
-        g.atkT = 0.8; g.anim = 0.25;
-        const dmg = st.gdmg * g.owner.dmgMult;
-        const list = g.holds.slice(0, st.cleave || 1);
-        let extra = [];
-        if (st.cleave) {
-          const first = g.holds[0];
-          for (const o of this.enemies) {
-            if (o.dead || o.air || o === first || extra.length >= st.cleave - 1) continue;
-            if (Math.hypot(o.x - first.x, o.y - first.y) < 40) extra.push(o);
-          }
-        }
-        for (const e of new Set([...list, ...extra])) {
-          const dx = e.x - g.x, dy = e.y - g.y, l = Math.hypot(dx, dy) || 1;
-          this.hurt(e, dmg, 'phys', { how: st.cleave ? 'chop' : 'slash', dx: dx / l, dy: dy / l, tower: g.owner, guard: g, heal: st.lifesteal });
-        }
-      }
-      if (g.anim > 0) g.anim -= dt;
-    }
-  }
-
   // ───── башни ─────
   findTarget(b) {
     const d = D.TOWERS[b.type], st = b.st, R = st.range * CELL;
@@ -805,12 +700,7 @@ export class Sim {
   updateTower(b, dt) {
     const st = b.st;
     if (b.recoil > 0) b.recoil = Math.max(0, b.recoil - dt * 6);
-    if (b.type === 'banner' || b.type === 'barracks') {
-      if (b.type === 'barracks') {
-        // стража синхронизируется при смене стат
-      }
-      return;
-    }
+    if (b.type === 'banner') return;
     if (b.stunT > 0) { b.stunT -= dt; return; }
     // орбитальные пилы
     if (b.type === 'saw' && st.orbit) { this.updateOrbit(b, dt); return; }

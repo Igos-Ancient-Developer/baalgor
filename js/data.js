@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261023175825';
+import { COLS, ROWS } from './layouts.js?v=20261023180731';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD = 80;
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261023175825';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261023180731';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -143,23 +143,6 @@ export const TOWERS = {
         { cost: 450, dmg: 140, rate: 0.9, range: 4.2, bounce: 8 } ] },
     },
   },
-  barracks: {
-    name: 'Казарма', cost: 100, air: false, ground: true,
-    short: 'Солдаты перекрывают дорогу и держат врагов на месте.',
-    lv: [
-      { guards: 2, ghp: 165, gdmg: 11, range: 2.6, respawn: 9 },
-      { cost: 80, guards: 2, ghp: 220, gdmg: 14, range: 2.8, respawn: 8 },
-      { cost: 130, guards: 3, ghp: 300, gdmg: 20, range: 3.0, respawn: 8 },
-    ],
-    branches: {
-      A: { name: 'Рыцари', desc: 'Тяжёлая броня и огромное здоровье. Не пробить.', lv: [
-        { cost: 240, guards: 3, ghp: 700, gdmg: 28, garmor: 0.4, range: 3.0, respawn: 8 },
-        { cost: 360, guards: 4, ghp: 1300, gdmg: 40, garmor: 0.55, range: 3.2, respawn: 7 } ] },
-      B: { name: 'Палачи', desc: 'Топоры рубят по несколько врагов сразу и лечатся от убийств.', lv: [
-        { cost: 240, guards: 3, ghp: 420, gdmg: 45, cleave: 2, range: 3.0, respawn: 8 },
-        { cost: 360, guards: 3, ghp: 700, gdmg: 75, cleave: 3, lifesteal: 0.3, range: 3.2, respawn: 7 } ] },
-    },
-  },
   banner: {
     name: 'Знамя крови', cost: 120, air: false, ground: false, support: true,
     short: 'Не атакует, но усиливает соседние башни.',
@@ -229,7 +212,7 @@ TOWERS.harpoon = {
       { cost: 440, dmg: 440, rate: 0.5, range: 6.2, splash: 1.5, shred: 0.6, heavyMult: 1.6 } ] },
   },
 };
-export const TOWER_ORDER = ['bolt', 'frost', 'mortar', 'tesla', 'toxic', 'saw', 'barracks', 'banner', 'flame', 'voidwell', 'harpoon'];
+export const TOWER_ORDER = ['bolt', 'frost', 'mortar', 'tesla', 'toxic', 'saw', 'banner', 'flame', 'voidwell', 'harpoon'];
 
 // ───────────────────────── Премиум-башни ─────────────────────────
 // Продаются только за донат-кристаллы. Это усиленные версии обычных башен (та же механика и дерево улучшений, сильнее характеристики,
@@ -397,10 +380,6 @@ export const TIERS = {
     [P('power', 'Крупные зубья', { mul: { dmg: 1.55 } }), P('speed', 'Раскрутка', { mul: { rate: 1.6 } }), P('special', 'Длинный рычаг', { mul: { range: 1.2, dmg: 1.3 } })],
     [P('power', 'Закалённая сталь', { mul: { dmg: 1.65 } }), P('speed', 'Турбина', { mul: { rate: 1.55 } }), P('special', 'Широкий замах', { mul: { range: 1.15, dmg: 1.35 } })],
   ],
-  barracks: [
-    [P('power', 'Боевые топоры', { mul: { gdmg: 1.7 } }), P('speed', 'Тяжёлая броня', { mul: { ghp: 1.9 } }), P('special', 'Гарнизон', { add: { guards: 1 }, mul: { ghp: 1.25 } })],
-    [P('power', 'Боевые навыки', { mul: { gdmg: 1.7 } }), P('speed', 'Латы', { mul: { ghp: 1.8 }, add: { garmor: 0.15 } }), P('special', 'Резерв', { add: { guards: 1 }, mul: { range: 1.1 } })],
-  ],
   banner: [
     [P('power', 'Боевой клич', { mul: { rateBuff: 1.6 } }), P('speed', 'Ярость', { add: { dmgBuff: 0.12 } }), P('special', 'Дальний горн', { add: { range: 0.4 }, mul: { rateBuff: 1.2 } })],
     [P('power', 'Барабаны войны', { mul: { rateBuff: 1.5 } }), P('speed', 'Кровавая песнь', { add: { dmgBuff: 0.12 } }), P('special', 'Горн тревоги', { add: { range: 0.4 }, mul: { rateBuff: 1.2 } })],
@@ -418,8 +397,8 @@ export const TIERS = {
     [P('power', 'Зазубрины', { mul: { dmg: 1.75 } }), P('speed', 'Скоростной ворот', { mul: { rate: 1.3 } }), P('special', 'Дальний прицел', { add: { range: 0.4, armorPierce: 0.1 } })],
   ],
 };
-const RATIO_KEYS = ['dmg', 'rate', 'range', 'splash', 'ghp', 'gdmg', 'rateBuff', 'dmgBuff', 'poison', 'burn', 'pull'];
-const LOWER_KEYS = ['respawn', 'frenzyEvery', 'collapse'];
+const RATIO_KEYS = ['dmg', 'rate', 'range', 'splash', 'rateBuff', 'dmgBuff', 'poison', 'burn', 'pull'];
+const LOWER_KEYS = ['frenzyEvery', 'collapse'];
 function applyOpt(s, o) {
   if (o.mul) for (const k of Object.keys(o.mul)) if (s[k] !== undefined) s[k] *= o.mul[k];
   if (o.add) for (const k of Object.keys(o.add)) s[k] = (s[k] || 0) + o.add[k];
@@ -477,7 +456,7 @@ export function econUpgradeCost(type, level) {
 
 // Закрытые вещи: открываются в Кузнице за души или за донат-кристаллы. Свободны с начала только арбалет и рудник.
 export const UNLOCKS = {
-  frost: { souls: 30, gems: 5 }, toxic: { souls: 45, gems: 8 }, mortar: { souls: 60, gems: 10 }, barracks: { souls: 70, gems: 12 },
+  frost: { souls: 30, gems: 5 }, toxic: { souls: 45, gems: 8 }, mortar: { souls: 60, gems: 10 },
   flame: { souls: 100, gems: 17 }, banner: { souls: 120, gems: 20 }, saw: { souls: 150, gems: 25 }, harpoon: { souls: 190, gems: 32 }, tesla: { souls: 230, gems: 38 },
   bank: { souls: 260, gems: 43 }, voidwell: { souls: 320, gems: 53 }, altar: { souls: 380, gems: 63 },
 };

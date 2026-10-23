@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261023175825';
-import { TOWERS } from './data.js?v=20261023175825';
+import { SPR, img } from './sprites.js?v=20261023180731';
+import { TOWERS } from './data.js?v=20261023180731';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -335,43 +335,6 @@ TOWER_ART.saw = {
   hub(lvl) { return { y: 74 - (16 + lvl) - 12 }; },
 };
 
-TOWER_ART.barracks = {
-  lift: 10,
-  body(g, lvl, br) {
-    const wall = br === 'A' ? '#8d99aa' : br === 'B' ? '#5d4a52' : '#a08a6a';
-    const roof = br === 'A' ? '#2d5f9a' : br === 'B' ? '#7a1018' : '#9a3a24';
-    shadowEll(g, 43, 80, 34, 12, 0.4);
-    // основание-платформа
-    g.beginPath(); g.ellipse(40, 76, 30, 12, 0, 0, Math.PI * 2); fillStroke(g, '#6d717a', 1.3);
-    const W = 16 + lvl * 1.2, H = 17 + lvl * 1.3;
-    // стена
-    rrect(g, 40 - W, 76 - H - 4, W * 2, H + 2, 2);
-    fillStroke(g, lin(g, 40 - W, 0, 40 + W, 0, [[0, shade(wall, 0.25)], [0.55, wall], [1, shade(wall, -0.4)]]), 1.4);
-    g.save(); rrect(g, 40 - W, 76 - H - 4, W * 2, H + 2, 2); g.clip();
-    g.strokeStyle = 'rgba(20,10,10,0.3)'; g.lineWidth = 0.7;
-    for (let y = 76 - H; y < 76; y += 6) { g.beginPath(); g.moveTo(40 - W, y); g.lineTo(40 + W, y); g.stroke(); }
-    g.restore();
-    // дверь
-    g.beginPath(); g.moveTo(34, 76); g.lineTo(34, 66); g.quadraticCurveTo(40, 58, 46, 66); g.lineTo(46, 76); g.closePath(); fillStroke(g, '#2a160c', 1.2);
-    g.fillStyle = 'rgba(255,150,40,0.35)'; g.fillRect(36, 67, 8, 9);
-    // щит на стене
-    const sx = 40 + W - 6, sy = 76 - H + 6;
-    poly(g, [[sx - 4, sy - 4], [sx + 4, sy - 4], [sx + 4, sy + 2], [sx, sy + 8], [sx - 4, sy + 2]]); fillStroke(g, br === 'B' ? '#222' : '#d8d2c2', 0.9);
-    g.strokeStyle = roof; g.lineWidth = 1.6; g.beginPath(); g.moveTo(sx, sy - 3); g.lineTo(sx, sy + 6); g.stroke();
-    // крыша
-    const ry = 76 - H - 4;
-    poly(g, [[40 - W - 4, ry + 1], [40, ry - 17 - lvl * 1.2], [40 + W + 4, ry + 1]]);
-    fillStroke(g, lin(g, 40 - W, 0, 40 + W, 0, [[0, shade(roof, 0.3)], [0.55, roof], [1, shade(roof, -0.45)]]), 1.5);
-    g.strokeStyle = 'rgba(0,0,0,0.3)'; g.lineWidth = 0.8;
-    for (let i = 1; i < 4; i++) { g.beginPath(); g.moveTo(40 - W - 4 + i * 4, ry + 1 - i * 1.5); g.lineTo(40 + W + 4 - i * 4, ry + 1 - i * 1.5); g.stroke(); }
-    flag(g, 40, ry - 14 - lvl * 1.2, br === 'B' ? '#111' : roof, 11, 8, 1);
-    if (lvl >= 3) { // боковые башенки
-      for (const s of [-1, 1]) { const x = 40 + s * (W + 3); rrect(g, x - 4, 76 - H - 12, 8, H + 12, 1.5); fillStroke(g, lin(g, x - 4, 0, x + 4, 0, [[0, shade(wall, 0.2)], [1, shade(wall, -0.4)]]), 1.2); poly(g, [[x - 5.5, 76 - H - 11], [x, 76 - H - 20], [x + 5.5, 76 - H - 11]]); fillStroke(g, roof, 1.1); }
-    }
-    if (br === 'B') { skull(g, 40, ry + 5, 2.6); for (const s of [-1, 1]) { poly(g, [[40 + s * (W + 6), 77], [40 + s * (W + 9), 77], [40 + s * (W + 7.5), 66]]); fillStroke(g, '#c9ced6', 0.8); } }
-  },
-  head: null,
-};
 
 TOWER_ART.banner = {
   lift: 30,
@@ -616,7 +579,7 @@ function towerIdx(type, lvl, br) {
 // Здание не больше клетки по ширине и клетки с небольшим запасом по высоте: соседние здания не закрывают друг друга.
 // Масштаб один на весь ряд уровней (рост по уровням остаётся), считается по самой большой картинке ряда.
 // предельные размеры (ширина, высота) здания на карте; узкие и низкие здания разрешено делать крупнее
-const CAPS = { mine: [50, 58], bolt: [56, 72], frost: [56, 72], tesla: [56, 72], saw: [56, 70], banner: [56, 72], flame: [56, 70], voidwell: [56, 70], toxic: [56, 68], barracks: [60, 66], bank: [56, 70], altar: [56, 66], harpoon: [56, 66],
+const CAPS = { mine: [50, 58], bolt: [56, 72], frost: [56, 72], tesla: [56, 72], saw: [56, 70], banner: [56, 72], flame: [56, 70], voidwell: [56, 70], toxic: [56, 68], bank: [56, 70], altar: [56, 66], harpoon: [56, 66],
   gold_bolt: [56, 72], storm_tesla: [56, 72], hell_flame: [56, 72] }, CAP_DEF = [56, 64], GK = {};
 function groupK(type) {
   if (GK[type]) return GK[type];
@@ -631,7 +594,7 @@ export function towerGeo(type, lvl, br) {
 }
 const BR_TINT = { A: '#4aa8ff', B: '#ff3a3a' };
 // светлая кайма и мягкий свет под основанием: здание отделяется от земли и читается на любом фоне
-const RIM = { frost: '#d4f0ff', tesla: '#c4e4ff', toxic: '#e0ffb8', flame: '#ffd8a8', voidwell: '#e6d0ff', barracks: '#ffdcd0', banner: '#ffd0d0', saw: '#ffe6c0', mine: '#fff0b8' };
+const RIM = { frost: '#d4f0ff', tesla: '#c4e4ff', toxic: '#e0ffb8', flame: '#ffd8a8', voidwell: '#e6d0ff', banner: '#ffd0d0', saw: '#ffe6c0', mine: '#fff0b8' };
 function spriteTower(type, lvl, br) {
   const i = towerIdx(type, lvl, br), im = img(`towers/${type}_${i}.webp`); if (!im) return null;
   const k = spriteK(type, lvl), w = 192 * k, h = 240 * k;
@@ -672,7 +635,10 @@ export function towerBody(type, lvl, br) {
   return cached(`tb:${type}:${lvl}:${br || ''}`, () => (SPR.ok && SPR.towers[type] && spriteTower(type, lvl, br)) || mk(TW_W, TW_H, (g) => { TOWER_ART[type].body(g, lvl, br); }));
 }
 // Вращающееся оружие (арбалет, мортира, огнемёт, гарпун): основание статично, голова поворачивается к цели (8 картинок: E, SE, S, SW, W, NW, N, NE)
+// какой вид картинки у здания: у премиума свой набор голов (hell_flame), иначе голова базовой башни; у обычной картинки с зафиксированным оружием — базовая
+export const rotKey = (b) => (b.prem && SPR.ok && SPR.towers[b.prem] && SPR.towers[b.prem].head) ? b.prem : (b.prem ? null : b.type);
 export function rotHead(type, lvl, br) {
+  if (!type) return null;
   const m = SPR.ok && SPR.towers[type]; if (!m || !m.head) return null;
   const im = img(`towers/${type}_head.webp`); if (!im) return null;
   const i = towerIdx(type, lvl, br), k = spriteK(type, lvl), [hx, hy] = m.holes[i], w = 192 * k, h = 240 * k;

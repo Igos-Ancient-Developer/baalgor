@@ -1,9 +1,9 @@
 // Расчленёнка, кровь и частицы. Подписывается на события симуляции и рисует в постоянный «слой крови».
-import { tr } from './i18n.js?v=20261023175825';
-import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261023175825';
-import { S as ART_S } from './art.js?v=20261023175825';
-import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261023175825';
-import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261023175825';
+import { tr } from './i18n.js?v=20261023180731';
+import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261023180731';
+import { S as ART_S } from './art.js?v=20261023180731';
+import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261023180731';
+import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261023180731';
 
 const GRAV = 560;
 const LAYERS = 3, SPAN = 6, HOLD = 6, FADE = 5;   // секунд игрового времени
@@ -68,8 +68,6 @@ export class Gore {
     sim.on('stun', (e) => { this.spark(e.x, e.y - 20, '#ffe27a'); });
     sim.on('plague', (d) => { this.ring(d.x, d.y, d.r, '#8aff3a', 0.6); for (let i = 0; i < 12; i++) this.part({ k: 'cloud', x: d.x + rnd(-d.r * 0.7, d.r * 0.7), y: d.y + rnd(-d.r * 0.5, d.r * 0.5), z: rnd(0, 14), vx: rnd(-10, 10), vy: rnd(-6, 6), vz: rnd(8, 24), life: rnd(0.7, 1.3), size: rnd(14, 26), col: '#79d94a' }); });
     sim.on('bag', (d) => { this.floatText(d.x, d.y - 8, '+' + d.gold, d.tapped ? '#fff27a' : '#ffd24a', d.tapped ? 1.25 : 1); for (let i = 0; i < (d.tapped ? 6 : 3); i++) this.coinPop(d.x, d.y); });
-    sim.on('guardhit', (d) => { this.part({ k: 'drop', x: d.g.x + rnd(-4, 4), y: d.g.y, z: 14, vx: rnd(-40, 40), vy: rnd(-20, 20), vz: rnd(30, 90), life: 1, col: '#b3101e', size: 1.4 }); });
-    sim.on('guarddie', (g) => { for (let i = 0; i < 6; i++) this.part({ k: 'drop', x: g.x, y: g.y, z: 12, vx: rnd(-60, 60), vy: rnd(-30, 30), vz: rnd(60, 160), life: 1, col: '#b3101e', size: 1.6 }); });
     sim.on('callwave', (d) => { if (d.bonus) this.floatText(this.cam.x, this.cam.y - 30, '+' + d.bonus + ' за скорость', '#ffd24a', 1.2); });
     sim.on('build', (b) => { this.dust(b.x, b.y + 8, 8, 26); });
     sim.on('upgrade', (b) => { this.ring(b.x, b.y, 34, '#ffe27a', 0.5); for (let i = 0; i < 8; i++) this.spark(b.x + rnd(-14, 14), b.y + rnd(-6, 8), '#ffe27a'); });

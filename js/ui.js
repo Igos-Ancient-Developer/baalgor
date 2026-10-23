@@ -1,10 +1,10 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261023175825';
-import * as A from './art.js?v=20261023175825';
-import { uiIcon } from './env.js?v=20261023175825';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261023175825';
-import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261023175825';
-import { TARGET_MODES } from './sim.js?v=20261023175825';
+import * as D from './data.js?v=20261023180731';
+import * as A from './art.js?v=20261023180731';
+import { uiIcon } from './env.js?v=20261023180731';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261023180731';
+import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261023180731';
+import { TARGET_MODES } from './sim.js?v=20261023180731';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -15,13 +15,12 @@ const f1 = (v) => (Math.round(v * 10) / 10).toString();
 // форматирование характеристик башен
 const FMT = {
   dmg: (v) => Math.round(v), rate: f1, range: f1, splash: f1, chains: (v) => v, pierce: (v) => v, crit: pct, execute: pct, slow: pct, freeze: pct, brittle: (v) => '+' + pct(v), shatter: pct,
-  poison: (v) => Math.round(v), stacks: (v) => v, plague: f1, shred: pct, orbit: (v) => v, bounce: (v) => v, stun: pct, guards: (v) => v, ghp: (v) => Math.round(v), gdmg: (v) => Math.round(v), garmor: pct, cleave: (v) => v,
-  rateBuff: (v) => '+' + pct(v), dmgBuff: (v) => '+' + pct(v), mark: (v) => '+' + pct(v), cluster: (v) => v, fire: (v) => v, burn: (v) => Math.round(v), spread: (v) => v, trail: (v) => v, pull: (v) => Math.round(v),
+  poison: (v) => Math.round(v), stacks: (v) => v, plague: f1, shred: pct, orbit: (v) => v, bounce: (v) => v, stun: pct, rateBuff: (v) => '+' + pct(v), dmgBuff: (v) => '+' + pct(v), mark: (v) => '+' + pct(v), cluster: (v) => v, fire: (v) => v, burn: (v) => Math.round(v), spread: (v) => v, trail: (v) => v, pull: (v) => Math.round(v),
   collapseMult: (v) => '×' + v, anchor: (v) => f1(v) + 'с', heavyMult: (v) => '×' + f1(v), armorPierce: pct,
   income: (v) => '+' + v, cap: (v) => v, bonus: (v) => '+' + v,
 };
 const ECON_FMT = { income: (v) => '+' + v, rate: pct, cap: (v) => v, bonus: (v) => '+' + v, range: f1 };
-const SHOW_ORDER = ['dmg', 'rate', 'range', 'splash', 'burn', 'poison', 'chains', 'pierce', 'crit', 'execute', 'slow', 'freeze', 'brittle', 'shatter', 'stacks', 'plague', 'shred', 'orbit', 'bounce', 'stun', 'cluster', 'fire', 'spread', 'trail', 'pull', 'collapseMult', 'anchor', 'heavyMult', 'armorPierce', 'guards', 'ghp', 'gdmg', 'garmor', 'cleave', 'rateBuff', 'dmgBuff', 'mark'];
+const SHOW_ORDER = ['dmg', 'rate', 'range', 'splash', 'burn', 'poison', 'chains', 'pierce', 'crit', 'execute', 'slow', 'freeze', 'brittle', 'shatter', 'stacks', 'plague', 'shred', 'orbit', 'bounce', 'stun', 'cluster', 'fire', 'spread', 'trail', 'pull', 'collapseMult', 'anchor', 'heavyMult', 'armorPierce', 'rateBuff', 'dmgBuff', 'mark'];
 const BRANCH_COL = { A: '#6fd0ff', B: '#ff5a6a' };
 
 const chip = (glyph, text, cls = '', title = '') => `<span class="ch ${cls}" ${title ? `title="${title}"` : ''}><img src="${bareGlyphUrl(glyph, 18)}" alt=""><b>${text}</b></span>`;
@@ -44,7 +43,7 @@ export const towerIcon = (type, lvl = 1, br = null, picks = null, o = {}) => {
 };
 export const econIcon = (type, lvl = 3, o = {}) => spriteIcon(`e:${type}:${lvl}:${o.k || ''}`, A.econBody(type, lvl), { bg: PALETTE.econ, spriteScale: 1.4, ...o });
 
-const STAT_LABEL = { dmg: 'Урон', rate: 'Скорострельность', range: 'Дальность', splash: 'Радиус взрыва', burn: 'Горение', poison: 'Яд', chains: 'Прыжков молнии', pierce: 'Пробивает целей', crit: 'Шанс крита', execute: 'Казнь раненых', slow: 'Замедление', freeze: 'Шанс заморозки', brittle: 'Уязвимость ко льду', shatter: 'Осколки льда', stacks: 'Слоёв яда', plague: 'Радиус чумы', shred: 'Снятие брони', orbit: 'Лезвий вокруг', bounce: 'Рикошетов', stun: 'Шанс оглушения', cluster: 'Бомб в кассете', fire: 'Огонь', spread: 'Заражение огнём', trail: 'Огонь за целью', pull: 'Отбрасывание', collapseMult: 'Мощь схлопывания', anchor: 'Пригвождение', heavyMult: 'Урон по тяжёлым', armorPierce: 'Пробитие брони', guards: 'Солдат', ghp: 'Здоровье солдат', gdmg: 'Урон солдат', garmor: 'Броня солдат', cleave: 'Задевает целей', rateBuff: 'Скорость союзников', dmgBuff: 'Урон союзников', mark: 'Метка на врагах', income: 'Золото с монеты', cap: 'Потолок монеты', bonus: 'Золото за убийство' };
+const STAT_LABEL = { dmg: 'Урон', rate: 'Скорострельность', range: 'Дальность', splash: 'Радиус взрыва', burn: 'Горение', poison: 'Яд', chains: 'Прыжков молнии', pierce: 'Пробивает целей', crit: 'Шанс крита', execute: 'Казнь раненых', slow: 'Замедление', freeze: 'Шанс заморозки', brittle: 'Уязвимость ко льду', shatter: 'Осколки льда', stacks: 'Слоёв яда', plague: 'Радиус чумы', shred: 'Снятие брони', orbit: 'Лезвий вокруг', bounce: 'Рикошетов', stun: 'Шанс оглушения', cluster: 'Бомб в кассете', fire: 'Огонь', spread: 'Заражение огнём', trail: 'Огонь за целью', pull: 'Отбрасывание', collapseMult: 'Мощь схлопывания', anchor: 'Пригвождение', heavyMult: 'Урон по тяжёлым', armorPierce: 'Пробитие брони', rateBuff: 'Скорость союзников', dmgBuff: 'Урон союзников', mark: 'Метка на врагах', income: 'Золото с монеты', cap: 'Потолок монеты', bonus: 'Золото за убийство' };
 const UNIT = { rate: ' /с', range: ' кл.', splash: ' кл.', plague: ' кл.' };
 const NO_PCT = ['crit', 'execute', 'slow', 'freeze', 'brittle', 'shatter', 'armorPierce', 'stun', 'garmor', 'rateBuff', 'dmgBuff', 'mark'];
 const PICK_NAME = { power: 'Мощь', speed: 'Скорость', special: 'Особое' };
@@ -175,7 +174,7 @@ export class GameUI {
     const out = [];
     for (const k of SHOW_ORDER) {
       if (st[k] === undefined || out.length >= max) continue;
-      if (k === 'rate' && (b.type === 'banner' || b.type === 'barracks')) continue;
+      if (k === 'rate' && b.type === 'banner') continue;
       let v = st[k]; const buffed = (k === 'dmg' && b.dmgMult > 1) || (k === 'rate' && b.rateMult > 1);
       if (k === 'dmg' && b.dmgMult > 1) v = st.dmg * b.dmgMult; if (k === 'rate' && b.rateMult > 1) v = st.rate * b.rateMult;
       out.push(chip(STAT_GLYPH[k] || 'dmg', fmtStat(k, v), buffed ? 'pos' : '', k));

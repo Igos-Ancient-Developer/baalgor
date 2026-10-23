@@ -1,9 +1,9 @@
 // Окружение: фон карт, пятна крови, иконки интерфейса. На картах стоят только деревья и валуны; портал и ворота — на концах дороги.
-import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023175825';
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261023175825';
-import { UI_IMG, inner } from './iconmap.js?v=20261023175825';
-import { BLOOD } from './enemies.js?v=20261023175825';
-import { SPR, img } from './sprites.js?v=20261023175825';
+import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023180731';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261023180731';
+import { UI_IMG, inner } from './iconmap.js?v=20261023180731';
+import { BLOOD } from './enemies.js?v=20261023180731';
+import { SPR, img } from './sprites.js?v=20261023180731';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -113,7 +113,7 @@ function natDecor(g, L, kind, x, y, key) {
 
 // ───── портал врагов и ворота крепости ─────
 // портал: зев в центре клетки, откуда выходят враги; ворота: проём у нижнего края дороги, где враги исчезают
-export const PORTAL = { w: 96 }, GATE = { w: 92, floor: 0.88 };
+export const PORTAL = { w: 96 }, GATE = { w: 92, floor: 0.92 };
 function drawPortal(g, L, x, y) {
   const pm = L.m.portal && L.m.portal.base; if (!L.portal || !pm) return;
   const w = PORTAL.w, h = w * pm.h / pm.w, top = y - 4 - h * pm.my, left = x - w * pm.mx;
@@ -249,21 +249,6 @@ export function sawBladeSprite(r = 14, col = '#cfd5de') {
     g.fillStyle = 'rgba(160,10,20,0.6)'; ell(g, r * 0.45, r * 0.3, r * 0.22, r * 0.1, 0.8); g.fill();
   }));
 }
-export function guardSprite(kind, step = 0) {
-  return cached(`guard:${kind}:${step}`, () => mk(36, 46, (g) => {
-    g.translate(0, 6);
-    const col = { norm: ['#8a8f9a', '#b03a2a'], A: ['#a8b4c8', '#2d5f9a'], B: ['#5d4a52', '#8a1018'] }[kind];
-    shadowEll(g, 18, 36, 9, 3, 0.4);
-    tube(g, 15, 26, 14 - step, 35, 3.6, '#3a2a22', 0.9); tube(g, 21, 26, 22 + step, 35, 3.6, '#3a2a22', 0.9);
-    rrect(g, 11, 14, 14, 14, 4); fillStroke(g, lin(g, 11, 0, 25, 0, [[0, shade(col[0], 0.3)], [1, shade(col[0], -0.4)]]), 1.3);
-    rrect(g, 11, 23, 14, 3, 1); fillStroke(g, '#3a2218', 0.6);
-    circ(g, 18, 10, 6.4); fillStroke(g, lin(g, 12, 4, 24, 16, [[0, shade(col[0], 0.4)], [1, shade(col[0], -0.3)]]), 1.3);
-    g.fillStyle = '#0a0a12'; g.fillRect(19, 8.6, 6, 2.4);
-    poly(g, [[14, 5], [18, -2], [22, 5]]); fillStroke(g, col[1], 0.8);
-    poly(g, [[6, 16], [12, 15], [12, 26], [9, 30], [6, 26]]); fillStroke(g, lin(g, 6, 0, 12, 0, [[0, '#6a7080'], [1, '#2e323c']]), 1.1); tube(g, 9, 17, 9, 27, 1.3, col[1], 0.4);
-    tube(g, 24, 20, 31, 12, 2.4, '#d8dde6', 0.8); tube(g, 24, 20, 27, 18, 3, '#3a2a22', 0.6);
-  }));
-}
 
 // ───── иконки интерфейса (dataURL) ─────
 export function uiIcon(name, size = 24) {
@@ -307,6 +292,6 @@ export function renderSheet({ section, add, verdict }) {
   const row3 = section('Иконки и эффекты');
   if (row3) {
     for (const n of ['coin', 'heart', 'skull', 'sword', 'clock', 'fast', 'pause', 'play', 'income', 'meteor', 'stasis', 'rush', 'sell', 'up', 'worker', 'horde', 'target']) { const img = new Image(); img.src = uiIcon(n, 48); const c = mk(24, 24, () => {}); const cv = document.createElement('canvas'); cv.width = 96; cv.height = 96; cv.lw = 48; img.onload = () => cv.getContext('2d').drawImage(img, 0, 0, 96, 96); add(row3, n, cv, null, 60); }
-    for (const [n, c] of [['bag', bagSprite()], ['saw', sawBladeSprite(14)], ['guard', guardSprite('norm')], ['guardA', guardSprite('A')], ['guardB', guardSprite('B')], ['coin', coinSprite()], ['scorch', scorchSprite()]]) add(row3, n, c, verdict(n, c, { minFill: 0.05 }), 60);
+    for (const [n, c] of [['bag', bagSprite()], ['saw', sawBladeSprite(14)], ['coin', coinSprite()], ['scorch', scorchSprite()]]) add(row3, n, c, verdict(n, c, { minFill: 0.05 }), 60);
   }
 }

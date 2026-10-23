@@ -1,5 +1,5 @@
-// Режим просмотра врагов: открой index.html?debug&enemydemo — первый уровень, золото, несколько башен и казарма,
-// каждые несколько секунд по дороге идут враги всех видов (или тех, что перечислены: enemydemo=ogre,demon) (ходьба, атака у казармы, смерть).
+// Режим просмотра врагов: открой index.html?debug&enemydemo — первый уровень, золото, несколько башен,
+// каждые несколько секунд по дороге идут враги всех видов (или тех, что перечислены: enemydemo=ogre,demon) (ходьба, смерть).
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export async function enemyDemo(ctrl) {
   while (!ctrl.startLevel || !ctrl.save) await sleep(200);          // ждём, пока игра загрузится
@@ -12,7 +12,7 @@ export async function enemyDemo(ctrl) {
     cells.push([c, r, cov]);
   }
   cells.sort((a, b) => b[2] - a[2]);
-  const plan = ((location.search.match(/towers=([\w,]+)/) || [])[1] || 'barracks,bolt,bolt,frost').split(','); let used = [];
+  const plan = ((location.search.match(/towers=([\w,]+)/) || [])[1] || 'bolt,mortar,bolt,frost').split(','); let used = [];
   for (const t of plan) { const cell = cells.find(([c, r]) => !used.some(([a, b]) => Math.abs(a - c) < 2 && Math.abs(b - r) < 2)); if (!cell) break; used.push(cell); const b = s.build('tower', t, cell[0], cell[1]); if (b && typeof b === 'object') { b.level = t === 'barracks' ? 2 : 3; s.refreshStats(b); } }
   const types = ['grunt', 'skeleton', 'zombie', 'hound', 'bat', 'slime', 'shaman', 'knight', 'butcher', 'gargoyle', 'berserker', 'ogre', 'reaper', 'lich', 'demon'];
   const pick = (location.search.match(/enemydemo=([\w,]+)/) || [])[1]; const list = pick ? pick.split(',').filter((t) => types.includes(t)) : types;
@@ -32,7 +32,7 @@ export async function buildAll(ctrl) {
   const go = document.querySelector('#lo-go'); if (go) go.click(); await sleep(2200);
   const s = ctrl.sim; if (!s) return;
   s.locked.clear(); s.allowed = null; s.limits = {}; s.gold = 99999; s.hold = true;
-  const D = await import('./data.js?v=20261023175825');
+  const D = await import('./data.js?v=20261023180731');
   const types = [...Object.keys(D.TOWERS).map((t) => ['tower', t]), ...Object.keys(D.ECON).map((t) => ['econ', t])];
   const free = []; for (let r = 0; r < s.grid.length; r++) for (let c = 0; c < s.grid[0].length; c++) if (s.canBuild(c, r)) free.push([c, r]);
   // клетки вперемешку не нужны: идём по рядам сверху вниз через одну, чтобы здания не слипались
