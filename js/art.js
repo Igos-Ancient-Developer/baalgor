@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261023194025';
-import { TOWERS } from './data.js?v=20261023194025';
+import { SPR, img } from './sprites.js?v=20261023204028';
+import { TOWERS } from './data.js?v=20261023204028';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -573,7 +573,7 @@ function towerIdx(type, lvl, br) {
   if (k === 1) return 0;
   if (type === 'mine') return Math.min(lvl, k) - 1;
   if (k === 5) return lvl <= 3 ? lvl - 1 : (br === 'A' ? 4 : 3);
-  const tab = k >= 4 ? [0, 1, 2, 3, 3] : k === 3 ? [0, 1, 2, 2, 2] : [0, 0, 0, 1, 1];
+  const tab = k >= 4 ? [0, 1, 2, 3, 3] : k === 3 ? [0, 1, 2, 2, 2] : [0, 0, 1, 1, 1];
   return tab[Math.min(lvl, 5) - 1];
 }
 // Здание не больше клетки по ширине и клетки с небольшим запасом по высоте: соседние здания не закрывают друг друга.
@@ -618,7 +618,7 @@ function spriteTower(type, lvl, br) {
   });
 }
 // геометрия «живых» эффектов (орб, жерло, флаг…) считается по рамке картинки
-const FR = { tesla: ['orb', 0.11], frost: ['orb', 0.3], voidwell: ['well', 0.36], saw: ['hub', 0.2], banner: ['pole', 0.04], toxic: ['liq', 0.2] };
+const FR = { tesla: ['orb', 0.11], frost: ['orb', 0.3], voidwell: ['well', 0.4], saw: ['hub', 0.2], banner: ['pole', 0.04], toxic: ['liq', 0.2] };
 for (const [t, [key, f]] of Object.entries(FR)) {
   const old = TOWER_ART[t][key];
   TOWER_ART[t][key] = (lvl, br) => {

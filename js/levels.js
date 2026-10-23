@@ -1,5 +1,5 @@
 // Уровни кампании: секторы, раскладки, связи (after = открывается после прохождения ЛЮБОГО из перечисленных).
-import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261023194025';
+import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261023204028';
 
 export const SECTORS = [
   { id: 'grave', name: 'Проклятый погост', theme: 'grave', color: '#7fa86a' },

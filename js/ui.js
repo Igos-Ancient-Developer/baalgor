@@ -1,10 +1,10 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261023194025';
-import * as A from './art.js?v=20261023194025';
-import { uiIcon } from './env.js?v=20261023194025';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261023194025';
-import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261023194025';
-import { TARGET_MODES } from './sim.js?v=20261023194025';
+import * as D from './data.js?v=20261023204028';
+import * as A from './art.js?v=20261023204028';
+import { uiIcon } from './env.js?v=20261023204028';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261023204028';
+import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261023204028';
+import { TARGET_MODES } from './sim.js?v=20261023204028';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -341,9 +341,5 @@ export class GameUI {
       L.cardT = 0.2; this.refreshCards(); this.updateSel(); this.updateModal();
       if (this.selB && !this.sim.buildings.includes(this.selB)) this.deselect(); else if (this.selB && this.tickSel()) this.showSel(this.selB);
     }
-    // напряжение музыки: до первой волны — тихо (дрон, щипки, сердцебиение); с её началом слои включаются, дальше растёт с номером волны, числом врагов и опасностью для ворот
-    let tn = s.wave === 0 ? 0.1 : 0.4 + 0.28 * (s.wave / Math.max(1, s.total)) + 0.32 * Math.min(1, s.enemies.length / 12);
-    if (s.wave > 0 && s.lives <= 2) tn += 0.08;
-    this.c.sfx.setTension(Math.min(1, tn));
   }
 }

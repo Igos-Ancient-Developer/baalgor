@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023194025';
-import * as A from './art.js?v=20261023194025';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261023194025';
-import { tile } from './iconmap.js?v=20261023194025';
-import { img } from './sprites.js?v=20261023194025';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261023194025';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261023204028';
+import * as A from './art.js?v=20261023204028';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261023204028';
+import { tile } from './iconmap.js?v=20261023204028';
+import { img } from './sprites.js?v=20261023204028';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261023204028';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -303,16 +303,9 @@ export class Renderer {
         if (b.type === 'flame' && head && !rh) { const nx = x + Math.cos(b.angle) * 20, ny = y - lift + Math.sin(b.angle) * 12; add(glowSprite(br === 'B' ? '#5affc8' : '#ff8a1c'), nx, ny, 16 + b.recoil * 20, 0.45 + 0.4 * b.recoil + 0.15 * Math.sin(t * 14)); }
         break;
       }
-      case 'voidwell': {
+      case 'voidwell': {                                // на растровой картинке воронка уже нарисована: сверху только пульсирующее свечение, на импульс — вспышка
         const w = art.well(lvl), wy = base + w.y, pc = clamp(b.recoil, 0, 1), acc = br === 'A' ? '#ff4a9a' : br === 'B' ? '#4adcff' : '#b070ff';
-        ctx.save(); ctx.translate(x, wy); ctx.strokeStyle = acc; ctx.lineWidth = 1.5;
-        for (let i = 0; i < 4; i++) { const r = 1 - i * 0.2; ctx.globalAlpha = 0.75 - i * 0.12; ctx.beginPath(); ctx.ellipse(0, 0, w.rx * r * 0.92, w.ry * r * 0.92, t * (1.6 + i * 0.5) + i, 0, 4.4); ctx.stroke(); }
-        ctx.restore();
-        add(glowSprite(acc), x, wy, 40 + pc * 34, 0.4 + 0.2 * Math.sin(t * 3 + b.id) + pc * 0.5);
-        for (let i = 0; i < 3; i++) {
-          const an = t * 1.3 + i * 2.09 + b.id, sx = x + Math.cos(an) * 25, sy = wy - 12 + Math.sin(an) * 8 - 3 * Math.sin(t * 2 + i);
-          ctx.save(); ctx.translate(sx, sy); ctx.rotate(t * 2 + i); ctx.fillStyle = acc; ctx.strokeStyle = '#170a0f'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -3.4); ctx.lineTo(2.4, 0); ctx.lineTo(0, 3.4); ctx.lineTo(-2.4, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
-        }
+        add(glowSprite(acc), x, wy, 36 + pc * 34, 0.22 + 0.1 * Math.sin(t * 3 + b.id) + pc * 0.5);
         break;
       }
       case 'tesla': {

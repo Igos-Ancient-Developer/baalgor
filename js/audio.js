@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261023194025';
+import { createTrack, MENU_SPEC } from './music.js?v=20261023204028';
 export class Sfx {
   constructor() {
     this.ctx = null; this.sfxOn = true; this.musOn = true;
@@ -122,7 +122,24 @@ export class Sfx {
       case 'build': this.noise('lowpass', 700, 150, 0.08, 0.5 * v); this.tone('sine', 150, 70, 0.1, 0.5 * v); this.chip([659, 988], 0.05, 'square', 0.07 * v); this.noise('lowpass', 700, 150, 0.08, 0.4 * v, 0.1); break;
       case 'upgrade': this.chip([523, 659, 784, 1046, 784, 1046, 1318, 1568], 0.055, 'square', 0.09 * v, 1.2); this.chip([262, 330, 392, 523], 0.11, 'triangle', 0.1 * v); this.tone('sine', 3136, 3136, 0.3, 0.04 * v, 0.4); break;
       case 'sell': this.chip([1319, 988, 1319, 1976], 0.05, 'square', 0.08 * v); break;
-      case 'horn': this.tone('sawtooth', 98, 92, 1.0, 0.16 * v); this.tone('sawtooth', 147, 138, 1.0, 0.1 * v); this.tone('square', 49, 46, 1.0, 0.1 * v); break;
+      case 'horn': {                                                   // зловещий рог волны: два глухих удара сердца, низкий медный рёв с тритоном, гонг и призрачный вой
+        const c = this.ctx, t = c.currentTime;
+        this.tone('sine', 70, 32, 0.22, 0.55 * v); this.tone('sine', 62, 30, 0.26, 0.5 * v, 0.24);
+        [[55, 0.5], [58.3, 0.5], [77.8, 0.56], [110, 0.62]].forEach(([f, dl]) => {
+          const o = c.createOscillator(), fl = c.createBiquadFilter(), g = c.createGain(), t0 = t + dl;
+          o.type = 'sawtooth'; o.frequency.setValueAtTime(f * 1.04, t0); o.frequency.exponentialRampToValueAtTime(f, t0 + 0.5);
+          fl.type = 'lowpass'; fl.Q.value = 5; fl.frequency.setValueAtTime(140, t0); fl.frequency.exponentialRampToValueAtTime(1000, t0 + 0.75); fl.frequency.exponentialRampToValueAtTime(160, t0 + 2.1);
+          g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.17 * v, t0 + 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.2);
+          o.connect(fl); fl.connect(g); g.connect(this.sfxBus); o.start(t0); o.stop(t0 + 2.3);
+        });
+        this.tone('sine', 58, 28, 1.5, 0.65 * v, 0.5); this.noise('lowpass', 520, 45, 1.4, 0.5 * v, 0.5);              // гонг
+        const w = c.createOscillator(), wl = c.createOscillator(), wg = c.createGain(), wf = c.createGain(), tw = t + 1.0;                 // вой: падающий тон с дрожью
+        w.type = 'triangle'; w.frequency.setValueAtTime(420, tw); w.frequency.exponentialRampToValueAtTime(190, tw + 1.6); wl.frequency.value = 5.5; wf.gain.value = 9; wl.connect(wf); wf.connect(w.frequency);
+        wg.gain.setValueAtTime(0.0001, tw); wg.gain.exponentialRampToValueAtTime(0.06 * v, tw + 0.5); wg.gain.exponentialRampToValueAtTime(0.0001, tw + 1.7);
+        w.connect(wg); wg.connect(this.sfxBus); w.start(tw); wl.start(tw); w.stop(tw + 1.8); wl.stop(tw + 1.8);
+        this.noise('bandpass', 700, 2200, 1.2, 0.12 * v, 0.9, 3);
+        break;
+      }
       case 'bosshorn': this.tone('sawtooth', 65, 55, 1.8, 0.22 * v); this.tone('sawtooth', 98, 82, 1.8, 0.14 * v); this.noise('lowpass', 300, 80, 1.6, 0.35 * v); this.tone('square', 32, 28, 1.8, 0.2 * v); break;
       case 'leak': this.chip([440, 330, 220, 165], 0.07, 'square', 0.11 * v, 1.2); this.tone('sawtooth', 120, 40, 0.5, 0.25 * v); this.noise('lowpass', 800, 100, 0.4, 0.4 * v); break;
       case 'error': this.tone('square', 233, 110, 0.16, 0.11); this.tone('square', 175, 90, 0.14, 0.09, 0.08); break;
@@ -175,7 +192,7 @@ export function attachSfx(sim, sfx) {
   sim.on('build', () => sfx.play('build')); sim.on('upgrade', () => sfx.play('upgrade')); sim.on('sell', () => sfx.play('sell'));
   sim.on('chest', (d) => { if (d.kind === 'hit') sfx.play('select', 0.9); else { sfx.play('win', 0.6); sfx.play('bag'); setTimeout(() => sfx.play('sparkle'), 150); setTimeout(() => sfx.play('coin'), 120); } });
   sim.on('bag', (d) => sfx.play(d.tapped ? 'bag' : 'coin', 0.8));
-  sim.on('wave', (d) => { sfx.play('horn'); sfx.stinger(); });
+  sim.on('wave', () => sfx.play('horn'));
   sim.on('leak', () => sfx.play('leak'));
   sim.on('freeze', () => sfx.play('freeze', 0.5));
   sim.on('stomp', () => sfx.play('stomp'));
