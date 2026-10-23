@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261023150737';
-import { TOWERS } from './data.js?v=20261023150737';
+import { SPR, img } from './sprites.js?v=20261023153351';
+import { TOWERS } from './data.js?v=20261023153351';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -645,12 +645,12 @@ function spriteTower(type, lvl, br) {
     const gl = g.createRadialGradient(40, 75, 2, 40, 75, 30);                       // тёплый свет на земле
     gl.addColorStop(0, 'rgba(255,238,180,0.05)'); gl.addColorStop(1, 'rgba(255,238,180,0)');
     g.fillStyle = gl; g.beginPath(); g.ellipse(40, 75, 30, 13, 0, 0, Math.PI * 2); g.fill();
-    g.imageSmoothingQuality = 'high'; g.globalAlpha = 0.6;                          // чёрная обводка снаружи, под ней светлая кайма
-    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]]) g.drawImage(dark, dx * 1.5, dy * 1.5, TW_W, TW_H);
+    g.imageSmoothingQuality = 'high'; g.globalAlpha = 0.3;                          // тонкая тёмная обводка снаружи, под ней светлая кайма
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]]) g.drawImage(dark, dx * 0.9, dy * 0.9, TW_W, TW_H);
     g.globalAlpha = 0.1;
     for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) g.drawImage(sil, dx * 0.8, dy * 0.8, TW_W, TW_H);
     g.globalAlpha = 1; g.drawImage(body, 0, 0, TW_W, TW_H);
-    g.globalCompositeOperation = 'source-atop'; g.globalAlpha = 0.09; g.fillStyle = '#1a1018'; g.fillRect(0, 0, TW_W, TW_H); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;      // здания чуть темнее, чтобы сидели в гамме карты
+    g.globalCompositeOperation = 'source-atop'; g.globalAlpha = 0.04; g.fillStyle = '#1a1018'; g.fillRect(0, 0, TW_W, TW_H); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;      // здания чуть темнее, чтобы сидели в гамме карты
     if (type === 'mine') { g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.07; g.drawImage(body, 0, 0, TW_W, TW_H); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; }      // тёмные рудники чуть светлее
   });
 }
@@ -686,7 +686,7 @@ export function drawRotHead(g, hi, angle, x, y, rec = 0) {
 const RINGS = new WeakMap();
 export function selRing(src, cw, ch, n, px) {
   let r = RINGS.get(src); if (r) return r;
-  const k = cw / px, rl = 1.9 * k, rd = 3.1 * k, pad = Math.ceil(rd) + 1, W = cw + pad * 2, H = ch + pad * 2;
+  const k = cw / px, rl = 1.9 * k, rd = 2.6 * k, pad = Math.ceil(rd) + 1, W = cw + pad * 2, H = ch + pad * 2;
   const c = document.createElement('canvas'); c.width = W * n; c.height = H; const g = c.getContext('2d');
   const sil = document.createElement('canvas'); sil.width = cw; sil.height = ch; const sg = sil.getContext('2d');
   for (let i = 0; i < n; i++) {

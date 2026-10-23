@@ -1,25 +1,25 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261023150737';
-import * as A from './art.js?v=20261023150737';
-import { Sim } from './sim.js?v=20261023150737';
-import { Gore } from './gore.js?v=20261023150737';
-import { Renderer } from './render.js?v=20261023150737';
-import { GameUI } from './ui.js?v=20261023150737';
-import { Tutorial } from './tutorial.js?v=20261023150737';
-import { Sfx, attachSfx } from './audio.js?v=20261023150737';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023150737';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023150737';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261023150737';
-import { mapBG, releaseBG } from './env.js?v=20261023150737';
-import { levelSpec, MENU_SPEC } from './music.js?v=20261023150737';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023150737';
-import { renderForge, renderAchs } from './screens.js?v=20261023150737';
-import { renderShop } from './shop.js?v=20261023150737';
-import { Wallet } from './wallet.js?v=20261023150737';
-import { initLang, pickLang } from './i18n.js?v=20261023150737';
-import { Menus, RUN, clock } from './menus.js?v=20261023150737';
-import { Net } from './net.js?v=20261023150737';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023150737';
+import * as D from './data.js?v=20261023153351';
+import * as A from './art.js?v=20261023153351';
+import { Sim } from './sim.js?v=20261023153351';
+import { Gore } from './gore.js?v=20261023153351';
+import { Renderer } from './render.js?v=20261023153351';
+import { GameUI } from './ui.js?v=20261023153351';
+import { Tutorial } from './tutorial.js?v=20261023153351';
+import { Sfx, attachSfx } from './audio.js?v=20261023153351';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261023153351';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261023153351';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261023153351';
+import { mapBG, releaseBG } from './env.js?v=20261023153351';
+import { levelSpec, MENU_SPEC } from './music.js?v=20261023153351';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261023153351';
+import { renderForge, renderAchs } from './screens.js?v=20261023153351';
+import { renderShop } from './shop.js?v=20261023153351';
+import { Wallet } from './wallet.js?v=20261023153351';
+import { initLang, pickLang } from './i18n.js?v=20261023153351';
+import { Menus, RUN, clock } from './menus.js?v=20261023153351';
+import { Net } from './net.js?v=20261023153351';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261023153351';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -47,7 +47,7 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023150737').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261023153351').then((m) => m.enemyDemo(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
@@ -72,7 +72,7 @@ function ensureLevel(L) {
   warmP = (async () => {
     await loadEnemyImgs(enemyFiles(types));
     applyEnemySprites(types); releaseEnemies(types);
-    await loadLand(L.theme); mapBG(L); dropLand(L.theme);                      // фон запекаем один раз и сразу выбрасываем из памяти исходные картинки земли, дороги и декора
+    await loadLand(L.theme); mapBG(L); dropLand();                      // фон запекаем один раз и сразу выбрасываем из памяти исходные картинки земли, дороги и декора
   })().catch((e) => { console.error(e); });
   return warmP;
 }
@@ -80,7 +80,7 @@ function releaseLevel() {
   warmId = null; warmP = null;
   if (renderer) renderer.release();
   if (gore) { gore.dispose(); gore = null; ctrl.gore = null; }
-  releaseBG(); dropLand(null); releaseEnemies([]); sim = null; ctrl.sim = null;
+  releaseBG(); dropLand(); releaseEnemies([]); sim = null; ctrl.sim = null;
 }
 function busy(on) { $('#busy').classList.toggle('hidden', !on); }
 

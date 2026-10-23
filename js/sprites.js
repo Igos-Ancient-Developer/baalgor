@@ -20,7 +20,7 @@ function loadImg(path, tries = 3) {
 }
 
 // декор карт (деревья, камни, статуи), земля, дорога, портал и ворота лежат в img/land и грузятся по теме уровня (landFiles); тут — сундук и объекты поля
-export const DECOR_IMGS = ['chest_loot', 'obj_chest', 'obj_chest_open'];
+export const DECOR_IMGS = ['chest_loot', 'obj_gate', 'obj_chest', 'obj_chest_open'];
 export const GIB_IMGS = ['gib_1', 'gib_2', 'gib_3', 'gib_4', 'heart', 'arm', 'leg', 'bones', 'skull'];
 export const PORTRAITS = ['imp', 'brute', 'succubus', 'pitlord', 'archdemon', 'skull'];
 export const UI_ICONS = ['skull', 'star', 'settings', 'map', 'sword', 'shield', 'potion', 'book', 'crown', 'medal', 'chest', 'exit'];
@@ -53,16 +53,10 @@ export async function loadSprites(onProgress = () => {}) {
   return true;
 }
 
-// ландшафт темы грузим по требованию: земля, дорога, кромки, декор, панорамы, портал и ворота нужны только на время запекания фона карты (потом их можно выбросить), площадки — пока идёт бой
-const VARIANT = { ice: 'ice', lava: 'lava' };
-export const plotName = (theme) => ({ ice: 'plot_ice', lava: 'plot_lava', slaughter: 'plot_slaughter' }[theme] || 'plot');
-export const landFiles = (theme) => { const v = VARIANT[theme]; return [`ground_${theme}`, `road_${theme}`, `edge_${theme}`, `decor_${theme}`, `border_${theme}`, v ? `portal_${v}` : 'portal', v ? `gate_${v}` : 'gate'].map((n) => `land/${n}.webp`); };
-export const plotFiles = (theme) => [plotName(theme), 'plot_ok', 'plot_bad'].map((n) => `land/${n}.webp`);
-export function loadLand(theme) { return Promise.all([...landFiles(theme), ...plotFiles(theme)].filter((p) => !SPR.imgs.has(p)).map((p) => loadImg(p))); }
-export function dropLand(keepPlots) {          // keepPlots: тема, чьи площадки оставить (или null — всё)
-  const keep = new Set(keepPlots ? plotFiles(keepPlots) : []);
-  for (const p of [...SPR.imgs.keys()]) if (p.startsWith('land/') && !keep.has(p)) SPR.imgs.delete(p);
-}
+// ландшафт темы грузим по требованию: земля, дорога, кромки, декор, панорама и портал нужны только на время запекания фона карты, потом их выбрасываем
+export const landFiles = (theme) => [`ground_${theme}`, `road_${theme}`, `edge_${theme}`, `decor_${theme}`, `border_${theme}`, 'portal'].map((n) => `land/${n}.webp`);
+export function loadLand(theme) { return Promise.all(landFiles(theme).filter((p) => !SPR.imgs.has(p)).map((p) => loadImg(p))); }
+export function dropLand() { for (const p of [...SPR.imgs.keys()]) if (p.startsWith('land/')) SPR.imgs.delete(p); }
 
 // листы врагов грузим по требованию: на уровне нужны только его виды (остальные не занимают память)
 export const enemyFile = (f) => `enemies/${f}.webp`;

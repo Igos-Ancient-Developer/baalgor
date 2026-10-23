@@ -1,9 +1,9 @@
 // Окружение: фон карт, пятна крови, иконки интерфейса. На картах стоят только деревья и валуны; портал и ворота — на концах дороги.
-import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023150737';
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261023150737';
-import { UI_IMG, inner } from './iconmap.js?v=20261023150737';
-import { BLOOD } from './enemies.js?v=20261023150737';
-import { SPR, img } from './sprites.js?v=20261023150737';
+import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023153351';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261023153351';
+import { UI_IMG, inner } from './iconmap.js?v=20261023153351';
+import { BLOOD } from './enemies.js?v=20261023153351';
+import { SPR, img } from './sprites.js?v=20261023153351';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -40,9 +40,8 @@ DECOR.statue = DECOR.rock; DECOR.bush = DECOR.rock;
 // ───── ландшафт из img/land (листы собирает tools/build_landscape.py): земля, дорога, кромки, декор, панорамы, портал и ворота ─────
 const landImg = (n) => img(`land/${n}.webp`);
 function landSet(theme) {
-  const v = theme === 'ice' ? 'ice' : theme === 'lava' ? 'lava' : '', suf = v ? '_' + v : '';
   const L = { ground: landImg('ground_' + theme), road: landImg('road_' + theme), edge: landImg('edge_' + theme), decor: landImg('decor_' + theme), border: landImg('border_' + theme),
-    portal: landImg('portal' + suf), gate: landImg('gate' + suf), m: SPR.land || {}, v: v || 'base', theme };
+    portal: landImg('portal'), m: SPR.land || {}, theme };
   return L.ground && L.road && L.decor && L.m.road && L.m.decor ? L : null;
 }
 const ROAD_W = CELL;                                    // дорога в одну клетку: шире врагов, они идут по ней свободно
@@ -113,17 +112,16 @@ function natDecor(g, L, kind, x, y, key) {
 
 // ───── портал врагов и ворота крепости ─────
 // портал: зев в центре клетки, откуда выходят враги; ворота: проём у нижнего края дороги, где враги исчезают
-export const PORTAL = { w: 96 };
-export const GATE = { w: 104 };
+export const PORTAL = { w: 96 }, GATE = { w: 92, floor: 0.88 };
 function drawPortal(g, L, x, y) {
-  const pm = L.m.portal && L.m.portal[L.v]; if (!L.portal || !pm) return;
+  const pm = L.m.portal && L.m.portal.base; if (!L.portal || !pm) return;
   const w = PORTAL.w, h = w * pm.h / pm.w, top = y - 4 - h * pm.my, left = x - w * pm.mx;
   shadowEll(g, x, top + h - 7, w * 0.4, 6, 0.45); g.imageSmoothingQuality = 'high'; g.drawImage(L.portal, left, top, w, h);
 }
-function drawGate(g, L, x, y) {
-  const gm = L.m.gate && L.m.gate[L.v]; if (!L.gate || !gm) return;
-  const w = GATE.w, h = w * gm.h / gm.w, top = y - h * gm.dy, left = x - w * gm.dx;
-  shadowEll(g, x, top + h - 5, w * 0.42, 7, 0.5); g.imageSmoothingQuality = 'high'; g.drawImage(L.gate, left, top, w, h);
+function drawGate(g, x, y) {
+  const im = img('decor/obj_gate.webp'); if (!im) return;
+  const w = GATE.w, h = w * im.naturalHeight / im.naturalWidth, top = y - h * GATE.floor;
+  shadowEll(g, x, top + h - 4, w * 0.46, 7, 0.5); g.imageSmoothingQuality = 'high'; g.drawImage(im, x - w / 2, top, w, h);
 }
 
 export function bakeMap(map, scale = S) {
@@ -148,7 +146,7 @@ export function bakeMap(map, scale = S) {
     if (L) {
       for (const p of map.paths) drawPortal(g, L, (p[0][0] + 0.5) * CELL, (p[0][1] + 0.5) * CELL);
       const gates = new Set();
-      for (const p of map.paths) { const e = p[p.length - 1], k = e + ''; if (!gates.has(k)) { gates.add(k); drawGate(g, L, (e[0] + 0.5) * CELL, (e[1] + 0.5) * CELL); } }
+      for (const p of map.paths) { const e = p[p.length - 1], k = e + ''; if (!gates.has(k)) { gates.add(k); drawGate(g, (e[0] + 0.5) * CELL, (e[1] + 0.5) * CELL); } }
     }
     // лёгкая дымка и тонкая рамка по краю: фон не обрывается резко
     g.fillStyle = th.sky; g.fillRect(-PAD.l, -PAD.t, BW, BH);

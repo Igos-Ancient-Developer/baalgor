@@ -1,6 +1,6 @@
 // Процедурные спрайты врагов (кадры ходьбы) и кусков тел для расчленёнки.
-import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261023150737';
-import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023150737';
+import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261023153351';
+import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023153351';
 
 export const FRAMES = 8;
 const T2 = Math.PI * 2;
@@ -389,7 +389,7 @@ const SPRITE_ENEMIES = {
 };
 const FALLBACK = { ...ENEMY_ART };                                // запасные рисованные враги (если лист не загрузился)
 const ENEMY_K = 1.22;                                              // враги крупнее: они хорошо видны на широкой дороге
-const RIM = { dark: '#1f1014', px: 1.9, boost: 0.1 };            // тёмная обводка почти как у зданий, чуть светлее и толще; px — толщина в мировых пикселях; лёгкая подсветка листа
+const RIM = { dark: '#1f1014', px: 0.85, boost: 0.08 };           // тонкая тёмная обводка; px — толщина в мировых пикселях; лёгкая подсветка листа
 // Лист с обводкой: силуэт кольцом смещений (два кольца, чтобы не было зубцов), поверх — сам лист чуть светлее. Поля между кадрами (5+ px) обводка не пересекает.
 function outlineAtlas(im, k) {
   const W = im.naturalWidth, H = im.naturalHeight, r = Math.min(4.6, RIM.px / k), mkc = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
@@ -401,11 +401,6 @@ function outlineAtlas(im, k) {
   g.globalCompositeOperation = 'lighter'; g.globalAlpha = RIM.boost; g.drawImage(im, 0, 0);
   return out;
 }
-// Походка поверх кадров листа: у многих врагов 8 кадров почти одинаковые, и без неё они просто скользят. [подскок px, раскачка рад, шаг в сторону px, сжатие, плавное парение]
-export const GAIT = {
-  grunt: [2.2, 0.06, 1.0, 0.04, 0, 2.6, 0.34], skeleton: [1.6, 0.05, 0.8, 0.03, 0, 2.6, 0.42], zombie: [1.0, 0.09, 1.3, 0.03, 0, 2.2, 0.36], shaman: [1.8, 0.05, 0.8, 0.035, 0, 0, 0], knight: [1.2, 0.04, 0.8, 0.025, 0, 2.2, 0.34],
-  berserker: [2.4, 0.07, 1.1, 0.04, 0, 3, 0.36], butcher: [1.4, 0.05, 1, 0.03, 0, 2.4, 0.32], ogre: [1.8, 0.05, 1, 0.035, 0, 2.6, 0.32], lich: [2.4, 0.03, 0.6, 0, 1, 0, 0], demon: [1.8, 0.035, 0.8, 0.025, 0, 2.6, 0.38], hound: [0.9, 0.03, 0.5, 0.02, 0, 0, 0],
-};
 const spriteTypes = (types) => Object.keys(SPRITE_ENEMIES).filter((id) => !types || types.includes(id));
 export const enemyFiles = (types) => [...new Set(spriteTypes(types).map((id) => SPRITE_ENEMIES[id][0]))];
 // Собрать спрайты врагов для перечисленных видов (листы уже загружены: sprites.loadEnemyImgs); без списка — для всех
@@ -453,17 +448,10 @@ function drawCell(g, a, anim, i) {
   g.imageSmoothingQuality = 'high'; g.drawImage(a.atlas, k * m.cw, r.row * m.ch, m.cw, m.ch, x, y, m.cw * a.k, m.ch * a.k);
 }
 // рисует кадр прямо из атласа (без промежуточных канвасов: меньше памяти, нет задержки при первом появлении вида); точка опоры — в (0, 0)
-export function drawAnim(g, type, anim, i, leg) {
+export function drawAnim(g, type, anim, i) {
   const a = ENEMY_ART[type], m = a.anims, r = m.rows[anim]; if (!r) return;
-  const k = Math.min(r.n - 1, Math.max(0, i | 0)), w = m.cw * a.k, h = m.ch * a.k, top = a.size / 2 - h / 2 - a.ay, src = a.atlasO || a.atlas, sx = k * m.cw, sy0 = r.row * m.ch;
-  if (!leg) { g.drawImage(src, sx, sy0, m.cw, m.ch, -w / 2, top, w, h); return; }
-  // шаг: ноги — две половины под поясом, каждая со своим смещением (у многих листов кадры ходьбы почти одинаковые, и без этого враг просто скользит); торс рисуем поверх шва
-  const cut = Math.round(m.ch * leg.split), hw = m.cw >> 1, ov = 2;
-  for (let q = 0; q < 2; q++) {
-    const dx = q ? leg.rx : leg.lx, dy = q ? leg.ry : leg.ly;
-    g.drawImage(src, sx + q * hw, sy0 + cut - ov, hw, m.ch - cut + ov, -w / 2 + q * hw * a.k + dx, top + (cut - ov) * a.k + dy, hw * a.k, (m.ch - cut + ov) * a.k);
-  }
-  g.drawImage(src, sx, sy0, m.cw, cut, -w / 2, top, w, cut * a.k);
+  const k = Math.min(r.n - 1, Math.max(0, i | 0)), w = m.cw * a.k, h = m.ch * a.k;
+  g.drawImage(a.atlasO || a.atlas, k * m.cw, r.row * m.ch, m.cw, m.ch, -w / 2, a.size / 2 - h / 2 - a.ay, w, h);
 }
 export function animFrame(type, anim, i) {
   const a = ENEMY_ART[type]; if (!a.anims || !a.anims.rows[anim]) return null;
