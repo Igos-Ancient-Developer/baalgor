@@ -753,10 +753,9 @@ body.ranked #hud .chip { padding: 3px 8px 3px 5px; font-size: 15px; gap: 4px; } 
 .btn.ghost { min-height: 44px; padding: 2px 10px; font-size: 14px; }
 .btn.poor, .btn[disabled] { filter: grayscale(.85) brightness(.7) drop-shadow(0 3px 4px rgba(0,0,0,.7)); }
 .stn.small { min-height: 44px; }
-/* «Рейтинговый забег»: плита с руками скелета — только для этой кнопки */
-.stn.ranked { margin-bottom: 12px; padding: 8px 17%; gap: 6px; color: #f0e6ff; text-shadow: 0 2px 0 #000, 0 0 10px rgba(170,110,255,.7); }
-.stn.ranked span { font-size: 15px; letter-spacing: .02em; } .stn.ranked .tk { width: 32px; height: 32px; margin: -4px 0; }
-.stn.ranked::after { content: ''; position: absolute; left: -5%; top: 100%; width: 109.7%; aspect-ratio: 789 / 225; transform: translateY(-78.7%); background: url(../img/ui/hands_only.webp) 0 0 / 100% 100% no-repeat; pointer-events: none; filter: drop-shadow(0 3px 3px rgba(0,0,0,.7)); }
+/* «Рейтинговый забег»: вся картинка плиты с руками скелета целиком (руки на своих местах у краёв плиты); плита по ширине равна остальным кнопкам, поэтому вся кнопка крупнее */
+.stn.ranked { width: 109.7%; margin: 0 -4.85% 12px; min-height: 0; aspect-ratio: 789 / 225; border: 0; border-image: none; background: url(../img/ui/plate_hands.webp) 0 0 / 100% 100% no-repeat !important; padding: 0 17% 7%; gap: 7px; color: #f0e6ff; text-shadow: 0 2px 0 #000, 0 0 10px rgba(170,110,255,.7); }
+.stn.ranked span { font-size: 17px; letter-spacing: .02em; white-space: nowrap; } .stn.ranked .tk { width: 36px; height: 36px; margin: 0; }
 .btn b, .stn b { background: rgba(0,0,0,.55); }
 .um-cancel { min-height: 46px; }
 .lo-foot .btn { min-height: 62px; }

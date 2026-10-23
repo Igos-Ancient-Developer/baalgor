@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261023154623';
-import { TOWERS } from './data.js?v=20261023154623';
+import { SPR, img } from './sprites.js?v=20261023170657';
+import { TOWERS } from './data.js?v=20261023170657';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -645,9 +645,9 @@ function spriteTower(type, lvl, br) {
     const gl = g.createRadialGradient(40, 75, 2, 40, 75, 30);                       // тёплый свет на земле
     gl.addColorStop(0, 'rgba(255,238,180,0.05)'); gl.addColorStop(1, 'rgba(255,238,180,0)');
     g.fillStyle = gl; g.beginPath(); g.ellipse(40, 75, 30, 13, 0, 0, Math.PI * 2); g.fill();
-    g.imageSmoothingQuality = 'high'; g.globalAlpha = 0.3;                          // тонкая тёмная обводка снаружи, под ней светлая кайма
-    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]]) g.drawImage(dark, dx * 0.9, dy * 0.9, TW_W, TW_H);
-    g.globalAlpha = 0.1;
+    g.imageSmoothingQuality = 'high'; g.globalAlpha = 0.5;                          // тонкая тёмная обводка снаружи, под ней светлая кайма
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]]) g.drawImage(dark, dx * 1.0, dy * 1.0, TW_W, TW_H);
+    g.globalAlpha = 0.06;
     for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) g.drawImage(sil, dx * 0.8, dy * 0.8, TW_W, TW_H);
     g.globalAlpha = 1; g.drawImage(body, 0, 0, TW_W, TW_H);
     g.globalCompositeOperation = 'source-atop'; g.globalAlpha = 0.04; g.fillStyle = '#1a1018'; g.fillRect(0, 0, TW_W, TW_H); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;      // здания чуть темнее, чтобы сидели в гамме карты

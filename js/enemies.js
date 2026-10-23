@@ -1,6 +1,6 @@
 // Процедурные спрайты врагов (кадры ходьбы) и кусков тел для расчленёнки.
-import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261023154623';
-import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023154623';
+import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261023170657';
+import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023170657';
 
 export const FRAMES = 8;
 const T2 = Math.PI * 2;
@@ -383,12 +383,13 @@ export const ENEMY_ART = {
 // ───── растровые враги: полоса кадров ходьбы из img/enemies/<файл>.webp ─────
 // id в игре → [файл, высота на экране в логических px, доп. поля]
 const SPRITE_ENEMIES = {
-  grunt: ['grunt', 38], skeleton: ['skeleton', 44], zombie: ['zombie', 44], bat: ['bat', 36, { air: true }],
-  hound: ['hound', 40], slime: ['slime', 40], slimelet: ['slime', 24, { scale: 0.6 }], shaman: ['shaman', 42], knight: ['knight', 48], butcher: ['butcher', 52], gargoyle: ['gargoyle', 44, { air: true }],
-  berserker: ['berserker', 46], ogre: ['ogre', 56], reaper: ['reaper', 44], lich: ['lich', 58], demon: ['demon', 74],
+  grunt: ['grunt', 38, { scale: 0.92 }], skeleton: ['skeleton', 44], zombie: ['zombie', 44], bat: ['bat', 36, { air: true, scale: 0.9 }],
+  hound: ['hound', 40, { scale: 0.95 }], slime: ['slime', 40, { scale: 0.95 }], slimelet: ['slime', 24, { scale: 0.57 }], shaman: ['shaman', 42, { scale: 0.95 }], knight: ['knight', 48, { scale: 1.05 }],
+  butcher: ['butcher', 52, { scale: 1.12 }], gargoyle: ['gargoyle', 44, { air: true, scale: 0.95 }],
+  berserker: ['berserker', 46], ogre: ['ogre', 56, { scale: 1.15 }], reaper: ['reaper', 44, { scale: 0.95 }], lich: ['lich', 58, { scale: 1.05 }], demon: ['demon', 74],
 };
 const FALLBACK = { ...ENEMY_ART };                                // запасные рисованные враги (если лист не загрузился)
-const ENEMY_K = 1.22;                                              // враги крупнее: они хорошо видны на широкой дороге
+const ENEMY_K = 0.84;                                              // общий масштаб врагов; у каждого вида свой размер (scale выше): гоблин ~29 px, зомби и скелет ~37, рыцарь ~42, мясник ~49, огр ~54, владыка ~62 (клетка 48; здания не ниже среднего монстра)
 const RIM = { dark: '#1f1014', px: 0.85, boost: 0.08 };           // тонкая тёмная обводка; px — толщина в мировых пикселях; лёгкая подсветка листа
 // Лист с обводкой: силуэт кольцом смещений (два кольца, чтобы не было зубцов), поверх — сам лист чуть светлее. Поля между кадрами (5+ px) обводка не пересекает.
 function outlineAtlas(im, k) {

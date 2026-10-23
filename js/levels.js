@@ -1,5 +1,5 @@
 // Уровни кампании: секторы, раскладки, связи (after = открывается после прохождения ЛЮБОГО из перечисленных).
-import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261023154623';
+import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261023170657';
 
 export const SECTORS = [
   { id: 'grave', name: 'Проклятый погост', theme: 'grave', color: '#7fa86a' },
@@ -53,6 +53,15 @@ function autoDecor(paths, theme, seed, lvl = 1) {
     for (const e of left) { x -= e.w; if (x <= 0) { q = e; break; } }
     if (nb.some(([dc, dr]) => taken.has((q.c + dc) + ',' + (q.r + dr)))) { q.w *= 0.3; continue; }
     taken.add(q.c + ',' + q.r); out.push([q.c, q.r, kinds[Math.floor(R() * kinds.length)]]);
+  }
+  // Дерево — картинка высотой почти в две клетки: она закрывает клетку над собой, и построенное там здание налезало бы на крону.
+  // Поэтому дерево ставим только там, где клетка над ним занята (дорога, другое препятствие) или это верхний ряд; иначе переносим на подходящее место либо делаем низким камнем.
+  const busy = (c, r) => r < 0 || onPath.has(c + ',' + r) || taken.has(c + ',' + r);
+  for (let pass = 0; pass < 2; pass++) for (const d of out) {      // два прохода: перенос одного дерева может освободить клетку над другим
+    if (d[2] !== 'tree' || busy(d[0], d[1] - 1)) continue;
+    const spot = free.filter((q) => !taken.has(q.c + ',' + q.r) && busy(q.c, q.r - 1) && !nb.some(([dc, dr]) => taken.has((q.c + dc) + ',' + (q.r + dr))));
+    if (spot.length) { const q = spot[Math.floor(R() * spot.length)]; taken.delete(d[0] + ',' + d[1]); taken.add(q.c + ',' + q.r); d[0] = q.c; d[1] = q.r; }
+    else d[2] = R() < 0.5 ? 'rock' : 'bush';
   }
   return out;
 }

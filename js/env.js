@@ -1,9 +1,9 @@
 // Окружение: фон карт, пятна крови, иконки интерфейса. На картах стоят только деревья и валуны; портал и ворота — на концах дороги.
-import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023154623';
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261023154623';
-import { UI_IMG, inner } from './iconmap.js?v=20261023154623';
-import { BLOOD } from './enemies.js?v=20261023154623';
-import { SPR, img } from './sprites.js?v=20261023154623';
+import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023170657';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261023170657';
+import { UI_IMG, inner } from './iconmap.js?v=20261023170657';
+import { BLOOD } from './enemies.js?v=20261023170657';
+import { SPR, img } from './sprites.js?v=20261023170657';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -103,11 +103,12 @@ function borders(g, L, theme) {
   g.drawImage(b, -PAD.l, -6 - h, BW, h);
   g.fillStyle = lin(g, 0, WORLD_H + 10, 0, WORLD_H + PAD.b, [[0, 'rgba(8,2,6,0)'], [1, 'rgba(8,2,6,0.6)']]); g.fillRect(-PAD.l, WORLD_H + 10, BW, PAD.b - 10);       // внизу карта уходит в тень, под панелью зданий
 }
+const DECOR_SCALE = { statue: 0.78, tree: 0.9, rock: 0.9 };            // декор не крупнее зданий: статуи и камни ниже башен
 // декор: деревья, камни, статуи, кусты из листа темы; размер уже посчитан сборщиком (px мира)
 function natDecor(g, L, kind, x, y, key) {
   const list = L.m.decor[L.theme] && L.m.decor[L.theme][kind]; if (!list || !list.length) return false;
-  const q = list[key % list.length];
-  shadowEll(g, x, y + 13, q.ww * 0.36, Math.min(6, 2.5 + q.ww * 0.05), 0.4); g.imageSmoothingQuality = 'high'; g.drawImage(L.decor, q.x, q.y, q.w, q.h, x - q.ww / 2, y + 15 - q.wh, q.ww, q.wh); return true;
+  const q = list[key % list.length], ds = DECOR_SCALE[kind] || 1, ww = q.ww * ds, wh = q.wh * ds;
+  shadowEll(g, x, y + 13, ww * 0.36, Math.min(6, 2.5 + ww * 0.05), 0.4); g.imageSmoothingQuality = 'high'; g.drawImage(L.decor, q.x, q.y, q.w, q.h, x - ww / 2, y + 15 - wh, ww, wh); return true;
 }
 
 // ───── портал врагов и ворота крепости ─────
