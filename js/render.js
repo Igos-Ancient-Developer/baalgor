@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261025134546';
-import * as A from './art.js?v=20261025134546';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261025134546';
-import { tile } from './iconmap.js?v=20261025134546';
-import { img } from './sprites.js?v=20261025134546';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261025134546';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261025134940';
+import * as A from './art.js?v=20261025134940';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261025134940';
+import { tile } from './iconmap.js?v=20261025134940';
+import { img } from './sprites.js?v=20261025134940';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261025134940';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -76,7 +76,7 @@ export class Renderer {
     const ps = sim.map.paths; this.vx = this.vy = 0; this.goal = null; this.cx = ps.reduce((a, p) => a + (p[0][0] + 0.5) * CELL, 0) / ps.length; this.cy = -1e4; if (this.cssW) this.place();      // на старте виден верх карты: оттуда придут враги
   }
   // освободить память после боя: фон карты и кэши
-  release() { this.bg = null; this.mapId = null; this.corpses = []; this.chestFx = []; this.sim = null; this.gore = null; }
+  release() { this._uc = null; this.bg = null; this.mapId = null; this.corpses = []; this.chestFx = []; this.sim = null; this.gore = null; }
   toScreen(wx, wy) { return { x: this.ox + wx * this.zoom, y: this.oy + wy * this.zoom }; }
   toWorld(clientX, clientY) {
     const r = this.canvas.getBoundingClientRect();
@@ -255,14 +255,22 @@ export class Renderer {
       sx = b._face * FACE0[b.type];
     }
     const sel = view.selected === b;
+    const dir8 = ((Math.round((b.angle || 0) / (Math.PI / 4)) % 8) + 8) % 8;
+    if (sel && rh) {                                   // башня с головой: одна общая обводка вокруг силуэта «тело + голова» (без внутренней линии между ними)
+      const key = `${b.type}:${b.prem || ''}:${b.level}:${b.branch || ''}:${dir8}`, UC = this._uc || (this._uc = new Map()); let u = UC.get(key);
+      if (!u) {
+        const S = body.width / A.TW_W, pad = 26, c = document.createElement('canvas'); c.width = Math.round((A.TW_W + pad * 2) * S); c.height = Math.round((A.TW_H + pad * 2) * S);
+        const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.scale(S, S); g.translate(pad, pad); g.drawImage(body, 0, 0, A.TW_W, A.TW_H); A.drawRotHead(g, rh, dir8 * Math.PI / 4, A.TW_AX, A.TW_AY, 0);
+        u = { r: A.selRing(c, c.width, c.height, 1, A.TW_W + pad * 2), pad }; UC.set(key, u);
+      }
+      const r = u.r; ctx.drawImage(r.c, 0, 0, r.W, r.H, x - A.TW_AX - u.pad - r.pad / r.k, y - A.TW_AY - u.pad - r.pad / r.k, r.W / r.k, r.H / r.k);
+    }
     ctx.save(); ctx.translate(x, y); ctx.scale((1 - wob) * sx, 1 + wob);
-    if (sel) { const r = A.selRing(body, body.width, body.height, 1, A.TW_W); ctx.drawImage(r.c, 0, 0, r.W, r.H, -A.TW_AX - r.pad / r.k, -A.TW_AY - r.pad / r.k, r.W / r.k, r.H / r.k); }          // выбранное здание: белая обводка по силуэту
+    if (sel && !rh) { const r = A.selRing(body, body.width, body.height, 1, A.TW_W); ctx.drawImage(r.c, 0, 0, r.W, r.H, -A.TW_AX - r.pad / r.k, -A.TW_AY - r.pad / r.k, r.W / r.k, r.H / r.k); }          // выбранное здание: белая обводка по силуэту
     ctx.drawImage(body, -A.TW_AX, -A.TW_AY, A.TW_W, A.TW_H);
     ctx.restore();
     if (rh) {
       ctx.save(); ctx.imageSmoothingQuality = 'high'; const rec = 0;      // голова при выстреле не дёргается: ось поворота неподвижна
-      if (sel) { const r = A.selRing(rh.im, rh.cw, rh.ch, 8, rh.cw * rh.k), d = ((Math.round((b.angle || 0) / (Math.PI / 4)) % 8) + 8) % 8, px = r.pad / r.k;
-        ctx.drawImage(r.c, d * r.W, 0, r.W, r.H, x + rh.dx - rh.ax * rh.k - Math.cos(b.angle || 0) * rec - px, y + rh.dy - rh.ay * rh.k - Math.sin(b.angle || 0) * rec * 0.5 - px, r.W / r.k, r.H / r.k); }
       A.drawRotHead(ctx, rh, b.angle || 0, x, y, rec); ctx.restore();
     }
     if (b.prem) { const col = TOWERS[b.prem].tint; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = col; for (let i = 0; i < 3; i++) { const ph = (t * 0.7 + i / 3 + b.id * 0.13) % 1, a2 = Math.sin(ph * Math.PI); const sx = x + Math.sin(i * 2.4 + b.id) * 18, sy = y - 6 - ph * 40; ctx.globalAlpha = a2 * 0.9; ctx.beginPath(); ctx.moveTo(sx, sy - 3.2 * a2); ctx.lineTo(sx + 1, sy - 1); ctx.lineTo(sx + 3.2 * a2, sy); ctx.lineTo(sx + 1, sy + 1); ctx.lineTo(sx, sy + 3.2 * a2); ctx.lineTo(sx - 1, sy + 1); ctx.lineTo(sx - 3.2 * a2, sy); ctx.lineTo(sx - 1, sy - 1); ctx.fill(); } ctx.restore(); }      // и искры
