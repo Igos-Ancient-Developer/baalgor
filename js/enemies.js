@@ -1,6 +1,6 @@
 // Процедурные спрайты врагов (кадры ходьбы) и кусков тел для расчленёнки.
-import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261023204028';
-import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261023204028';
+import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261025121138';
+import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261025121138';
 
 export const FRAMES = 8;
 const T2 = Math.PI * 2;
@@ -383,7 +383,7 @@ export const ENEMY_ART = {
 // ───── растровые враги: полоса кадров ходьбы из img/enemies/<файл>.webp ─────
 // id в игре → [файл, высота на экране в логических px, доп. поля]
 const SPRITE_ENEMIES = {
-  skeleton: ['skeleton', 44], zombie: ['zombie', 44], bat: ['bat', 36, { air: true }],
+  skeleton: ['skeleton', 44], zombie: ['zombie', 44], goblin: ['goblin', 38], bat: ['bat', 36, { air: true }],
   hound: ['hound', 40], slime: ['slime', 40], slimelet: ['slime', 24, { scale: 0.6 }], knight: ['knight', 48],
   butcher: ['butcher', 52, { scale: 1.08 }], gargoyle: ['gargoyle', 44, { air: true }],
   berserker: ['berserker', 46], ogre: ['ogre', 56, { scale: 1.1 }], reaper: ['reaper', 44], lich: ['lich', 58],
@@ -573,7 +573,7 @@ function procGib(type, kind, variant = 0) {
       g.translate(W / 2, Hh / 2); g.scale(big, big);
       const bleed = !isBone && !isOoze;
       if (kind === 'head') {
-        const headKind = { zombie: 'ghoul', zombie_fast: 'ghoul', grunt: 'goblin', runner: 'ghoul', brute: 'orc', knight: 'knight', skeleton: 'skull', shaman: 'hood', zerk: 'horned', reaper: 'hood', bat: 'goblin', gargoyle: 'orc', ogre: 'orc', lich: 'crown', demon: 'demon', slime: 'goblin', slimelet: 'goblin' }[type];
+        const headKind = { zombie: 'ghoul', zombie_fast: 'ghoul', grunt: 'goblin', goblin: 'goblin', runner: 'ghoul', brute: 'orc', knight: 'knight', skeleton: 'skull', shaman: 'hood', zerk: 'horned', reaper: 'hood', bat: 'goblin', gargoyle: 'orc', ogre: 'orc', lich: 'crown', demon: 'demon', slime: 'goblin', slimelet: 'goblin' }[type];
         if (isOoze) { blobGib(g, p, 7); return; }
         g.save(); const hk = type === 'demon' || type === 'zerk' || type === 'lich' ? 0.62 : 0.9; g.scale(hk, hk); g.translate(0, type === 'demon' ? 4 : 0); HEADS[headKind](g, 0, -1, 7.5, p); g.restore();
         if (bleed) { g.beginPath(); g.ellipse(-1, 7, 4.5, 1.6, 0, 0, T2); fillStroke(g, '#b0101e', 0.6); }

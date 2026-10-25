@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261023204028';
+import * as D from './data.js?v=20261025121138';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {

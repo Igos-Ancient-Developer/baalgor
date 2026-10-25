@@ -14,7 +14,7 @@ export async function enemyDemo(ctrl) {
   cells.sort((a, b) => b[2] - a[2]);
   const plan = ((location.search.match(/towers=([\w,]+)/) || [])[1] || 'bolt,mortar,bolt,frost').split(','); let used = [];
   for (const t of plan) { const cell = cells.find(([c, r]) => !used.some(([a, b]) => Math.abs(a - c) < 2 && Math.abs(b - r) < 2)); if (!cell) break; used.push(cell); const b = s.build('tower', t, cell[0], cell[1]); if (b && typeof b === 'object') { b.level = t === 'barracks' ? 2 : 3; s.refreshStats(b); } }
-  const types = ['skeleton', 'zombie', 'hound', 'bat', 'slime', 'knight', 'butcher', 'gargoyle', 'berserker', 'ogre', 'reaper', 'lich'];
+  const types = ['skeleton', 'zombie', 'goblin', 'hound', 'bat', 'slime', 'knight', 'butcher', 'gargoyle', 'berserker', 'ogre', 'reaper', 'lich'];
   const pick = (location.search.match(/enemydemo=([\w,]+)/) || [])[1]; const list = pick ? pick.split(',').filter((t) => types.includes(t)) : types;
   await ctrl.ensureTypes(list);                                      // листы врагов грузятся по уровню: докачиваем нужные
   for (;;) {
@@ -32,7 +32,7 @@ export async function buildAll(ctrl) {
   const go = document.querySelector('#lo-go'); if (go) go.click(); await sleep(2200);
   const s = ctrl.sim; if (!s) return;
   s.locked.clear(); s.allowed = null; s.limits = {}; s.gold = 99999; s.hold = true;
-  const D = await import('./data.js?v=20261023204028');
+  const D = await import('./data.js?v=20261025121138');
   const types = [...Object.keys(D.TOWERS).map((t) => ['tower', t]), ...Object.keys(D.ECON).map((t) => ['econ', t])];
   const free = []; for (let r = 0; r < s.grid.length; r++) for (let c = 0; c < s.grid[0].length; c++) if (s.canBuild(c, r)) free.push([c, r]);
   // клетки вперемешку не нужны: идём по рядам сверху вниз через одну, чтобы здания не слипались

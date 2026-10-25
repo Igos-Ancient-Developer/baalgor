@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261023204028';
+import { COLS, ROWS } from './layouts.js?v=20261025121138';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD = 80;
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261023204028';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261025121138';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -271,6 +271,7 @@ export const ENEMIES = {
   // обычные: быстрые и средние (speed px/с, у гончей и мыши высокая, у зомби низкая)
   skeleton: { name: 'Скелет',         hp: 70,  spd: 42, gold: 0, lives: 1, size: 0.95, atk: 6,  immune: ['poison'], blood: 'bone' },
   zombie:   { name: 'Зомби',          hp: 130, spd: 30, gold: 0, lives: 1, size: 1.0,  atk: 6,  blood: 'dark' },
+  goblin:   { name: 'Гоблин',         hp: 48,  spd: 62, gold: 0, lives: 1, size: 0.85, atk: 4,  blood: 'ooze' },
   hound:    { name: 'Адская гончая',  hp: 50,  spd: 82, gold: 0, lives: 1, size: 0.95, atk: 6,  blood: 'dark' },
   bat:      { name: 'Летучая мышь',   hp: 34,  spd: 80, gold: 0, lives: 1, size: 0.85, atk: 0,  air: true, blood: 'red' },
   slime:    { name: 'Слизень',        hp: 90,  spd: 34, gold: 0, lives: 1, size: 1.0,  atk: 5,  split: 'slimelet', immune: ['poison'], blood: 'ooze' },
@@ -298,9 +299,9 @@ export const waveGap = (n) => 26 + Math.min(8, n * 0.25);   // пауза пос
 // ───── Волны кампании ─────
 // Чем дальше уровень, тем больше волн, врагов и видов врагов. Кладбище и лес (первые два сектора): только простая нежить.
 // Враги открываются по номеру уровня; боссы — только в последней волне трёх поздних уровней.
-const UNLOCK_LV = { skeleton: 1, zombie: 2, hound: 5, bat: 8, slime: 10, knight: 11, butcher: 12, gargoyle: 13, berserker: 14, ogre: 16, reaper: 17, lich: 18 };
-const COST = { skeleton: 1.2, zombie: 1.8, hound: 2.0, bat: 1.2, slime: 2.8, knight: 8, butcher: 11, gargoyle: 4.8, berserker: 6, ogre: 20, reaper: 9.5, lich: 18 };
-const IVAL = { skeleton: 1.0, zombie: 1.4, hound: 0.8, bat: 0.9, slime: 1.3, knight: 3, butcher: 4, gargoyle: 1.4, berserker: 1.4, ogre: 5, reaper: 1.8, lich: 5 };
+const UNLOCK_LV = { skeleton: 1, zombie: 2, goblin: 3, hound: 5, bat: 8, slime: 10, knight: 11, butcher: 12, gargoyle: 13, berserker: 14, ogre: 16, reaper: 17, lich: 18 };
+const COST = { skeleton: 1.2, zombie: 1.8, goblin: 1.4, hound: 2.0, bat: 1.2, slime: 2.8, knight: 8, butcher: 11, gargoyle: 4.8, berserker: 6, ogre: 20, reaper: 9.5, lich: 18 };
+const IVAL = { skeleton: 1.0, zombie: 1.4, goblin: 0.9, hound: 0.8, bat: 0.9, slime: 1.3, knight: 3, butcher: 4, gargoyle: 1.4, berserker: 1.4, ogre: 5, reaper: 1.8, lich: 5 };
 // «эквивалентный» номер волны на кривой 1..30: нужен для роста здоровья врагов
 export const eqWave = (L, n, T) => { const s = 1 + (L - 1) * 0.25, e = 7 + (L - 1) * 2.4; return Math.max(1, Math.round(T > 1 ? s + ((e - s) * (n - 1)) / (T - 1) : s)); };
 export function genWave(L, n, T) {
