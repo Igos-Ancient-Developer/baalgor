@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261025134213';
-import * as A from './art.js?v=20261025134213';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261025134213';
-import { tile } from './iconmap.js?v=20261025134213';
-import { img } from './sprites.js?v=20261025134213';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261025134213';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261025134546';
+import * as A from './art.js?v=20261025134546';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261025134546';
+import { tile } from './iconmap.js?v=20261025134546';
+import { img } from './sprites.js?v=20261025134546';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261025134546';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -242,7 +242,7 @@ export class Renderer {
   }
   drawBuilding0(ctx, b, t, view) {
     const x = b.x, y = b.y + 6;
-    const pop = b.age < 0.35 ? (1 - b.age / 0.35) : 0, wob = pop * 0.2 * Math.cos(b.age * 26);
+    const wob = 0;      // анимации «сжатия и подпрыгивания» при постройке и улучшении нет: голова башни её не повторяла и вид разваливался
     const body = b.kind === 'econ' ? A.econBody(b.type, b.level) : A.towerBody(A.artType(b.prem || b.type), b.level, b.branch);
     const rc = b.kind === 'econ' ? 0 : Math.min(1, b.recoil || 0);
     if (b.prem) { const col = TOWERS[b.prem].tint; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.6 + 0.22 * Math.sin(t * 3 + b.id); ctx.drawImage(glowSprite(col), x - 44, y - 24, 88, 58); ctx.restore(); }      // премиум: свечение под башней

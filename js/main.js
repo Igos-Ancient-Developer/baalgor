@@ -1,26 +1,26 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261025134213';
-import * as A from './art.js?v=20261025134213';
-import { Sim } from './sim.js?v=20261025134213';
-import { Gore } from './gore.js?v=20261025134213';
-import { Renderer } from './render.js?v=20261025134213';
-import { GameUI } from './ui.js?v=20261025134213';
-import { Tutorial } from './tutorial.js?v=20261025134213';
-import { Sfx, attachSfx } from './audio.js?v=20261025134213';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261025134213';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261025134213';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261025134213';
-import { mapBG, releaseBG } from './env.js?v=20261025134213';
-import { MENU_SPEC } from './music.js?v=20261025134213';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261025134213';
-import { renderForge, renderAchs } from './screens.js?v=20261025134213';
-import { renderShop } from './shop.js?v=20261025134213';
-import { Wallet } from './wallet.js?v=20261025134213';
-import { initLang, pickLang } from './i18n.js?v=20261025134213';
-import { Menus, RUN, clock } from './menus.js?v=20261025134213';
-import { Net } from './net.js?v=20261025134213';
-import { gemIc } from './res.js?v=20261025134213';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261025134213';
+import * as D from './data.js?v=20261025134546';
+import * as A from './art.js?v=20261025134546';
+import { Sim } from './sim.js?v=20261025134546';
+import { Gore } from './gore.js?v=20261025134546';
+import { Renderer } from './render.js?v=20261025134546';
+import { GameUI } from './ui.js?v=20261025134546';
+import { Tutorial } from './tutorial.js?v=20261025134546';
+import { Sfx, attachSfx } from './audio.js?v=20261025134546';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261025134546';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261025134546';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261025134546';
+import { mapBG, releaseBG } from './env.js?v=20261025134546';
+import { MENU_SPEC } from './music.js?v=20261025134546';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261025134546';
+import { renderForge, renderAchs } from './screens.js?v=20261025134546';
+import { renderShop } from './shop.js?v=20261025134546';
+import { Wallet } from './wallet.js?v=20261025134546';
+import { initLang, pickLang } from './i18n.js?v=20261025134546';
+import { Menus, RUN, clock } from './menus.js?v=20261025134546';
+import { Net } from './net.js?v=20261025134546';
+import { gemIc } from './res.js?v=20261025134546';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261025134546';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -49,8 +49,8 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261025134213').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261025134213').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261025134546').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261025134546').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
