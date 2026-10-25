@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261025132026';
-import { TOWERS } from './data.js?v=20261025132026';
+import { SPR, img } from './sprites.js?v=20261025133053';
+import { TOWERS } from './data.js?v=20261025133053';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -651,6 +651,8 @@ export function muzzle(b) {
   const a = Math.round((b.angle || 0) / (Math.PI / 4)) * (Math.PI / 4);
   return { x: b.x + hi.dx + Math.cos(a) * hi.mx * hi.k, y: b.y + 6 + hi.dy + Math.sin(a) * hi.mx * hi.k * 0.5 - hi.my * hi.k };
 }
+// угол, куда на самом деле смотрит голова (одно из 8 направлений картинки)
+export const headAngle = (b) => Math.round((b.angle || 0) / (Math.PI / 4)) * (Math.PI / 4);
 export function drawRotHead(g, hi, angle, x, y, rec = 0) {
   const dir = ((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8;
   g.drawImage(hi.im, dir * hi.cw, 0, hi.cw, hi.ch, x + hi.dx - hi.ax * hi.k - Math.cos(angle) * rec, y + hi.dy - hi.ay * hi.k - Math.sin(angle) * rec * 0.5, hi.cw * hi.k, hi.ch * hi.k);

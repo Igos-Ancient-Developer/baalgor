@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261025132026';
-import * as A from './art.js?v=20261025132026';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261025132026';
-import { tile } from './iconmap.js?v=20261025132026';
-import { img } from './sprites.js?v=20261025132026';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261025132026';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261025133053';
+import * as A from './art.js?v=20261025133053';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261025133053';
+import { tile } from './iconmap.js?v=20261025133053';
+import { img } from './sprites.js?v=20261025133053';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261025133053';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -422,25 +422,40 @@ export class Renderer {
       }
     }
   }
-  // Старт снаряда — из дула головы: смещение запоминается на первом кадре и плавно сходит на нет по мере отлёта (чисто визуально, полёт в sim не меняется).
+  // Снаряд вылетает из дула головы СТРОГО вдоль того, куда смотрит голова, и плавно доворачивает к цели (квадратичная кривая: касательная в дуле = направление головы, конец = цель).
+  // Чисто визуально: расчёт полёта и попадания в sim не меняется. Возвращает смещение к расчётной позиции снаряда и текущее направление.
   muzOff(p) {
     const b = p.owner; if (!b || b.kind !== 'tower') return null;
     const ps = this._ps || (this._ps = new WeakMap()); let st = ps.get(p);
+    const sy = p.kind === 'bolt' ? -14 : p.kind === 'shard' ? 0 : -8;
     if (!st) {
-      const M = A.muzzle(b), sy = p.kind === 'bolt' ? -14 : p.kind === 'shard' ? 0 : -8;
-      st = (!M || Math.hypot(p.x - b.x, p.y - b.y) > 40) ? { none: true } : { x: p.x, y: p.y, ox: M.x - p.x, oy: M.y - (p.y + sy) };
+      const M = A.muzzle(b);
+      st = (!M || Math.hypot(p.x - b.x, p.y - b.y) > 40) ? { none: true } : { x: p.x, y: p.y, sx: p.x, sy: p.y + sy, M, h: A.headAngle(b), lx: null, ly: null };
       ps.set(p, st);
     }
     if (st.none) return null;
-    const f = p.T ? 1 - 2 * p.t / p.T : 1 - Math.min(Math.hypot(p.x - st.x, p.y - st.y), p.kind === 'saw' ? Math.hypot(p.x - b.x, p.y - b.y) : 1e9) / (p.kind === 'saw' ? 44 : 52);      // дуга сходит за первую половину полёта; пила ещё и возвращается к дулу
-    return f > 0 ? [st.ox * f, st.oy * f] : null;
+    const tg = p.target || p.aim || b.target, arc = !!p.T;
+    let tx, ty;
+    if (arc) { tx = p.x1; ty = p.y1 - 8; } else if (tg && !tg.dead) { tx = tg.x; ty = tg.y + sy; } else { tx = st.sx + (p.vx || 0); ty = st.sy + (p.vy || 0); }
+    const D = Math.max(30, Math.hypot(tx - st.sx, ty - st.sy));
+    const u = arc ? Math.min(1, p.t / p.T) : Math.min(1, Math.hypot(p.x - st.x, p.y - st.y) / D);
+    if (p.kind === 'saw') { const f = 1 - Math.min(Math.hypot(p.x - st.x, p.y - st.y), Math.hypot(p.x - b.x, p.y - b.y)) / 44; return f > 0 ? { dx: (st.M.x - st.sx) * f, dy: (st.M.y - st.sy) * f } : null; }
+    if (u >= 1) return null;
+    const hx = Math.cos(st.h), hy = Math.sin(st.h) * 0.5, hl = Math.hypot(hx, hy) || 1, lam = 0.42 * D;
+    const cx = st.M.x + hx / hl * lam, cy = st.M.y + hy / hl * lam, mx = (st.sx + tx) / 2, my = (st.sy + ty) / 2;
+    const q = (1 - u) * (1 - u), w = 2 * u * (1 - u), dx = q * (st.M.x - st.sx) + w * (cx - mx), dy = q * (st.M.y - st.sy) + w * (cy - my);
+    const vx = p.x + dx, vy = p.y + sy + dy;
+    let dirx = null, diry = null;
+    if (st.lx !== null) { const ddx = vx - st.lx, ddy = vy - st.ly, l = Math.hypot(ddx, ddy); if (l > 0.6) { dirx = ddx / l; diry = ddy / l; } }
+    st.lx = vx; st.ly = vy; if (dirx === null && st.dx !== undefined) { dirx = st.dx; diry = st.dy; } else if (dirx !== null) { st.dx = dirx; st.dy = diry; }
+    return { dx, dy, dirx, diry };
   }
   drawProjs(ctx, t) {
     for (const p of this.sim.projs) {
-      const mo = this.muzOff(p); if (mo) { ctx.save(); ctx.translate(mo[0], mo[1]); }
+      const mo = this.muzOff(p); if (mo) { ctx.save(); ctx.translate(mo.dx, mo.dy); }
       switch (p.kind) {
         case 'bolt': {
-          const l = Math.hypot(p.vx, p.vy), ux = p.vx / l, uy = p.vy / l, y = p.y - 14;
+          const l = Math.hypot(p.vx, p.vy); let ux = p.vx / l, uy = p.vy / l; if (mo && mo.dirx !== null && mo.dirx !== undefined) { ux = mo.dirx; uy = mo.diry; } const y = p.y - 14;
           ctx.save(); ctx.lineCap = 'round';
           const LEN = p.harpoon ? 30 : 12, W1 = p.harpoon ? 7 : 4, W2 = p.harpoon ? 3.4 : 2;
           ctx.strokeStyle = '#170a0f'; ctx.lineWidth = W1; ctx.beginPath(); ctx.moveTo(p.x - ux * LEN, y - uy * LEN); ctx.lineTo(p.x + ux * 4, y + uy * 4); ctx.stroke();
@@ -452,13 +467,20 @@ export class Renderer {
         case 'shell': case 'vial': {
           const z = p.z || 0; const r = p.kind === 'vial' ? 4 : p.bomblet ? 3 : 4.8;
           ctx.save(); ctx.globalAlpha = 0.3; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(p.x, p.y, r * 1.2, r * 0.5, 0, 0, T2); ctx.fill(); ctx.restore();
+          if (p.kind === 'vial') {                         // стеклянная склянка с зелёным ядом: кружится в полёте
+            ctx.save(); ctx.translate(p.x, p.y - z - 8); ctx.rotate((p.t || 0) * 10); ctx.lineJoin = 'round';
+            ctx.beginPath(); ctx.arc(0, 1.4, 4.2, 0, T2); ctx.fillStyle = '#5fe83a'; ctx.fill(); ctx.lineWidth = 1.3; ctx.strokeStyle = '#170a0f'; ctx.stroke();
+            ctx.fillStyle = '#d9f2e4'; ctx.fillRect(-1.4, -5.6, 2.8, 3.4); ctx.strokeRect(-1.4, -5.6, 2.8, 3.4); ctx.fillStyle = '#a8703a'; ctx.fillRect(-1.8, -7.2, 3.6, 1.8); ctx.strokeRect(-1.8, -7.2, 3.6, 1.8);
+            ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.beginPath(); ctx.arc(-1.4, 0, 1.1, 0, T2); ctx.fill();
+            ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#6aff3a'), -8, -6, 16, 16); ctx.restore(); break;
+          }
           ctx.beginPath(); ctx.arc(p.x, p.y - z - 8, r, 0, T2);
           if (p.kind === 'vial') { ctx.fillStyle = '#6aff3a'; ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = '#170a0f'; ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(p.x - 1.5, p.y - z - 10, 1.6, 2); }
           else { const gr = ctx.createRadialGradient(p.x - 1.5, p.y - z - 9.5, 0.5, p.x, p.y - z - 8, r * 1.3); gr.addColorStop(0, p.bomblet ? '#ffb060' : '#8a8f9a'); gr.addColorStop(1, p.bomblet ? '#7a2a0a' : '#1a1c22'); ctx.fillStyle = gr; ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = '#170a0f'; ctx.stroke(); if (p.fire) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#ff7a1c'), p.x - 10, p.y - z - 18, 20, 20); ctx.restore(); } }
           break;
         }
         case 'shard': {                                   // ледяная стрела: гранёное остриё, древко и оперение, холодный свет за ней
-          const e = p.target; const a = e ? Math.atan2(e.y - p.y, e.x - p.x) : 0;
+          const e = p.target; const a = (mo && mo.dirx !== null && mo.dirx !== undefined) ? Math.atan2(mo.diry, mo.dirx) : e ? Math.atan2(e.y - p.y, e.x - p.x) : 0;
           ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(a); ctx.lineJoin = 'round';
           ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#7fd8ff'), -30, -9, 34, 18); ctx.globalCompositeOperation = 'source-over';
           ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(5, -3.6); ctx.lineTo(-11, -1.2); ctx.lineTo(-15, -4.2); ctx.lineTo(-13, 0); ctx.lineTo(-15, 4.2); ctx.lineTo(-11, 1.2); ctx.lineTo(5, 3.6); ctx.closePath();
