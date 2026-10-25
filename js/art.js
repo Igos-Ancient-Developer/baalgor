@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261025133959';
-import { TOWERS } from './data.js?v=20261025133959';
+import { SPR, img } from './sprites.js?v=20261025134213';
+import { TOWERS } from './data.js?v=20261025134213';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -580,8 +580,8 @@ function towerIdx(type, lvl, br) {
 // Здание не больше клетки по ширине и клетки с небольшим запасом по высоте: соседние здания не закрывают друг друга.
 // Масштаб один на весь ряд уровней (рост по уровням остаётся), считается по самой большой картинке ряда.
 // предельные размеры (ширина, высота) здания на карте; узкие и низкие здания разрешено делать крупнее
-const CAPS = { mine: [50, 58], bolt: [56, 72], frost: [56, 72], tesla: [56, 72], saw: [56, 70], banner: [56, 72], flame: [56, 70], voidwell: [56, 70], toxic: [56, 68], bank: [56, 70], altar: [56, 66], harpoon: [56, 66],
-  gold_bolt: [56, 72], storm_tesla: [56, 72], hell_flame: [56, 72] }, CAP_DEF = [56, 64], GK = {};
+const CAPS = { mortar: [56, 78], mine: [50, 58], bolt: [56, 72], frost: [56, 72], tesla: [56, 72], saw: [56, 70], banner: [56, 72], flame: [56, 78], voidwell: [56, 70], toxic: [56, 68], bank: [56, 70], altar: [56, 66], harpoon: [56, 78],
+  gold_bolt: [56, 78], storm_tesla: [56, 72], hell_flame: [56, 78] }, CAP_DEF = [56, 64], GK = {};
 function groupK(type) {
   if (GK[type]) return GK[type];
   const [cw, ch] = CAPS[type] || CAP_DEF; let k = TS * 2; for (const [l, t, r, b] of SPR.towers[type].boxes) k = Math.min(k, cw / (r - l), ch / (b - t));
