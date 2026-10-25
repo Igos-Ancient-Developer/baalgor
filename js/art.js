@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261025130937';
-import { TOWERS } from './data.js?v=20261025130937';
+import { SPR, img } from './sprites.js?v=20261025132026';
+import { TOWERS } from './data.js?v=20261025132026';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -637,13 +637,19 @@ export function towerBody(type, lvl, br) {
 }
 // Вращающееся оружие (арбалет, мортира, огнемёт, гарпун): основание статично, голова поворачивается к цели (8 картинок: E, SE, S, SW, W, NW, N, NE)
 // какой вид картинки у здания: у премиума свой набор голов (hell_flame), иначе голова базовой башни; у обычной картинки с зафиксированным оружием — базовая
-export const rotKey = (b) => (b.prem && SPR.ok && SPR.towers[b.prem] && SPR.towers[b.prem].head) ? b.prem : (b.prem ? null : b.type);
+export const rotKey = (b) => (b.type === 'saw' && b.st && b.st.orbit) ? null : (b.prem && SPR.ok && SPR.towers[b.prem] && SPR.towers[b.prem].head) ? b.prem : (b.prem ? null : b.type);      // у пиломёта с вращающимися лезвиями (ветка A) пускателя нет
 export function rotHead(type, lvl, br) {
   if (!type) return null;
   const m = SPR.ok && SPR.towers[type]; if (!m || !m.head) return null;
   const im = img(`towers/${type}_head.webp`); if (!im) return null;
   const i = towerIdx(type, lvl, br), k = spriteK(type, lvl), [hx, hy] = m.holes[i], w = 192 * k, h = 240 * k;
-  return { im, cw: m.head.cw, ch: m.head.ch, ax: m.head.ax, ay: m.head.ay, k, dx: 40 - w / 2 + hx * k - TW_AX, dy: TW_BASE_Y - h + hy * k - TW_AY };
+  return { im, cw: m.head.cw, ch: m.head.ch, ax: m.head.ax, ay: m.head.ay, mx: m.head.mx || 0, my: m.head.my || 0, k, dx: 40 - w / 2 + hx * k - TW_AX, dy: TW_BASE_Y - h + hy * k - TW_AY };
+}
+// Дуло повёрнутой головы в тех же координатах, где рисуются снаряды и эффекты: ось плиты + вынос ствола вдоль одного из 8 направлений картинки (эллипс: вдоль экрана 1, вглубь 0.5) и высота дула над плитой.
+export function muzzle(b) {
+  const hi = rotHead(rotKey(b), b.level, b.branch); if (!hi || !hi.mx) return null;
+  const a = Math.round((b.angle || 0) / (Math.PI / 4)) * (Math.PI / 4);
+  return { x: b.x + hi.dx + Math.cos(a) * hi.mx * hi.k, y: b.y + 6 + hi.dy + Math.sin(a) * hi.mx * hi.k * 0.5 - hi.my * hi.k };
 }
 export function drawRotHead(g, hi, angle, x, y, rec = 0) {
   const dir = ((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8;

@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261025130937';
-import * as A from './art.js?v=20261025130937';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261025130937';
-import { tile } from './iconmap.js?v=20261025130937';
-import { img } from './sprites.js?v=20261025130937';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261025130937';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261025132026';
+import * as A from './art.js?v=20261025132026';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261025132026';
+import { tile } from './iconmap.js?v=20261025132026';
+import { img } from './sprites.js?v=20261025132026';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261025132026';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -260,7 +260,7 @@ export class Renderer {
     ctx.drawImage(body, -A.TW_AX, -A.TW_AY, A.TW_W, A.TW_H);
     ctx.restore();
     if (rh) {
-      ctx.save(); ctx.imageSmoothingQuality = 'high'; const rec = (b.recoil || 0) * ({ mortar: 5, harpoon: 6, flame: 1 }[b.type] || 3);
+      ctx.save(); ctx.imageSmoothingQuality = 'high'; const rec = 0;      // голова при выстреле не дёргается: ось поворота неподвижна
       if (sel) { const r = A.selRing(rh.im, rh.cw, rh.ch, 8, rh.cw * rh.k), d = ((Math.round((b.angle || 0) / (Math.PI / 4)) % 8) + 8) % 8, px = r.pad / r.k;
         ctx.drawImage(r.c, d * r.W, 0, r.W, r.H, x + rh.dx - rh.ax * rh.k - Math.cos(b.angle || 0) * rec - px, y + rh.dy - rh.ay * rh.k - Math.sin(b.angle || 0) * rec * 0.5 - px, r.W / r.k, r.H / r.k); }
       A.drawRotHead(ctx, rh, b.angle || 0, x, y, rec); ctx.restore();
@@ -271,7 +271,7 @@ export class Renderer {
     // оглушён
     if (b.stunT > 0) { for (let i = 0; i < 3; i++) { const an = t * 5 + (i * T2) / 3; ctx.fillStyle = '#ffe27a'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('★', x + Math.cos(an) * 10, y - 56 + Math.sin(an) * 3); } }
     // точки уровня над зданием: первая золотая, 2-я и 3-я цвета выбранных улучшений (мощь красная, скорость жёлтая, особое зелёное), 4-я и 5-я — цвета ветки (A синяя, B красная)
-    const n = b.level, at = A.artType(b.prem || b.type), top = (A.SPR.ok && A.SPR.towers[at]) ? y - A.TW_AY + A.towerGeo(at, b.level, b.branch).top - 5 : y - 50;
+    const n = b.level, at = A.artType(b.prem || b.type), top0 = (A.SPR.ok && A.SPR.towers[at]) ? y - A.TW_AY + A.towerGeo(at, b.level, b.branch).top - 5 : y - 50, rh2 = b.kind === 'tower' ? A.rotHead(A.rotKey(b), b.level, b.branch) : null, top = rh2 ? Math.min(top0, y + rh2.dy - rh2.ay * rh2.k + 3) : top0;      // точки уровня — над самой высокой точкой: у башни с головой это верх картинки головы
     const bc = b.branch === 'A' ? '#4aa8ff' : b.branch === 'B' ? '#ff4a4a' : '#ffd24a', pc = A.PICK_COLORS, pk = b.picks || [];
     const cols = ['#ffd24a', pc[pk[0]] || '#ffd24a', pc[pk[1]] || '#ffd24a', bc, bc];
     for (let i = 0; i < n; i++) {
@@ -284,6 +284,7 @@ export class Renderer {
     const lvl = b.level, br = b.branch, art = A.TOWER_ART[b.type];
     const base = y - A.TW_AY; // y-координата верха спрайта
     const add = (sprite, cx, cy, size, alpha) => { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = clamp(alpha, 0, 1); ctx.drawImage(sprite, cx - size / 2, cy - size / 2, size, size); ctx.restore(); };
+    const M0 = A.muzzle(b);                                     // дуло повёрнутой головы (null у башен без головы)
     switch (b.type) {
       case 'bolt': case 'mortar': case 'flame': case 'harpoon': {
         const head = A.towerHead(b.type, lvl, br), rh = A.rotHead(A.rotKey(b), lvl, br);
@@ -291,9 +292,9 @@ export class Renderer {
         if (head) { ctx.save(); ctx.translate(x - Math.cos(b.angle) * rec, y - lift - Math.sin(b.angle) * rec * 0.5);
           ctx.rotate(b.angle); ctx.drawImage(head, -A.HEAD / 2, -A.HEAD / 2, A.HEAD, A.HEAD); ctx.restore(); }
         else if (rh) {                                    // вспышка выстрела у дула повёрнутой головы
-          if (b.recoil > 0.05) { const col = { bolt: '#ffe9a0', mortar: '#ff9a3a', flame: br === 'B' ? '#5affc8' : '#ff8a1c', harpoon: '#cfd8ff' }[b.type], L = { bolt: 14, mortar: 12, flame: 16, harpoon: 16 }[b.type];
-            add(glowSprite(col), x + rh.dx + Math.cos(b.angle) * L, y + rh.dy - 8 + Math.sin(b.angle) * L * 0.6, (b.type === 'flame' ? 22 : 16) + b.recoil * 22, clamp(b.recoil, 0, 1) * 0.8); }
-          if (b.type === 'flame') add(glowSprite(br === 'B' ? '#5affc8' : '#ff8a1c'), x + rh.dx + Math.cos(b.angle) * 14, y + rh.dy - 6 + Math.sin(b.angle) * 8, 14 + b.recoil * 16, 0.3 + 0.3 * b.recoil + 0.1 * Math.sin(t * 14));
+          if (b.recoil > 0.05 && M0) { const col = { bolt: '#ffe9a0', mortar: '#ff9a3a', flame: br === 'B' ? '#5affc8' : '#ff8a1c', harpoon: '#cfd8ff' }[b.type];
+            add(glowSprite(col), M0.x, M0.y, (b.type === 'flame' ? 22 : b.type === 'mortar' ? 26 : 14) + b.recoil * 18, clamp(b.recoil, 0, 1) * (b.type === 'mortar' ? 0.9 : 0.75)); }
+          if (b.type === 'flame' && M0) add(glowSprite(br === 'B' ? '#5affc8' : '#ff8a1c'), M0.x, M0.y + 1, 10 + b.recoil * 14, 0.25 + 0.3 * b.recoil + 0.08 * Math.sin(t * 14));
         }
         else if (b.recoil > 0.05) {                       // растровая башня: вспышка выстрела у верхушки
           const gt = A.towerGeo(A.artType(b.prem || b.type), lvl, br), col = { bolt: '#ffe9a0', mortar: '#ff9a3a', flame: br === 'B' ? '#5affc8' : '#ff8a1c', harpoon: '#cfd8ff' }[b.type];
@@ -309,6 +310,11 @@ export class Renderer {
         break;
       }
       case 'tesla': {
+        if (M0) {                                       // электрод: свечение и искры на его конце
+          add(glowSprite(br === 'A' ? '#c070ff' : '#7fd8ff'), M0.x, M0.y, 20 + b.recoil * 22, 0.4 + 0.15 * Math.sin(t * 9 + b.id) + b.recoil * 0.5);
+          if (Math.random() < 0.3 + b.recoil) { ctx.save(); ctx.strokeStyle = 'rgba(200,240,255,0.9)'; ctx.lineWidth = 1; ctx.beginPath(); let px = M0.x, py = M0.y; ctx.moveTo(px, py); const a0 = Math.random() * T2; for (let i = 0; i < 3; i++) { px += Math.cos(a0 + (Math.random() - 0.5)) * 4; py += Math.sin(a0 + (Math.random() - 0.5)) * 4; ctx.lineTo(px, py); } ctx.stroke(); ctx.restore(); }
+          break;
+        }
         const o = art.orb(lvl), oy = base + o.y;
         const pulse = 0.55 + 0.25 * Math.sin(t * 9 + b.id) + b.recoil * 0.6;
         add(glowSprite(br === 'A' ? '#c070ff' : '#7fd8ff'), x, oy, 30 + b.recoil * 26, pulse);
@@ -319,6 +325,11 @@ export class Renderer {
         break;
       }
       case 'frost': {
+        if (M0) {                                       // ледяное копьё: холодное свечение на острие
+          add(glowSprite('#9fe8ff'), M0.x, M0.y, 18 + b.recoil * 20, 0.3 + 0.12 * Math.sin(t * 3 + b.id) + b.recoil * 0.5);
+          if (b.st.aura) { const f = (t % 1.8) / 1.8; ctx.save(); ctx.strokeStyle = `rgba(160,225,255,${0.45 * (1 - f)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x, y, b.st.range * CELL * f, b.st.range * CELL * f * 0.82, 0, 0, T2); ctx.stroke(); ctx.restore(); }
+          break;
+        }
         const o = art.orb(lvl), oy = base + o.y;
         add(glowSprite('#9fe8ff'), x, oy + 6, 34, 0.35 + 0.15 * Math.sin(t * 3 + b.id) + b.recoil * 0.4);
         if (b.st.aura) {
@@ -327,6 +338,7 @@ export class Renderer {
         break;
       }
       case 'toxic': {
+        if (M0) { if (b.recoil > 0.05) add(glowSprite(br === 'B' ? '#d6ff3a' : '#6aff3a'), M0.x, M0.y, 14 + b.recoil * 16, b.recoil * 0.6); break; }       // метатель склянок: вспышка у чаши при броске
         const liqY = base + (art.liq ? art.liq(lvl).y : 52);
         add(glowSprite(br === 'B' ? '#d6ff3a' : '#6aff3a'), x, liqY, 36, 0.35 + 0.15 * Math.sin(t * 4) + b.recoil * 0.3);
         for (let i = 0; i < 4; i++) {
@@ -410,8 +422,22 @@ export class Renderer {
       }
     }
   }
+  // Старт снаряда — из дула головы: смещение запоминается на первом кадре и плавно сходит на нет по мере отлёта (чисто визуально, полёт в sim не меняется).
+  muzOff(p) {
+    const b = p.owner; if (!b || b.kind !== 'tower') return null;
+    const ps = this._ps || (this._ps = new WeakMap()); let st = ps.get(p);
+    if (!st) {
+      const M = A.muzzle(b), sy = p.kind === 'bolt' ? -14 : p.kind === 'shard' ? 0 : -8;
+      st = (!M || Math.hypot(p.x - b.x, p.y - b.y) > 40) ? { none: true } : { x: p.x, y: p.y, ox: M.x - p.x, oy: M.y - (p.y + sy) };
+      ps.set(p, st);
+    }
+    if (st.none) return null;
+    const f = p.T ? 1 - 2 * p.t / p.T : 1 - Math.min(Math.hypot(p.x - st.x, p.y - st.y), p.kind === 'saw' ? Math.hypot(p.x - b.x, p.y - b.y) : 1e9) / (p.kind === 'saw' ? 44 : 52);      // дуга сходит за первую половину полёта; пила ещё и возвращается к дулу
+    return f > 0 ? [st.ox * f, st.oy * f] : null;
+  }
   drawProjs(ctx, t) {
     for (const p of this.sim.projs) {
+      const mo = this.muzOff(p); if (mo) { ctx.save(); ctx.translate(mo[0], mo[1]); }
       switch (p.kind) {
         case 'bolt': {
           const l = Math.hypot(p.vx, p.vy), ux = p.vx / l, uy = p.vy / l, y = p.y - 14;
@@ -431,9 +457,15 @@ export class Renderer {
           else { const gr = ctx.createRadialGradient(p.x - 1.5, p.y - z - 9.5, 0.5, p.x, p.y - z - 8, r * 1.3); gr.addColorStop(0, p.bomblet ? '#ffb060' : '#8a8f9a'); gr.addColorStop(1, p.bomblet ? '#7a2a0a' : '#1a1c22'); ctx.fillStyle = gr; ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = '#170a0f'; ctx.stroke(); if (p.fire) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#ff7a1c'), p.x - 10, p.y - z - 18, 20, 20); ctx.restore(); } }
           break;
         }
-        case 'shard': {
-          const s = shardSprite(); const e = p.target; const a = e ? Math.atan2(e.y - p.y, e.x - p.x) : 0;
-          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(a); ctx.drawImage(s, -9, -9, 18, 18); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#9fe8ff'), -9, -9, 18, 18); ctx.restore(); break;
+        case 'shard': {                                   // ледяная стрела: гранёное остриё, древко и оперение, холодный свет за ней
+          const e = p.target; const a = e ? Math.atan2(e.y - p.y, e.x - p.x) : 0;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(a); ctx.lineJoin = 'round';
+          ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#7fd8ff'), -30, -9, 34, 18); ctx.globalCompositeOperation = 'source-over';
+          ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(5, -3.6); ctx.lineTo(-11, -1.2); ctx.lineTo(-15, -4.2); ctx.lineTo(-13, 0); ctx.lineTo(-15, 4.2); ctx.lineTo(-11, 1.2); ctx.lineTo(5, 3.6); ctx.closePath();
+          ctx.lineWidth = 2.6; ctx.strokeStyle = '#170a0f'; ctx.stroke();
+          const gr = ctx.createLinearGradient(-15, 0, 14, 0); gr.addColorStop(0, '#5fc4f5'); gr.addColorStop(0.55, '#c8f1ff'); gr.addColorStop(1, '#ffffff'); ctx.fillStyle = gr; ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(12, 0); ctx.moveTo(5, -3.6); ctx.lineTo(5, 3.6); ctx.stroke();
+          ctx.restore(); break;
         }
         case 'saw': {
           const s = sawBladeSprite(13);
@@ -441,6 +473,7 @@ export class Renderer {
           ctx.save(); ctx.translate(p.x, p.y - 8); ctx.rotate(p.spin); ctx.drawImage(s, -s.lw / 2, -s.lh / 2, s.lw, s.lh); ctx.restore(); break;
         }
       }
+      if (mo) ctx.restore();
     }
     for (const f of this.sim.fx) {
       if (f.kind === 'meteor') {

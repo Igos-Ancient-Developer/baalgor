@@ -1,9 +1,9 @@
 // Расчленёнка, кровь и частицы. Подписывается на события симуляции и рисует в постоянный «слой крови».
-import { tr } from './i18n.js?v=20261025130937';
-import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261025130937';
-import { S as ART_S } from './art.js?v=20261025130937';
-import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261025130937';
-import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261025130937';
+import { tr } from './i18n.js?v=20261025132026';
+import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261025132026';
+import { S as ART_S } from './art.js?v=20261025132026';
+import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261025132026';
+import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261025132026';
 
 const GRAV = 560;
 const LAYERS = 3, SPAN = 6, HOLD = 6, FADE = 5;   // секунд игрового времени
@@ -57,7 +57,7 @@ export class Gore {
     sim.on('hit', (d) => this.onHit(d));
     sim.on('kill', (d) => this.onKill(d));
     sim.on('explosion', (d) => this.onExplosion(d));
-    sim.on('lightning', (d) => { this.bolts.push({ pts: d.pts, t: 0, T: 0.18, seed: Math.random() * 99 }); });
+    sim.on('lightning', (d) => { const pts = d.pts.slice(), M = this.muzzle && this.muzzle(d.b); if (M) pts[0] = { x: M.x, y: M.y }; this.bolts.push({ pts, t: 0, T: 0.18, seed: Math.random() * 99 }); });      // молния выходит с конца электрода
     sim.on('shot', (d) => this.onShot(d));
     sim.on('leak', (d) => { this.flash = 0.45; this.flashCol = '#ff1a2a'; this.ring(d.x, d.y, 40, '#ff2a2a', 0.5); });
     sim.on('stomp', (d) => { this.ring(d.x, d.y, 2.3 * CELL, '#ffb060', 0.6); this.dust(d.x, d.y, 14, 2.3 * CELL); });
@@ -80,7 +80,7 @@ export class Gore {
     sim.on('flame', (d) => {
       const col = d.b.branch === 'B' ? '#5affc8' : '#ffb04a', R = d.range;
       for (let i = 0; i < 4; i++) {
-        const a = d.a + rnd(-0.25, 0.25), s = rnd(R * 1.6, R * 2.6), x0 = d.x + Math.cos(d.a) * 16, y0 = d.y - 16 + Math.sin(d.a) * 8;
+        const a = d.a + rnd(-0.25, 0.25), s = rnd(R * 1.6, R * 2.6), M = this.muzzle && this.muzzle(d.b), x0 = M ? M.x : d.x + Math.cos(d.a) * 16, y0 = M ? M.y : d.y - 16 + Math.sin(d.a) * 8;      // огонь идёт из пасти головы
         this.part({ k: 'fire', x: x0, y: y0, z: 0, vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.6, vz: rnd(0, 20), life: rnd(0.28, 0.5), size: rnd(14, 26), col });
       }
     });
