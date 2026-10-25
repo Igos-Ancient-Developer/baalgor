@@ -1,5 +1,5 @@
 // Обёртка над Telegram Mini App SDK. Вне Telegram (обычный браузер) всё работает без него.
-import { newLife } from './meta.js?v=20261025121950';
+import { newLife } from './meta.js?v=20261025130937';
 const tg = window.Telegram && window.Telegram.WebApp;
 const KEY = 'bloodkeep_save_v1';
 
