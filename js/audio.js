@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261025121926';
+import { createTrack, MENU_SPEC } from './music.js?v=20261025121950';
 export class Sfx {
   constructor() {
     this.ctx = null; this.sfxOn = true; this.musOn = true;
