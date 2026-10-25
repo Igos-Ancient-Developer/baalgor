@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261025134940';
-import * as A from './art.js?v=20261025134940';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261025134940';
-import { tile } from './iconmap.js?v=20261025134940';
-import { img } from './sprites.js?v=20261025134940';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261025134940';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261025135957';
+import * as A from './art.js?v=20261025135957';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261025135957';
+import { tile } from './iconmap.js?v=20261025135957';
+import { img } from './sprites.js?v=20261025135957';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261025135957';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -292,6 +292,12 @@ export class Renderer {
     const lvl = b.level, br = b.branch, art = A.TOWER_ART[b.type];
     const base = y - A.TW_AY; // y-координата верха спрайта
     const add = (sprite, cx, cy, size, alpha) => { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = clamp(alpha, 0, 1); ctx.drawImage(sprite, cx - size / 2, cy - size / 2, size, size); ctx.restore(); };
+    if (b.prem && A.SPR.ok) {                         // у дверей премиум-башни горит и мерцает огонь изнутри
+      const at = A.artType(b.prem); for (const [dx, dy, dw] of A.towerDoors(at, lvl, br)) { if (dw < 12) continue;
+        const k = A.towerPt(at, lvl, br, dx, dy), fl = 0.5 + 0.25 * Math.sin(t * 9 + b.id) + 0.2 * Math.sin(t * 23.7 + b.id * 3) + 0.15 * Math.sin(t * 3.1);
+        add(glowSprite('#ff9a3a'), x + k.x, y + k.y + 1, Math.max(9, dw * (A.towerPt(at, lvl, br, 1, 0).x - A.towerPt(at, lvl, br, 0, 0).x) * 2.4), clamp(0.18 + 0.38 * fl, 0, 0.7));
+      }
+    }
     const M0 = A.muzzle(b);                                     // дуло повёрнутой головы (null у башен без головы)
     switch (b.type) {
       case 'bolt': case 'mortar': case 'flame': case 'harpoon': {
