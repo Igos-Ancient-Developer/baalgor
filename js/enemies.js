@@ -1,6 +1,6 @@
 // Процедурные спрайты врагов (кадры ходьбы) и кусков тел для расчленёнки.
-import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261025121304';
-import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261025121304';
+import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261025121926';
+import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261025121926';
 
 export const FRAMES = 8;
 const T2 = Math.PI * 2;
@@ -31,6 +31,8 @@ export const BLOOD = {
   bone: ['#8a1018', '#c8c0a8', '#4a0a10'],
   ooze: ['#6fd13a', '#b6f070', '#3a8a1c'],
   ichor: ['#6a1f9a', '#b050e0', '#2e0a4a'],
+  ice: ['#8fc8e8', '#e4f6ff', '#3c6e94'],
+  sand: ['#b88e4e', '#e2c488', '#7a5a2c'],
 };
 
 // ───── головы ─────
@@ -383,7 +385,7 @@ export const ENEMY_ART = {
 // ───── растровые враги: полоса кадров ходьбы из img/enemies/<файл>.webp ─────
 // id в игре → [файл, высота на экране в логических px, доп. поля]
 const SPRITE_ENEMIES = {
-  skeleton: ['skeleton', 44], zombie: ['zombie', 44], goblin: ['goblin', 38], bat: ['bat', 36, { air: true }],
+  skeleton: ['skeleton', 44], zombie: ['zombie', 44], goblin: ['goblin', 38], mummy: ['mummy', 46], yeti: ['yeti', 58, { scale: 1.05 }], bat: ['bat', 36, { air: true }],
   hound: ['hound', 40], slime: ['slime', 40], slimelet: ['slime', 24, { scale: 0.6 }], knight: ['knight', 48],
   butcher: ['butcher', 52, { scale: 1.08 }], gargoyle: ['gargoyle', 44, { air: true }],
   berserker: ['berserker', 46], ogre: ['ogre', 56, { scale: 1.1 }], reaper: ['reaper', 44], lich: ['lich', 58],
@@ -573,7 +575,7 @@ function procGib(type, kind, variant = 0) {
       g.translate(W / 2, Hh / 2); g.scale(big, big);
       const bleed = !isBone && !isOoze;
       if (kind === 'head') {
-        const headKind = { zombie: 'ghoul', zombie_fast: 'ghoul', grunt: 'goblin', goblin: 'goblin', runner: 'ghoul', brute: 'orc', knight: 'knight', skeleton: 'skull', shaman: 'hood', zerk: 'horned', reaper: 'hood', bat: 'goblin', gargoyle: 'orc', ogre: 'orc', lich: 'crown', demon: 'demon', slime: 'goblin', slimelet: 'goblin' }[type];
+        const headKind = { zombie: 'ghoul', zombie_fast: 'ghoul', grunt: 'goblin', goblin: 'goblin', mummy: 'skull', yeti: 'orc', runner: 'ghoul', brute: 'orc', knight: 'knight', skeleton: 'skull', shaman: 'hood', zerk: 'horned', reaper: 'hood', bat: 'goblin', gargoyle: 'orc', ogre: 'orc', lich: 'crown', demon: 'demon', slime: 'goblin', slimelet: 'goblin' }[type];
         if (isOoze) { blobGib(g, p, 7); return; }
         g.save(); const hk = type === 'demon' || type === 'zerk' || type === 'lich' ? 0.62 : 0.9; g.scale(hk, hk); g.translate(0, type === 'demon' ? 4 : 0); HEADS[headKind](g, 0, -1, 7.5, p); g.restore();
         if (bleed) { g.beginPath(); g.ellipse(-1, 7, 4.5, 1.6, 0, 0, T2); fillStroke(g, '#b0101e', 0.6); }

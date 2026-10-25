@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261025121304';
+import { COLS, ROWS } from './layouts.js?v=20261025121926';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD = 80;
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261025121304';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261025121926';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -272,6 +272,7 @@ export const ENEMIES = {
   skeleton: { name: 'Скелет',         hp: 70,  spd: 42, gold: 0, lives: 1, size: 0.95, atk: 6,  immune: ['poison'], blood: 'bone' },
   zombie:   { name: 'Зомби',          hp: 130, spd: 30, gold: 0, lives: 1, size: 1.0,  atk: 6,  blood: 'dark' },
   goblin:   { name: 'Гоблин',         hp: 48,  spd: 62, gold: 0, lives: 1, size: 0.85, atk: 4,  blood: 'ooze' },
+  mummy:    { name: 'Песчаная мумия', hp: 160, spd: 26, gold: 0, lives: 1, size: 1.05, atk: 8,  blood: 'sand' },
   hound:    { name: 'Адская гончая',  hp: 50,  spd: 82, gold: 0, lives: 1, size: 0.95, atk: 6,  blood: 'dark' },
   bat:      { name: 'Летучая мышь',   hp: 34,  spd: 80, gold: 0, lives: 1, size: 0.85, atk: 0,  air: true, blood: 'red' },
   slime:    { name: 'Слизень',        hp: 90,  spd: 34, gold: 0, lives: 1, size: 1.0,  atk: 5,  split: 'slimelet', immune: ['poison'], blood: 'ooze' },
@@ -283,9 +284,10 @@ export const ENEMIES = {
   knight:   { name: 'Чёрный рыцарь',  hp: 320, spd: 21, gold: 0, lives: 1, size: 1.05, atk: 12, armor: 0.2, heavy: true, blood: 'dark', pts: 0.03 },
   butcher:  { name: 'Мясник',         hp: 560, spd: 17, gold: 0, lives: 2, size: 1.3,  atk: 16, armor: 0.1, heavy: true, blood: 'red', pts: 0.04 },
   lich:     { name: 'Лич',            hp: 760, spd: 15, gold: 0, lives: 2, size: 1.4,  atk: 20, armor: 0.2, summon: 10, heavy: true, blood: 'bone', pts: 0.05 },
+  yeti:     { name: 'Ледяной йети',   hp: 480, spd: 19, gold: 0, lives: 2, size: 1.3,  atk: 18, armor: 0.15, heavy: true, blood: 'ice', pts: 0.04 },
   ogre:     { name: 'Огр',            hp: 900, spd: 14, gold: 0, lives: 2, size: 1.45, atk: 22, armor: 0.2, stomp: 9, heavy: true, blood: 'red', pts: 0.06 },
 };
-export const HEAVY_CAP = { knight: 3, butcher: 2, lich: 1, ogre: 2 };      // не больше стольких за волну
+export const HEAVY_CAP = { yeti: 2, knight: 3, butcher: 2, lich: 1, ogre: 2 };      // не больше стольких за волну
 
 // Масштаб здоровья/награды по номеру волны
 export const TUNE = { hp1: 0.10, hp2: 0.0075, gold1: 0.035 };
@@ -299,16 +301,16 @@ export const waveGap = (n) => 26 + Math.min(8, n * 0.25);   // пауза пос
 // ───── Волны кампании ─────
 // Чем дальше уровень, тем больше волн, врагов и видов врагов. Кладбище и лес (первые два сектора): только простая нежить.
 // Враги открываются по номеру уровня; боссы — только в последней волне трёх поздних уровней.
-const UNLOCK_LV = { skeleton: 1, zombie: 2, goblin: 3, hound: 5, bat: 8, slime: 10, knight: 11, butcher: 12, gargoyle: 13, berserker: 14, ogre: 16, reaper: 17, lich: 18 };
-const COST = { skeleton: 1.2, zombie: 1.8, goblin: 1.4, hound: 2.0, bat: 1.2, slime: 2.8, knight: 8, butcher: 11, gargoyle: 4.8, berserker: 6, ogre: 20, reaper: 9.5, lich: 18 };
-const IVAL = { skeleton: 1.0, zombie: 1.4, goblin: 0.9, hound: 0.8, bat: 0.9, slime: 1.3, knight: 3, butcher: 4, gargoyle: 1.4, berserker: 1.4, ogre: 5, reaper: 1.8, lich: 5 };
+const UNLOCK_LV = { skeleton: 1, zombie: 2, goblin: 3, hound: 5, bat: 8, mummy: 9, slime: 10, knight: 11, butcher: 12, gargoyle: 13, yeti: 13, berserker: 14, ogre: 16, reaper: 17, lich: 18 };
+const COST = { skeleton: 1.2, zombie: 1.8, goblin: 1.4, mummy: 2.4, hound: 2.0, bat: 1.2, slime: 2.8, knight: 8, butcher: 11, gargoyle: 4.8, yeti: 14, berserker: 6, ogre: 20, reaper: 9.5, lich: 18 };
+const IVAL = { skeleton: 1.0, zombie: 1.4, goblin: 0.9, mummy: 1.5, hound: 0.8, bat: 0.9, slime: 1.3, knight: 3, butcher: 4, gargoyle: 1.4, yeti: 4.5, berserker: 1.4, ogre: 5, reaper: 1.8, lich: 5 };
 // «эквивалентный» номер волны на кривой 1..30: нужен для роста здоровья врагов
 export const eqWave = (L, n, T) => { const s = 1 + (L - 1) * 0.25, e = 7 + (L - 1) * 2.4; return Math.max(1, Math.round(T > 1 ? s + ((e - s) * (n - 1)) / (T - 1) : s)); };
 export function genWave(L, n, T) {
   let a = (L * 1009 + n * 7919) | 0; const R = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const W0 = (LEVELS[L - 1] && LEVELS[L - 1].wavesFull) || T, nv = T > 1 ? 1 + ((n - 1) * (1 + 0.35 * (W0 - T) / (T - 1))) : n;      // при сжатии уровня до 15 волн каждая волна чуть сильнее (экономика копится по времени, поэтому сжимаем лишь на треть)
   const budget = 3 + (nv - 1) * (1.0 + 0.075 * L) + 0.25 * L;
-  const STRONG = ['knight', 'butcher', 'ogre', 'reaper', 'berserker', 'lich'], SIDE = ['bat', 'gargoyle'];     // сильные — не в первых волнах уровня; лекарь и летуны — не основа волны
+  const STRONG = ['knight', 'butcher', 'yeti', 'ogre', 'reaper', 'berserker', 'lich'], SIDE = ['bat', 'gargoyle'];     // сильные — не в первых волнах уровня; лекарь и летуны — не основа волны
   const avail = Object.keys(UNLOCK_LV).filter((t) => UNLOCK_LV[t] <= L && !(L === 2 && t === 'zombie' && n < 2) && !(n < Math.max(5, T * 0.45) && STRONG.includes(t)) && !(L === UNLOCK_LV[t] && L > 2 && n < T * 0.4));        // новый вид выходит в середине своего уровня, а сильные — не в первых волнах
   const w = (t) => (1 + R()) * (UNLOCK_LV[t] <= 2 ? 1.3 : Math.min(1, 0.25 + (L - UNLOCK_LV[t] + n / T) / 2.5)) / (1 + Math.max(0, L - UNLOCK_LV[t] - 6) * 0.12) * (HEAVY_CAP[t] ? 0.45 : 1);          // новые виды сначала редки, потом становятся обычными; совсем старые — реже
   const picks = [], pool = [...avail], k = Math.min(pool.length, 1 + (n >= 3 ? 1 : 0) + (n >= T * 0.6 && L >= 5 ? 1 : 0));
