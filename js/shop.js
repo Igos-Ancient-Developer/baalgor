@@ -1,12 +1,12 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261025135957';
-import { Wallet } from './wallet.js?v=20261025135957';
-import { fillPlates, gemIc } from './res.js?v=20261025135957';
-import { towerIcon } from './ui.js?v=20261025135957';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261025135957';
-import { SHOP_IMG } from './iconmap.js?v=20261025135957';
+import * as D from './data.js?v=20261026145234';
+import { Wallet } from './wallet.js?v=20261026145234';
+import { fillPlates, gemIc } from './res.js?v=20261026145234';
+import { towerIcon } from './ui.js?v=20261026145234';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261026145234';
+import { SHOP_IMG } from './iconmap.js?v=20261026145234';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
 
 const $ = (s) => document.querySelector(s);
