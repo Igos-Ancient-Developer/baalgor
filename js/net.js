@@ -1,5 +1,5 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=20261026175823';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=20261026175845';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
