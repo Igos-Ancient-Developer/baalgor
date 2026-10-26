@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261026145821';
+import { createTrack, MENU_SPEC } from './music.js?v=20261026175823';
 export class Sfx {
   constructor() {
     this.ctx = null; this.sfxOn = true; this.musOn = true;
@@ -181,7 +181,7 @@ export class Sfx {
 
 // Привязка звуков к событиям симуляции
 export function attachSfx(sim, sfx) {
-  sim.on('shot', (d) => sfx.play({ bolt: 'bolt', mortar: 'mortar', tesla: 'tesla', frost: 'frost', toxic: 'toxic', saw: 'saw', flame: 'flame', void: 'void', harpoon: 'harpoon' }[d.kind]));
+  sim.on('shot', (d) => sfx.play({ bolt: 'bolt', mortar: 'mortar', tesla: 'tesla', frost: 'frost', toxic: 'toxic', saw: 'saw', flame: 'flame', void: 'void', harpoon: 'harpoon', magnet: 'void', grinder: 'crack', giant: 'mortar' }[d.kind]));
   sim.on('explosion', (d) => { if (d.kind === 'meteor') sfx.play('meteor'); else if (d.kind === 'pop') sfx.play('crack', 0.6); else if (d.kind === 'shatter') sfx.play('crack'); else if (d.kind === 'vial') sfx.play('splat', 0.8); else sfx.play(d.kind === 'bomblet' ? 'boomsmall' : 'boom', d.big ? 1.2 : 1); });
   sim.on('hit', (d) => { if (d.how === 'saw' || d.how === 'chop' || d.how === 'slash') sfx.play('sawhit', 0.7); });
   sim.on('kill', (d) => {

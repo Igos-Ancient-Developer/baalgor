@@ -1,9 +1,9 @@
 // Расчленёнка, кровь и частицы. Подписывается на события симуляции и рисует в постоянный «слой крови».
-import { tr } from './i18n.js?v=20261026145821';
-import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261026145821';
-import { S as ART_S } from './art.js?v=20261026145821';
-import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261026145821';
-import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261026145821';
+import { tr } from './i18n.js?v=20261026175823';
+import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261026175823';
+import { S as ART_S } from './art.js?v=20261026175823';
+import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261026175823';
+import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261026175823';
 
 const GRAV = 560;
 const LAYERS = 3, SPAN = 6, HOLD = 6, FADE = 5;   // секунд игрового времени
@@ -85,8 +85,9 @@ export class Gore {
       }
     });
     sim.on('ignite', (e) => { for (let i = 0; i < 3; i++) this.spark(e.x, e.y - 8, '#ff9a2a'); });
+    sim.on('grind', (d) => { this.dust(d.x, d.y + 8, 8 + d.n * 2, 34); for (let i = 0; i < 6 + d.n * 2; i++) this.spark(d.x + rnd(-14, 14), d.y + rnd(-4, 10), d.mag ? '#5ab8ff' : '#ffb04a'); this.ring(d.x, d.y + 8, 30, d.mag ? '#5ab8ff' : '#ffb04a', 0.4); });
     sim.on('pulse', (d) => {
-      const col = d.b.branch === 'A' ? '#ff4a9a' : d.b.branch === 'B' ? '#4adcff' : '#b070ff';
+      const col = d.magnet ? (d.b.branch === 'B' ? '#4adcff' : '#ff5a6a') : d.b.branch === 'A' ? '#ff4a9a' : d.b.branch === 'B' ? '#4adcff' : '#b070ff';
       this.ring(d.x, d.y, d.r, col, 0.55); this.ring(d.x, d.y, d.r * 0.6, col, 0.4);
       for (let i = 0; i < 14; i++) { const a = rnd(6.28), r = d.r * rnd(0.6, 1); this.part({ k: 'spark', x: d.x + Math.cos(a) * r, y: d.y + Math.sin(a) * r * 0.8, z: rnd(4, 20), vx: -Math.cos(a) * r * 1.8, vy: -Math.sin(a) * r * 1.4, vz: 0, life: 0.5, col, size: rnd(1.2, 2.2) }); }
       if (d.collapse) { this.flash = 0.2; this.flashCol = col; this.ring(d.x, d.y, d.r * 1.15, '#ffffff', 0.35); }
@@ -134,7 +135,7 @@ export class Gore {
 
   // ───── события ─────
   onShot(d) {
-    const col = { bolt: '#ffe8a0', mortar: '#ffb050', tesla: '#9adfff', frost: '#cfefff', toxic: '#aaff7a', saw: '#ffffff', harpoon: '#fff2c0' }[d.kind];
+    const col = { giant: '#ffe0a0', bolt: '#ffe8a0', mortar: '#ffb050', tesla: '#9adfff', frost: '#cfefff', toxic: '#aaff7a', saw: '#ffffff', harpoon: '#fff2c0' }[d.kind];
     if (!col) return;
     const a = d.a || 0, x = d.x + Math.cos(a) * 14, y = d.y + Math.sin(a) * 8 - 18;
     this.part({ k: 'flash', x, y, z: 0, vx: 0, vy: 0, vz: 0, life: 0.1, r: d.kind === 'mortar' ? 18 : 10, col });

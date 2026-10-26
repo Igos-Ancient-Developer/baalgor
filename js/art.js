@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261026145821';
-import { TOWERS } from './data.js?v=20261026145821';
+import { SPR, img } from './sprites.js?v=20261026175823';
+import { TOWERS } from './data.js?v=20261026175823';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -574,14 +574,14 @@ function towerIdx(type, lvl, br) {
   if (type === 'mine') return Math.min(lvl, k) - 1;
   if (m.bylevel) return Math.min(lvl, k) - 1;                               // 5 картинок = 5 уровней (мортира, огнемёт, гарпун)
   if (k === 5) return lvl <= 3 ? lvl - 1 : (br === 'A' ? 4 : 3);
-  const tab = k >= 4 ? [0, 1, 2, 3, 3] : k === 3 ? (TOWERS[type] && TOWERS[type].premium ? [0, 1, 1, 2, 2] : [0, 1, 2, 2, 2]) : [0, 0, 1, 1, 1];      // у премиума три внешних вида: 1 ур., 2–3 ур., 4–5 ур.
+  const tab = k >= 4 ? [0, 1, 2, 3, 3] : k === 3 ? (TOWERS[type] && (TOWERS[type].premium || TOWERS[type].stages3) ? [0, 1, 1, 2, 2] : [0, 1, 2, 2, 2]) : [0, 0, 1, 1, 1];      // у премиума три внешних вида: 1 ур., 2–3 ур., 4–5 ур.
   return tab[Math.min(lvl, 5) - 1];
 }
 // Здание не больше клетки по ширине и клетки с небольшим запасом по высоте: соседние здания не закрывают друг друга.
 // Масштаб один на весь ряд уровней (рост по уровням остаётся), считается по самой большой картинке ряда.
 // предельные размеры (ширина, высота) здания на карте; узкие и низкие здания разрешено делать крупнее
 const CAPS = { mortar: [56, 78], mine: [50, 58], bolt: [56, 72], frost: [56, 72], tesla: [56, 72], saw: [56, 70], banner: [56, 72], flame: [56, 78], voidwell: [56, 70], toxic: [56, 68], bank: [56, 70], altar: [56, 66], harpoon: [56, 78],
-  gold_bolt: [56, 78], storm_tesla: [56, 72], hell_flame: [56, 78] }, CAP_DEF = [56, 64], GK = {};
+  gold_bolt: [56, 78], storm_tesla: [56, 72], hell_flame: [56, 78], magnet: [56, 72], grinder: [62, 68], giant: [68, 74] }, CAP_DEF = [56, 64], GK = {};
 // Размер спрайта считается по каждой картинке отдельно: ранние уровни (маленькие хижины, низкие постаменты) растягиваются до доли предельной высоты (HF), чтобы не казаться крошечными; ширина ограничена CAPS.
 const HF = [0.86, 0.93, 1, 1, 1], TS_MAX = 0.46, SK = {};
 function spriteK(type, lvl, br) {
@@ -600,8 +600,8 @@ export function towerGeo(type, lvl, br) {
 const BR_TINT = { A: '#4aa8ff', B: '#ff3a3a' };
 // светлая кайма и мягкий свет под основанием: здание отделяется от земли и читается на любом фоне
 const RIM = { frost: '#d4f0ff', tesla: '#c4e4ff', toxic: '#e0ffb8', flame: '#ffd8a8', voidwell: '#e6d0ff', banner: '#ffd0d0', saw: '#ffe6c0', mine: '#fff0b8' };
-function spriteTower(type, lvl, br) {
-  const i = towerIdx(type, lvl, br), im = img(`towers/${type}_${i}.webp`); if (!im) return null;
+function spriteTower(type, lvl, br, fire = false) {
+  const i = towerIdx(type, lvl, br), im = img(`towers/${type}_${fire ? 'f' : ''}${i}.webp`); if (!im) return null;
   const k = spriteK(type, lvl, br), w = 192 * k, h = 240 * k;
   const rim = RIM[type] || '#fff4d0';
   const body = mk(TW_W, TW_H, (g2) => {
@@ -636,6 +636,11 @@ for (const [t, [key, f]] of Object.entries(FR)) {
 // ───── API получения спрайтов (с кэшем) ─────
 // у премиум-башни своя картинка (если загружена), иначе рисуем базовую
 export const artType = (type) => (SPR.ok && SPR.towers[type]) ? type : (TOWERS[type] && TOWERS[type].base) || type;
+// картинка «выстрел» (пилорама: щель открыта); null, если у здания такой нет
+export function towerBodyF(type, lvl, br) {
+  const m = SPR.ok && SPR.towers[type]; if (!m || !m.fire) return null;
+  return cached(`tbf:${type}:${lvl}:${br || ''}`, () => spriteTower(type, lvl, br, true));
+}
 export function towerBody(type, lvl, br) {
   return cached(`tb:${type}:${lvl}:${br || ''}`, () => (SPR.ok && SPR.towers[type] && spriteTower(type, lvl, br)) || mk(TW_W, TW_H, (g) => { TOWER_ART[type].body(g, lvl, br); }));
 }
@@ -651,7 +656,11 @@ export function rotHead(type, lvl, br) {
 }
 // Дуло повёрнутой головы в тех же координатах, где рисуются снаряды и эффекты: ось плиты + вынос ствола вдоль одного из 8 направлений картинки (эллипс: вдоль экрана 1, вглубь 0.5) и высота дула над плитой.
 export function muzzle(b) {
-  const hi = rotHead(rotKey(b), b.level, b.branch); if (!hi || !hi.mx) return null;
+  const hi = rotHead(rotKey(b), b.level, b.branch);
+  if (!hi || !hi.mx) {                                  // здание без головы (дом алхимика, пилорама): снаряд вылетает из окна или щели на картинке
+    const m = SPR.ok && SPR.towers[b.type]; if (!m || !m.mz || b.prem) return null;
+    const [px, py] = m.mz[towerIdx(b.type, b.level, b.branch)], q = towerPt(b.type, b.level, b.branch, px, py); return { x: b.x + q.x, y: b.y + 6 + q.y };
+  }
   const a = Math.round((b.angle || 0) / (Math.PI / 4)) * (Math.PI / 4);
   return { x: b.x + hi.dx + Math.cos(a) * hi.mx * hi.k, y: b.y + 6 + hi.dy + Math.sin(a) * hi.mx * hi.k * 0.5 - hi.my * hi.k };
 }
@@ -701,4 +710,17 @@ export function iconURL(kind, type, size = 56) {
     if (head) { const lift = TOWER_ART[type].lift; g.drawImage(head, (size * 2 - HEAD * sc) / 2, (74 - lift - 32 - 2) * sc, HEAD * sc, HEAD * sc); }
     return c.toDataURL();
   });
+}
+
+// ───── Гигант: кадры броска (колонки 0..7: готов, наклон, подъём, замах, бросок, отпускание, проводка, возврат), ряды атласа: E, SE, S, NE, N (W, SW, NW — зеркалом) ─────
+const GROW = [[0, 1], [1, 1], [2, 1], [1, -1], [0, -1], [3, -1], [4, 1], [3, 1]];      // направление (E, SE, S, SW, W, NW, N, NE) → [ряд атласа, знак по x]
+export function giantFrame(b) {
+  const m = SPR.ok && SPR.towers.giant; if (!m || !m.anim) return null;
+  const st = towerIdx('giant', b.level, b.branch), im = img(`towers/giant_a${st}.webp`); if (!im) return null;
+  const an = m.anim, dir = ((Math.round((b.angle || 0) / (Math.PI / 4)) % 8) + 8) % 8, [row, sg] = GROW[dir];
+  let f = 0;
+  if (b.throwT > 0) f = [4, 5, 5, 6, 6, 7][Math.min(5, Math.floor((1 - b.throwT / 0.8) * 6))];
+  else if (b.windT > 0) f = [1, 2, 3][Math.min(2, Math.floor(b.windT / 0.25))];
+  const k = spriteK('giant', b.level, b.branch);
+  return { im, sx: f * an.cw, sy: row * an.ch, sw: an.cw, sh: an.ch, k, sg, ax: an.ax, ay: an.ay };
 }

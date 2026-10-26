@@ -40,7 +40,7 @@ export async function loadSprites(onProgress = () => {}) {
   if (!tw || !en) return false;
   SPR.towers = tw; SPR.enemies = en; SPR.land = ld || {};
   const list = [];
-  for (const [t, m] of Object.entries(tw)) { for (let i = 0; i < m.n; i++) list.push(`towers/${t}_${i}.webp`); if (m.head) list.push(`towers/${t}_head.webp`); }
+  for (const [t, m] of Object.entries(tw)) { for (let i = 0; i < m.n; i++) { list.push(`towers/${t}_${i}.webp`); if (m.fire) list.push(`towers/${t}_f${i}.webp`); if (m.anim) list.push(`towers/${t}_a${i}.webp`); } if (m.head) list.push(`towers/${t}_head.webp`); }
   for (const k of DECOR_IMGS) list.push(`decor/${k}.webp`);
   for (const k of GIB_IMGS) list.push(`gibs/${k}.webp`);
   for (const k of PORTRAITS) list.push(`ui/portrait_${k}.webp`);

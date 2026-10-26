@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261026145821';
-import * as A from './art.js?v=20261026145821';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261026145821';
-import { tile } from './iconmap.js?v=20261026145821';
-import { img } from './sprites.js?v=20261026145821';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261026145821';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261026175823';
+import * as A from './art.js?v=20261026175823';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261026175823';
+import { tile } from './iconmap.js?v=20261026175823';
+import { img } from './sprites.js?v=20261026175823';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261026175823';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -243,7 +243,10 @@ export class Renderer {
   drawBuilding0(ctx, b, t, view) {
     const x = b.x, y = b.y + 6;
     const wob = 0;      // анимации «сжатия и подпрыгивания» при постройке и улучшении нет: голова башни её не повторяла и вид разваливался
-    const body = b.kind === 'econ' ? A.econBody(b.type, b.level) : A.towerBody(A.artType(b.prem || b.type), b.level, b.branch);
+    let body = b.kind === 'econ' ? A.econBody(b.type, b.level) : A.towerBody(A.artType(b.prem || b.type), b.level, b.branch);
+    if (b.kind === 'tower' && b.throwT > 0) { const bf = A.towerBodyF(A.artType(b.prem || b.type), b.level, b.branch); if (bf) body = bf; }      // пилорама: на выстреле щель открыта
+    const gf = b.type === 'giant' ? A.giantFrame(b) : null;      // Гигант рисуется кадрами броска, а не одной картинкой
+    const shake = b.type === 'grinder' && b.throwT > 0 ? Math.sin(t * 70) * 1.1 : 0;      // Гриндер трясёт, пока мелет
     const rc = b.kind === 'econ' ? 0 : Math.min(1, b.recoil || 0);
     if (b.prem) { const col = TOWERS[b.prem].tint; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.6 + 0.22 * Math.sin(t * 3 + b.id); ctx.drawImage(glowSprite(col), x - 44, y - 24, 88, 58); ctx.restore(); }      // премиум: свечение под башней
     // башня с оружием смотрит в сторону цели: картинка зеркалится влево/вправо (FACE0 — куда смотрит исходная картинка)
@@ -265,13 +268,14 @@ export class Renderer {
       }
       const r = u.r; ctx.drawImage(r.c, 0, 0, r.W, r.H, x - A.TW_AX - u.pad - r.pad / r.k, y - A.TW_AY - u.pad - r.pad / r.k, r.W / r.k, r.H / r.k);
     }
-    ctx.save(); ctx.translate(x, y); ctx.scale((1 - wob) * sx, 1 + wob);
+    ctx.save(); ctx.translate(x + shake, y); ctx.scale((1 - wob) * sx, 1 + wob);
     if (sel && !rh) { const r = A.selRing(body, body.width, body.height, 1, A.TW_W); ctx.drawImage(r.c, 0, 0, r.W, r.H, -A.TW_AX - r.pad / r.k, -A.TW_AY - r.pad / r.k, r.W / r.k, r.H / r.k); }          // выбранное здание: белая обводка по силуэту
-    ctx.drawImage(body, -A.TW_AX, -A.TW_AY, A.TW_W, A.TW_H);
+    if (gf) { ctx.save(); ctx.translate(0, 6); ctx.scale(gf.sg * gf.k, gf.k); ctx.imageSmoothingQuality = 'high'; ctx.drawImage(gf.im, gf.sx, gf.sy, gf.sw, gf.sh, -gf.ax, -gf.ay, gf.sw, gf.sh); ctx.restore(); }
+    else ctx.drawImage(body, -A.TW_AX, -A.TW_AY, A.TW_W, A.TW_H);
     ctx.restore();
     if (rh) {
       ctx.save(); ctx.imageSmoothingQuality = 'high'; const rec = 0;      // голова при выстреле не дёргается: ось поворота неподвижна
-      A.drawRotHead(ctx, rh, b.angle || 0, x, y, rec); ctx.restore();
+      A.drawRotHead(ctx, rh, b.type === 'magnet' ? t * (1.6 + 3.2 * Math.min(1, b.throwT > 0 ? 1 : b.recoil)) : (b.angle || 0), x, y, rec); ctx.restore();
     }
     if (b.prem) { const col = TOWERS[b.prem].tint; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = col; for (let i = 0; i < 3; i++) { const ph = (t * 0.7 + i / 3 + b.id * 0.13) % 1, a2 = Math.sin(ph * Math.PI); const sx = x + Math.sin(i * 2.4 + b.id) * 18, sy = y - 6 - ph * 40; ctx.globalAlpha = a2 * 0.9; ctx.beginPath(); ctx.moveTo(sx, sy - 3.2 * a2); ctx.lineTo(sx + 1, sy - 1); ctx.lineTo(sx + 3.2 * a2, sy); ctx.lineTo(sx + 1, sy + 1); ctx.lineTo(sx, sy + 3.2 * a2); ctx.lineTo(sx - 1, sy + 1); ctx.lineTo(sx - 3.2 * a2, sy); ctx.lineTo(sx - 1, sy - 1); ctx.fill(); } ctx.restore(); }      // и искры
     if (b.kind === 'econ') this.dynEcon(ctx, b, t, x, y);
@@ -316,6 +320,17 @@ export class Renderer {
         }
         if (br === 'B' && b.type === 'mortar') add(glowSprite('#ff7a1c'), x + 14, y - 12, 26, 0.4 + 0.2 * Math.sin(t * 9));
         if (b.type === 'flame' && head && !rh) { const nx = x + Math.cos(b.angle) * 20, ny = y - lift + Math.sin(b.angle) * 12; add(glowSprite(br === 'B' ? '#5affc8' : '#ff8a1c'), nx, ny, 16 + b.recoil * 20, 0.45 + 0.4 * b.recoil + 0.15 * Math.sin(t * 14)); }
+        break;
+      }
+      case 'magnet': {                                  // красно-синее свечение полюсов: на импульсе вспыхивает, поле стягивает врагов
+        const gt = A.towerGeo(A.artType(b.type), lvl, br), pc = clamp(b.recoil, 0, 1), top = base + gt.top + 4;
+        add(glowSprite('#ff4a5a'), x - 7, top, 14 + pc * 16, 0.2 + 0.12 * Math.sin(t * 5 + b.id) + pc * 0.5);
+        add(glowSprite('#5ab8ff'), x + 7, top, 14 + pc * 16, 0.2 + 0.12 * Math.sin(t * 5 + b.id + 2) + pc * 0.5);
+        break;
+      }
+      case 'grinder': {                                 // пока мелет: из распахнутых дверей идёт раскалённый свет и летит пыль
+        if (b.throwT > 0) { const gt = A.towerGeo(A.artType(b.type), lvl, br), f = clamp(b.throwT / 0.7, 0, 1);
+          add(glowSprite('#ff8a2a'), x + 2, base + gt.top + (gt.bottom - gt.top) * 0.78, 20 + f * 12, 0.35 + 0.4 * f * (0.7 + 0.3 * Math.sin(t * 40))); }
         break;
       }
       case 'voidwell': {                                // на растровой картинке воронка уже нарисована: сверху только пульсирующее свечение, на импульс — вспышка
@@ -481,6 +496,14 @@ export class Renderer {
         case 'shell': case 'vial': {
           const z = p.z || 0; const r = p.kind === 'vial' ? 4 : p.bomblet ? 3 : 4.8;
           ctx.save(); ctx.globalAlpha = 0.3; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(p.x, p.y, r * 1.2, r * 0.5, 0, 0, T2); ctx.fill(); ctx.restore();
+          if (p.rock) {                                    // валун Гиганта: кружится в полёте; цвет по стадии (камень, мрамор, огонь)
+            const lv = p.owner ? p.owner.level : 1, stg = lv <= 1 ? 0 : lv <= 3 ? 1 : 2, C = [['#9a9184', '#5d574e'], ['#f2f6fb', '#9fb4cc'], ['#3a2420', '#120a0a']][stg];
+            ctx.save(); ctx.translate(p.x, p.y - z - 10); ctx.rotate((p.t || 0) * 7); ctx.lineJoin = 'round';
+            ctx.beginPath(); for (let i = 0; i < 9; i++) { const a = (i / 9) * T2, rr = 7 + ((i * 37) % 5) * 0.8; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr * 0.9); } ctx.closePath();
+            const gr = ctx.createRadialGradient(-2, -2, 1, 0, 0, 9); gr.addColorStop(0, C[0]); gr.addColorStop(1, C[1]); ctx.fillStyle = gr; ctx.fill(); ctx.lineWidth = 1.6; ctx.strokeStyle = '#170a0f'; ctx.stroke();
+            if (stg === 2) { ctx.strokeStyle = '#ff9a2a'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-4, -1); ctx.lineTo(0, 2); ctx.lineTo(4, -2); ctx.stroke(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#ff7a1c'), -12, -12, 24, 24); }
+            ctx.restore(); break;
+          }
           if (p.kind === 'vial') {                         // стеклянная склянка с зелёным ядом: кружится в полёте
             ctx.save(); ctx.translate(p.x, p.y - z - 8); ctx.rotate((p.t || 0) * 10); ctx.lineJoin = 'round';
             ctx.beginPath(); ctx.arc(0, 1.4, 4.2, 0, T2); ctx.fillStyle = '#5fe83a'; ctx.fill(); ctx.lineWidth = 1.3; ctx.strokeStyle = '#170a0f'; ctx.stroke();

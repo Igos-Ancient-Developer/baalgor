@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261026145821';
+import * as D from './data.js?v=20261026175823';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -34,6 +34,12 @@ export class Path {
     out.x = a.x + (b.x - a.x) * t; out.y = a.y + (b.y - a.y) * t;
     out.dx = (b.x - a.x) / sl; out.dy = (b.y - a.y) / sl;
     return out;
+  }
+  // расстояние вдоль дороги до точки, ближайшей к (x, y): Магнетто стягивает врагов именно сюда
+  nearest(x, y) {
+    let best = 0, bd = Infinity;
+    for (let d = 0; d <= this.total; d += 8) { const p = this.at(d), q = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y); if (q < bd) { bd = q; best = d; } }
+    return best;
   }
 }
 
@@ -344,7 +350,7 @@ export class Sim {
 
   // ───── статусы / урон ─────
   curSpeed(e) {
-    if (e.freezeT > 0 || e.stunT > 0 || e.pullLeft > 0) return 0;
+    if (e.freezeT > 0 || e.stunT > 0 || e.pullLeft > 0 || e.magT > 0) return 0;
     let s = e.def.spd * e.spdMult;
     if (e.def.enrage) s *= 1 + (1 - e.hp / e.maxHp) * 0.9;
     return s * (1 - e.slowF);
@@ -674,6 +680,11 @@ export class Sim {
       }
       // движение
       if (e.pullLeft > 0) { const m = Math.min(e.pullLeft, 420 * dt); e.d = Math.max(0, e.d - m); e.pullLeft -= m }
+      if (e.magT > 0) {                                                        // стянут магнитом или затягивается в Гриндер: скользит по дороге к ближайшей точке
+        e.magT -= dt; const dd = e.magTo - e.d, m = Math.min(Math.abs(dd), (e.grindT ? 300 : 230) * dt); e.d += Math.sign(dd) * m;
+        if (e.grindT) { e.grindT -= dt; if (e.grindT <= 0 || Math.abs(dd) < 3) { e.grindT = 0; this.hurt(e, e.hp + 1, 'grind', { how: 'grind', tower: e.grindSrc }); if (e.dead) continue; } }
+        if (Math.abs(dd) < 3) e.magT = 0;
+      }
       const sp = this.curSpeed(e);
       if (sp > 0) {
         e.d += sp * dt;
@@ -690,6 +701,7 @@ export class Sim {
     for (const e of this.enemies) {
       if (e.dead) continue;
       if (e.air ? !d.air : !d.ground) continue;
+      if (d.grinder && (e.def.hp > st.medium || e.def.heavy && !(st.weak > 200))) continue;      // Гриндер видит только тех, кого может смолоть
       const dx = e.x - b.x, dy = e.y - b.y, d2 = dx * dx + dy * dy, rr = R + e.size * 8;
       if (d2 > rr * rr) continue;
       let v;
@@ -701,6 +713,7 @@ export class Sim {
   updateTower(b, dt) {
     const st = b.st;
     if (b.recoil > 0) b.recoil = Math.max(0, b.recoil - dt * 6);
+    if (b.throwT > 0) b.throwT -= dt;
     if (b.type === 'banner') return;
     if (b.stunT > 0) { b.stunT -= dt; return; }
     // орбитальные пилы
@@ -724,12 +737,15 @@ export class Sim {
     }
     b.cd -= dt * b.rateMult;
     if (b.cd <= 0) {
-      if (tg) { this.fire(b, tg); b.cd += 1 / st.rate; if (b.cd < 0) b.cd = 0; } else b.cd = 0;
+      if (tg) {
+        if (b.type === 'giant') { b.windT = (b.windT || 0) + dt; if (b.windT < 0.75) return; b.windT = 0; }      // Гигант сначала наклоняется за камнем, поднимает и замахивается
+        this.fire(b, tg); b.cd += 1 / st.rate; if (b.cd < 0) b.cd = 0;
+      } else { b.cd = 0; b.windT = 0; }
     }
   }
   fire(b, tg) {
     const st = b.st, X = b.x, Y = b.y;
-    b.recoil = 1;
+    b.recoil = 1; b.throwT = b.type === 'giant' ? 0.8 : b.type === 'grinder' ? 0.7 : b.type === 'saw' ? 0.3 : 0;
     const dm = b.dmgMult;
     switch (b.type) {
       case 'bolt': {
@@ -782,6 +798,44 @@ export class Sim {
         }
         this.emit('pulse', { b, x: X, y: Y, r: R, collapse: !!collapse });
         this.emit('shot', { b, kind: 'void', x: X, y: Y, a: 0 });
+        break;
+      }
+      case 'magnet': {
+        b.pulses = (b.pulses || 0) + 1; const R = st.range * CELL; let n = 0;
+        for (const e of this.enemies) {
+          if (e.dead) continue;
+          const dx = X - e.x, dy = Y - e.y, d = Math.hypot(dx, dy);
+          if (d > R + e.size * 8) continue;
+          const dn = e.path.nearest(X, Y), diff = dn - e.d, lim = st.pull * (e.def.heavy ? 0.45 : 1);
+          if (Math.abs(diff) > 4) { e.magTo = e.d + Math.sign(diff) * Math.min(Math.abs(diff), lim); e.magT = 1.2; e.grindT = 0; n++; }
+          if (st.stun) this.stun(e, st.stun);
+          if (st.dmg) this.hurt(e, st.dmg * dm, 'lightning', { how: 'lightning', tower: b, dx: dx / (d || 1), dy: dy / (d || 1) });
+        }
+        this.emit('pulse', { b, x: X, y: Y, r: R, collapse: false, magnet: true });
+        this.emit('shot', { b, kind: 'magnet', x: X, y: Y, a: 0 });
+        break;
+      }
+      case 'grinder': {
+        const R = st.range * CELL;
+        const mag = this.buildings.some((o) => o.kind === 'tower' && o.type === 'magnet' && !o.dead && Math.hypot(o.x - X, o.y - Y) <= 3.3 * CELL);       // рядом Магнетто: мелют и средних, пачкой вдвое больше
+        const cap = mag ? st.medium : st.weak, cnt = st.grind * (mag ? 2 : 1), pool = [];
+        for (const e of this.enemies) {
+          if (e.dead || e.air || e.def.heavy && !(mag && st.weak > 200) || e.def.hp > cap) continue;
+          const d = Math.hypot(e.x - X, e.y - Y); if (d > R + e.size * 8) continue; pool.push([d, e]);
+        }
+        if (!pool.length) { b.cd = 0.3 - 1 / st.rate; b.recoil = 0; b.throwT = 0; break; }
+        pool.sort((a, c) => a[0] - c[0]);
+        for (const [, e] of pool.slice(0, cnt)) { e.magTo = e.path.nearest(X, Y); e.magT = 0.7; e.grindT = 0.55; e.grindSrc = b; }
+        this.emit('grind', { b, x: X, y: Y, n: Math.min(cnt, pool.length), mag });
+        this.emit('shot', { b, kind: 'grinder', x: X, y: Y, a: 0 });
+        break;
+      }
+      case 'giant': {
+        const dist = Math.hypot(tg.x - X, tg.y - Y), T = Math.min(1.6, Math.max(0.7, dist / 210));
+        const p = this.predict(tg, T);
+        this.projs.push({ kind: 'shell', rock: true, x0: X, y0: Y - 26, x1: p.x, y1: p.y, x: X, y: Y - 26, t: 0, T, dmg: st.dmg * dm, r: st.splash * CELL,
+          fire: st.fire, fireT: st.fireT, quake: st.quake, owner: b });
+        this.emit('shot', { b, kind: 'giant', x: X, y: Y, a: Math.atan2(p.y - Y, p.x - X) });
         break;
       }
       case 'harpoon': {
@@ -939,6 +993,7 @@ export class Sim {
     const crit = !!(p.crit && !p.bomblet && this.rng() < p.crit);       // критический залп: сильнее и разносит врагов в клочья
     this.explode(p.x1, p.y1, p.r, crit ? p.dmg * p.critMult : p.dmg, 'blast', { ...src, crit, kind: p.bomblet ? 'bomblet' : 'shell' });
     if (p.fire) this.zones.push({ kind: 'fire', x: p.x1, y: p.y1, r: p.r * 0.9, t: p.fireT, tick: 0, dps: p.fire, owner: p.owner });
+    if (p.quake) for (const e of this.enemies) if (!e.dead && !e.air && Math.hypot(e.x - p.x1, e.y - p.y1) <= p.r + e.size * 8) this.stun(e, p.quake);
     return true;
   }
   updShard(p, dt) {

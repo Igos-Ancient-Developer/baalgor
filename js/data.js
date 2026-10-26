@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261026145821';
+import { COLS, ROWS } from './layouts.js?v=20261026175823';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD = 80;
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261026145821';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261026175823';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -110,7 +110,7 @@ export const TOWERS = {
     },
   },
   toxic: {
-    name: 'Алхимик', cost: 95, air: false, ground: true,
+    name: 'Дом алхимика', cost: 95, air: false, ground: true,
     short: 'Склянки с ядом. Яд копится и игнорирует броню. Только земля.',
     lv: [
       { dmg: 12, rate: 0.8, range: 3.2, splash: 0.9, poison: 11, poisonT: 4, stacks: 3 },
@@ -127,7 +127,7 @@ export const TOWERS = {
     },
   },
   saw: {
-    name: 'Пиломёт', cost: 130, air: false, ground: true,
+    name: 'Пилорама', cost: 130, air: false, ground: true,
     short: 'Пила-бумеранг режет всех на пути туда и обратно. Только земля.',
     lv: [
       { dmg: 37, rate: 0.75, range: 3.2 },
@@ -212,7 +212,60 @@ TOWERS.harpoon = {
       { cost: 440, dmg: 440, rate: 0.5, range: 6.2, splash: 1.5, shred: 0.6, heavyMult: 1.6 } ] },
   },
 };
-export const TOWER_ORDER = ['bolt', 'frost', 'mortar', 'tesla', 'toxic', 'saw', 'banner', 'flame', 'voidwell', 'harpoon'];
+
+// ───── Новые здания: Магнетто (притягивает врагов по дороге к себе), Гриндер (затягивает слабых в двери и перемалывает), Гигант (кидает валуны) ─────
+TOWERS.magnet = {
+  name: 'Магнетто', cost: 130, air: true, ground: true, utility: true,
+  short: 'Не бьёт сам: мощный магнит стягивает врагов по дороге к башне, и они сбиваются в кучу. Вместе с Гриндером перемалывают и средних.',
+  lv: [
+    { rate: 0.2, range: 2.8, pull: 70 },
+    { cost: 110, rate: 0.22, range: 3.0, pull: 100 },
+    { cost: 170, rate: 0.25, range: 3.2, pull: 130 },
+  ],
+  branches: {
+    A: { name: 'Гравитация', desc: 'Огромный радиус и сила: стягивает толпу с половины карты.', lv: [
+      { cost: 270, rate: 0.26, range: 3.7, pull: 190 },
+      { cost: 410, rate: 0.3, range: 4.2, pull: 260 } ] },
+    B: { name: 'Электромагнит', desc: 'Притягивает и оглушает: враги замирают в куче и получают разряд.', lv: [
+      { cost: 260, rate: 0.26, range: 3.3, pull: 150, stun: 0.8, dmg: 30 },
+      { cost: 400, rate: 0.3, range: 3.6, pull: 190, stun: 1.2, dmg: 60 } ] },
+  },
+};
+TOWERS.grinder = {
+  name: 'Гриндер', cost: 160, air: false, ground: true, grinder: true,
+  short: 'Двери распахиваются, затягивают слабых врагов пачками и перемалывают в труху. Рядом с Магнетто берёт и средних.',
+  lv: [
+    { rate: 0.33, range: 1.7, grind: 2, weak: 135, medium: 330 },
+    { cost: 110, rate: 0.38, range: 1.85, grind: 3, weak: 135, medium: 330 },
+    { cost: 180, rate: 0.42, range: 2.0, grind: 4, weak: 135, medium: 330 },
+  ],
+  branches: {
+    A: { name: 'Мясорубка', desc: 'Огромная пасть: до 7 врагов за раз и быстрый цикл.', lv: [
+      { cost: 300, rate: 0.5, range: 2.2, grind: 6, weak: 135, medium: 330 },
+      { cost: 460, rate: 0.6, range: 2.5, grind: 8, weak: 135, medium: 330 } ] },
+    B: { name: 'Дробилка', desc: 'Перемалывает и средних врагов даже без Магнетто; рядом с ним — тяжёлых.', lv: [
+      { cost: 290, rate: 0.4, range: 2.1, grind: 4, weak: 260, medium: 480 },
+      { cost: 450, rate: 0.45, range: 2.3, grind: 5, weak: 360, medium: 700 } ] },
+  },
+};
+TOWERS.giant = {
+  name: 'Гигант', cost: 220, air: false, ground: true, stages3: true, defaultMode: 2,
+  short: 'Прикованный титан швыряет валуны: тяжёлый взрывной удар по площади. Три облика: камень, мрамор, огонь.',
+  lv: [
+    { dmg: 95, rate: 0.36, range: 4.0, splash: 1.0 },
+    { cost: 150, dmg: 150, rate: 0.38, range: 4.2, splash: 1.1 },
+    { cost: 240, dmg: 240, rate: 0.4, range: 4.4, splash: 1.2 },
+  ],
+  branches: {
+    A: { name: 'Белый титан', desc: 'Валуны ледяного мрамора оглушают всех в зоне падения.', lv: [
+      { cost: 330, dmg: 300, rate: 0.42, range: 4.6, splash: 1.3, quake: 0.8 },
+      { cost: 500, dmg: 420, rate: 0.45, range: 4.9, splash: 1.45, quake: 1.2 } ] },
+    B: { name: 'Огненный титан', desc: 'Раскалённые валуны: пылающая земля жжёт всех, кто идёт по ней.', lv: [
+      { cost: 320, dmg: 330, rate: 0.42, range: 4.6, splash: 1.3, fire: 40, fireT: 4 },
+      { cost: 490, dmg: 460, rate: 0.45, range: 4.9, splash: 1.45, fire: 70, fireT: 5.5 } ] },
+  },
+};
+export const TOWER_ORDER = ['bolt', 'frost', 'mortar', 'tesla', 'toxic', 'saw', 'banner', 'flame', 'voidwell', 'harpoon', 'magnet', 'grinder', 'giant'];
 
 // ───────────────────────── Премиум-башни ─────────────────────────
 // Продаются только за донат-кристаллы. Это усиленные версии обычных башен (та же механика и дерево улучшений, сильнее характеристики,
@@ -286,8 +339,21 @@ export const ENEMIES = {
   lich:     { name: 'Лич',            hp: 760, spd: 15, gold: 0, lives: 2, size: 1.4,  atk: 20, armor: 0.2, summon: 10, heavy: true, blood: 'bone', pts: 0.05 },
   yeti:     { name: 'Ледяной йети',   hp: 480, spd: 19, gold: 0, lives: 2, size: 1.3,  atk: 18, armor: 0.15, heavy: true, blood: 'ice', pts: 0.04 },
   ogre:     { name: 'Огр',            hp: 900, spd: 14, gold: 0, lives: 2, size: 1.45, atk: 22, armor: 0.2, stomp: 9, heavy: true, blood: 'red', pts: 0.06 },
+  // ───── новые монстры по секторам (sector: появляются только на картах своего сектора) ─────
+  anubis:    { name: 'Анубис',           hp: 300,  spd: 34, gold: 0, lives: 1, size: 1.1,  atk: 12, armor: 0.15, blood: 'dark', pts: 0.03, sector: 'desert' },
+  djinn:     { name: 'Злой джинн',       hp: 240,  spd: 46, gold: 0, lives: 1, size: 1.05, atk: 10, ghost: true, blink: 7, blood: 'ichor', pts: 0.03, sector: 'desert' },
+  sandgolem: { name: 'Песчаный голем',   hp: 640,  spd: 16, gold: 0, lives: 2, size: 1.35, atk: 18, armor: 0.25, heavy: true, blood: 'sand', pts: 0.045, sector: 'desert' },
+  pharaoh:   { name: 'Мумия фараона',    hp: 1000, spd: 15, gold: 0, lives: 2, size: 1.5,  atk: 22, armor: 0.2, summon: 12, heavy: true, blood: 'sand', pts: 0.06, sector: 'desert' },
+  wolf:      { name: 'Снежный волк',    hp: 85,   spd: 86, gold: 0, lives: 1, size: 0.95, atk: 7,  blood: 'red', sector: 'ice' },
+  iceskel:   { name: 'Ледяной скелет',   hp: 120,  spd: 40, gold: 0, lives: 1, size: 1.0,  atk: 8,  immune: ['poison'], blood: 'ice', sector: 'ice' },
+  snowgolem: { name: 'Снежный голем',    hp: 600,  spd: 17, gold: 0, lives: 2, size: 1.3,  atk: 18, armor: 0.1, heavy: true, blood: 'ice', pts: 0.04, sector: 'ice' },
+  ultrayeti: { name: 'Ультра-йети',      hp: 1300, spd: 18, gold: 0, lives: 3, size: 1.55, atk: 26, armor: 0.25, heavy: true, blood: 'ice', pts: 0.07, sector: 'ice' },
+  imp:       { name: 'Бес',              hp: 60,   spd: 72, gold: 0, lives: 1, size: 0.85, atk: 6,  blood: 'red', sector: 'hell' },
+  pinky:     { name: 'Бычий демон',      hp: 230,  spd: 56, gold: 0, lives: 1, size: 1.15, atk: 14, armor: 0.1, enrage: true, blood: 'red', pts: 0.02, sector: 'hell' },
+  lavagolem: { name: 'Лавовый голем',    hp: 820,  spd: 15, gold: 0, lives: 2, size: 1.35, atk: 20, armor: 0.25, heavy: true, blood: 'dark', pts: 0.05, sector: 'hell' },
+  baron:     { name: 'Барон ада',        hp: 1500, spd: 14, gold: 0, lives: 3, size: 1.6,  atk: 28, armor: 0.2, stomp: 8, heavy: true, blood: 'red', pts: 0.08, sector: 'hell' },
 };
-export const HEAVY_CAP = { yeti: 2, knight: 3, butcher: 2, lich: 1, ogre: 2 };      // не больше стольких за волну
+export const HEAVY_CAP = { yeti: 2, knight: 3, butcher: 2, lich: 1, ogre: 2, sandgolem: 2, pharaoh: 1, snowgolem: 2, ultrayeti: 1, lavagolem: 2, baron: 1 };      // не больше стольких за волну
 
 // Масштаб здоровья/награды по номеру волны
 export const TUNE = { hp1: 0.10, hp2: 0.0075, gold1: 0.035 };
@@ -301,17 +367,19 @@ export const waveGap = (n) => 26 + Math.min(8, n * 0.25);   // пауза пос
 // ───── Волны кампании ─────
 // Чем дальше уровень, тем больше волн, врагов и видов врагов. Кладбище и лес (первые два сектора): только простая нежить.
 // Враги открываются по номеру уровня; боссы — только в последней волне трёх поздних уровней.
-const UNLOCK_LV = { skeleton: 1, zombie: 2, goblin: 3, hound: 5, bat: 8, mummy: 9, slime: 10, knight: 11, butcher: 12, gargoyle: 13, yeti: 14, berserker: 14, ogre: 16, reaper: 17, lich: 18 };
-const COST = { skeleton: 1.2, zombie: 1.8, goblin: 1.4, mummy: 2.4, hound: 2.0, bat: 1.2, slime: 2.8, knight: 8, butcher: 11, gargoyle: 4.8, yeti: 14, berserker: 6, ogre: 20, reaper: 9.5, lich: 18 };
-const IVAL = { skeleton: 1.0, zombie: 1.4, goblin: 0.9, mummy: 1.5, hound: 0.8, bat: 0.9, slime: 1.3, knight: 3, butcher: 4, gargoyle: 1.4, yeti: 4.5, berserker: 1.4, ogre: 5, reaper: 1.8, lich: 5 };
+const UNLOCK_LV = { skeleton: 1, zombie: 2, goblin: 3, hound: 5, bat: 8, mummy: 9, slime: 10, knight: 11, butcher: 12, gargoyle: 13, yeti: 14, berserker: 14, ogre: 16, reaper: 17, lich: 18,
+  anubis: 10, djinn: 11, sandgolem: 11, pharaoh: 12, wolf: 13, iceskel: 14, snowgolem: 15, ultrayeti: 16, imp: 17, pinky: 18, lavagolem: 18, baron: 19 };
+const COST = { skeleton: 1.2, zombie: 1.8, goblin: 1.4, mummy: 2.4, hound: 2.0, bat: 1.2, slime: 2.8, knight: 8, butcher: 11, gargoyle: 4.8, yeti: 14, berserker: 6, ogre: 20, reaper: 9.5, lich: 18, anubis: 6.5, djinn: 5.5, sandgolem: 13, pharaoh: 21, wolf: 1.8, iceskel: 2.6, snowgolem: 12.5, ultrayeti: 26, imp: 1.6, pinky: 5, lavagolem: 17, baron: 29 };
+const IVAL = { skeleton: 1.0, zombie: 1.4, goblin: 0.9, mummy: 1.5, hound: 0.8, bat: 0.9, slime: 1.3, knight: 3, butcher: 4, gargoyle: 1.4, yeti: 4.5, berserker: 1.4, ogre: 5, reaper: 1.8, lich: 5, anubis: 2.2, djinn: 1.6, sandgolem: 4.5, pharaoh: 5, wolf: 0.7, iceskel: 1.2, snowgolem: 4.5, ultrayeti: 5, imp: 0.8, pinky: 1.5, lavagolem: 4.5, baron: 5 };
 // «эквивалентный» номер волны на кривой 1..30: нужен для роста здоровья врагов
 export const eqWave = (L, n, T) => { const s = 1 + (L - 1) * 0.25, e = 7 + (L - 1) * 2.4; return Math.max(1, Math.round(T > 1 ? s + ((e - s) * (n - 1)) / (T - 1) : s)); };
 export function genWave(L, n, T) {
   let a = (L * 1009 + n * 7919) | 0; const R = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const W0 = (LEVELS[L - 1] && LEVELS[L - 1].wavesFull) || T, nv = T > 1 ? 1 + ((n - 1) * (1 + 0.35 * (W0 - T) / (T - 1))) : n;      // при сжатии уровня до 15 волн каждая волна чуть сильнее (экономика копится по времени, поэтому сжимаем лишь на треть)
   const budget = 3 + (nv - 1) * (1.0 + 0.075 * L) + 0.25 * L;
-  const STRONG = ['knight', 'butcher', 'yeti', 'ogre', 'reaper', 'berserker', 'lich'], SIDE = ['bat', 'gargoyle'];     // сильные — не в первых волнах уровня; лекарь и летуны — не основа волны
-  const avail = Object.keys(UNLOCK_LV).filter((t) => UNLOCK_LV[t] <= L && !(L === 2 && t === 'zombie' && n < 2) && !(n < Math.max(5, T * 0.45) && STRONG.includes(t)) && !(L === UNLOCK_LV[t] && L > 2 && n < T * 0.4));        // новый вид выходит в середине своего уровня, а сильные — не в первых волнах
+  const STRONG = ['knight', 'butcher', 'yeti', 'ogre', 'reaper', 'berserker', 'lich', 'sandgolem', 'pharaoh', 'snowgolem', 'ultrayeti', 'lavagolem', 'baron', 'anubis', 'pinky'], SIDE = ['bat', 'gargoyle'];     // сильные — не в первых волнах уровня; лекарь и летуны — не основа волны
+  const sec = LEVELS[L - 1] && LEVELS[L - 1].sector;       // монстры сектора выходят только на его картах
+  const avail = Object.keys(UNLOCK_LV).filter((t) => UNLOCK_LV[t] <= L && (!ENEMIES[t].sector || ENEMIES[t].sector === sec) && !(L === 2 && t === 'zombie' && n < 2) && !(n < Math.max(5, T * 0.45) && STRONG.includes(t)) && !(L === UNLOCK_LV[t] && L > 2 && n < T * 0.4));        // новый вид выходит в середине своего уровня, а сильные — не в первых волнах
   const w = (t) => (1 + R()) * (UNLOCK_LV[t] <= 2 ? 1.3 : Math.min(1, 0.25 + (L - UNLOCK_LV[t] + n / T) / 2.5)) / (1 + Math.max(0, L - UNLOCK_LV[t] - 6) * 0.12) * (HEAVY_CAP[t] ? 0.45 : 1);          // новые виды сначала редки, потом становятся обычными; совсем старые — реже
   const picks = [], pool = [...avail], k = Math.min(pool.length, 1 + (n >= 3 ? 1 : 0) + (n >= T * 0.6 && L >= 5 ? 1 : 0));
   while (picks.length < k) {
@@ -393,6 +461,18 @@ export const TIERS = {
     [P('power', 'Давление', { mul: { dmg: 1.8 } }), P('speed', 'Частые импульсы', { mul: { rate: 1.45 } }), P('special', 'Притяжение', { mul: { pull: 1.5 }, add: { range: 0.2 } })],
     [P('power', 'Разрыв ткани', { mul: { dmg: 1.7 } }), P('speed', 'Резонанс бездны', { mul: { rate: 1.4 } }), P('special', 'Горизонт событий', { mul: { pull: 1.35 }, add: { range: 0.2, slow: 0.1 } })],
   ],
+  magnet: [
+    [P('power', 'Сильное поле', { mul: { pull: 1.5 } }), P('speed', 'Частые импульсы', { mul: { rate: 1.45 } }), P('special', 'Широкое поле', { add: { range: 0.4 }, mul: { pull: 1.2 } })],
+    [P('power', 'Сверхпроводник', { mul: { pull: 1.5 } }), P('speed', 'Разгон катушек', { mul: { rate: 1.4 } }), P('special', 'Дальний полюс', { add: { range: 0.4 }, mul: { pull: 1.2 } })],
+  ],
+  grinder: [
+    [P('power', 'Широкая пасть', { add: { grind: 1 } }), P('speed', 'Быстрые валы', { mul: { rate: 1.5 } }), P('special', 'Крепкие зубья', { add: { range: 0.25 }, mul: { weak: 1.35 } })],
+    [P('power', 'Ненасытность', { add: { grind: 2 } }), P('speed', 'Турбина', { mul: { rate: 1.45 } }), P('special', 'Стальные катки', { add: { range: 0.25 }, mul: { weak: 1.35, medium: 1.25 } })],
+  ],
+  giant: [
+    [P('power', 'Тяжёлые глыбы', { mul: { dmg: 1.6 } }), P('speed', 'Крепкая хватка', { mul: { rate: 1.45 } }), P('special', 'Дробящий удар', { mul: { splash: 1.3, dmg: 1.25 } })],
+    [P('power', 'Скальные валуны', { mul: { dmg: 1.7 } }), P('speed', 'Не знает усталости', { mul: { rate: 1.4 } }), P('special', 'Землетрясение', { mul: { splash: 1.25, dmg: 1.3 }, add: { range: 0.3 } })],
+  ],
   harpoon: [
     [P('power', 'Тяжёлый гарпун', { mul: { dmg: 1.65 } }), P('speed', 'Лебёдка', { mul: { rate: 1.35 } }), P('special', 'Оптика', { add: { range: 0.4, armorPierce: 0.1 } })],
     [P('power', 'Зазубрины', { mul: { dmg: 1.75 } }), P('speed', 'Скоростной ворот', { mul: { rate: 1.3 } }), P('special', 'Дальний прицел', { add: { range: 0.4, armorPierce: 0.1 } })],
@@ -463,6 +543,7 @@ export function econUpgradeCost(type, level) {
 
 // Закрытые вещи: открываются в Кузнице за души или за донат-кристаллы. Свободны с начала только арбалет и рудник.
 export const UNLOCKS = {
+  magnet: { souls: 280, gems: 47 }, grinder: { souls: 340, gems: 57 }, giant: { souls: 420, gems: 70 },
   frost: { souls: 30, gems: 5 }, toxic: { souls: 45, gems: 8 }, mortar: { souls: 60, gems: 10 },
   flame: { souls: 100, gems: 17 }, banner: { souls: 120, gems: 20 }, saw: { souls: 150, gems: 25 }, harpoon: { souls: 190, gems: 32 }, tesla: { souls: 230, gems: 38 },
   bank: { souls: 260, gems: 43 }, voidwell: { souls: 320, gems: 53 }, altar: { souls: 380, gems: 63 },
