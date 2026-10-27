@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027145539';
-import * as D from './data.js?v=20261027145539';
-import * as M from './meta.js?v=20261027145539';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027145539';
-import { url as imgUrl } from './sprites.js?v=20261027145539';
-import { Net } from './net.js?v=20261027145539';
-import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027145539';
-import { fillPlates, gemIc } from './res.js?v=20261027145539';
-import { gemHtml } from './gem3d.js?v=20261027145539';
-import { Wallet } from './wallet.js?v=20261027145539';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027145926';
+import * as D from './data.js?v=20261027145926';
+import * as M from './meta.js?v=20261027145926';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027145926';
+import { url as imgUrl } from './sprites.js?v=20261027145926';
+import { Net } from './net.js?v=20261027145926';
+import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027145926';
+import { fillPlates, gemIc } from './res.js?v=20261027145926';
+import { gemHtml } from './gem3d.js?v=20261027145926';
+import { Wallet } from './wallet.js?v=20261027145926';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -223,12 +223,11 @@ export class Menus {
           ${my && (my.duration || my.wave) ? `<div class="lvp-meta">${my.wave ? `волна ${my.wave}` : ''}${my.wave && my.duration ? ' · ' : ''}${my.duration ? `<img src="${bareGlyphUrl('hourglass', 14)}" alt="">${clock(my.duration)}` : ''}</div>` : ''}
           ${items.length ? `<div class="lvp-set">${items.map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 3))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('')}</div>` : ''}</div>`
         : `<div class="lvp-none">Не пройдено на этой сложности</div>`;
-      card.innerHTML = `<div class="lvp-h"><div class="lvp-t"><b>${l.name}</b><small>${SECT[l.sector] || ''} · рубеж ${l.lvl}</small></div><button class="lvp-x" aria-label="Закрыть">×</button></div>
+      card.innerHTML = `<div class="lvp-h"><div class="lvp-t"><b>${l.name}</b><small>${SECT[l.sector] || ''} · рубеж ${l.lvl}</small></div></div>
         <div class="dchips">${chips}</div><div class="dnm" style="--c:${d.color}"><b>${d.name}</b><small>${sub}</small></div>
         <div class="lvp-st">Твой результат</div>${mine}
         <div class="lvp-st">Лучшие игроки</div><div class="lvp-top"></div>
         <div class="lvp-st">Друзья</div><div class="lvp-fr"></div>`;
-      card.querySelector('.lvp-x').onclick = () => { c.sfx.play('back'); this.closeLevel(); };
       card.querySelectorAll('.dchip').forEach((b) => { b.onclick = () => { const i = +b.dataset.i; if (i === diff) return; c.sfx.play('click'); diff = i; data = { top: null, me: null, friends: null, loaded: false }; render(); load(); }; });
       // топ-3
       const tb = card.querySelector('.lvp-top');
@@ -243,13 +242,7 @@ export class Menus {
       else if (!data.loaded) fb.innerHTML = '<div class="skel"></div>'.repeat(2);
       else if (!fr || fr.length < 2) { fb.innerHTML = '<div class="lvp-hint">Здесь будут твои друзья и твоё место среди них. Друг появляется, когда заходит в игру по твоей ссылке.</div>'; fb.appendChild(invite); }
       else {
-        const i = fr.findIndex((r) => meU && r.tg_id === meU.id), mr = fr[i], lines = [];
-        const ahead = i > 0 ? fr[i - 1] : null, behind = i >= 0 && i < fr.length - 1 ? fr[i + 1] : null;
-        let msg = '';
-        if (i === 0) msg = `<b>Ты впереди всех друзей</b>${behind && behind.score ? `, ${nameEsc(behind.name)} отстаёт на ${fmt(mr.score - behind.score)}` : ''}`;
-        else if (i > 0) msg = `Ты <b>${i + 1}-й из ${fr.length}</b>: ${nameEsc(ahead.name)} впереди на ${fmt(Math.max(0, ahead.score - (mr.score || 0)))}${behind && behind.score ? `, ${nameEsc(behind.name)} позади` : ''}`;
-        fb.innerHTML = `${msg ? `<div class="lvp-cmp">${msg}</div>` : ''}`;
-        fr.slice(0, 8).forEach((r, k) => fb.appendChild(runRow({ ...r, rank: k + 1 }, 'trow')));
+        fr.slice(0, 6).forEach((r, k) => fb.appendChild(runRow({ ...r, rank: k + 1 }, 'trow')));
         fb.appendChild(invite);
       }
       place(false);
