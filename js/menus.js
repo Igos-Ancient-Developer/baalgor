@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027154057';
-import * as D from './data.js?v=20261027154057';
-import * as M from './meta.js?v=20261027154057';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027154057';
-import { url as imgUrl } from './sprites.js?v=20261027154057';
-import { Net } from './net.js?v=20261027154057';
-import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027154057';
-import { fillPlates, gemIc } from './res.js?v=20261027154057';
-import { gemHtml } from './gem3d.js?v=20261027154057';
-import { Wallet } from './wallet.js?v=20261027154057';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027154619';
+import * as D from './data.js?v=20261027154619';
+import * as M from './meta.js?v=20261027154619';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027154619';
+import { url as imgUrl } from './sprites.js?v=20261027154619';
+import { Net } from './net.js?v=20261027154619';
+import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027154619';
+import { fillPlates, gemIc } from './res.js?v=20261027154619';
+import { gemHtml } from './gem3d.js?v=20261027154619';
+import { Wallet } from './wallet.js?v=20261027154619';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -269,14 +269,12 @@ export class Menus {
       card.style.setProperty('--c', d.color);
       card.innerHTML = `<div class="dport"><div class="arch"><img src="${imgUrl('ui/portrait_' + d.demon + '.webp')}" alt=""></div>
           <div class="dname">${d.name}</div>
-          <div class="dskulls">${[0, 1, 2, 3, 4].map((k) => `<img class="${k <= i ? '' : 'off'}" src="${bareGlyphUrl('skull', 22)}" alt="">`).join('')}</div>
           ${best ? `<div class="dbest"><img src="${SC()}" alt="">${fmt(best)}</div>` : ''}
         </div>
         ${unlocked ? '' : `<div class="dlock"><img src="${iconUrl(glyphIcon('skulllock', { size: 96, bg: PALETTE.lock, frame: 'dark' }))}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}
         <div class="dbody"><div class="dsub">Испытания</div>${rows}<div class="dsub">Лучшие на этом рубеже</div><div class="dtop">${'<div class="skel"></div>'.repeat(3)}</div></div>
-        <div class="dfoot"><button class="btn big play">Играть</button><button class="btn ghost board"><img src="${bareGlyphUrl('crown', 22)}" alt="" style="width:26px;height:26px"></button></div>`;
+        <div class="dfoot"><button class="btn big play">Играть</button></div>`;
       card.querySelector('.play').onclick = () => { if (!unlocked) { c.sfx.play('error'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); return; } c.sfx.play('click'); c.startLevel(l.id, i); };
-      card.querySelector('.board').onclick = () => { c.sfx.play('click'); this.openBoard({ level: l.id, diff: i }); };
       car.appendChild(card); return card;
     });
     const dots = $('#ddots'); dots.innerHTML = D.DIFFS.map(() => '<i></i>').join('');
