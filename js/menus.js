@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027154619';
-import * as D from './data.js?v=20261027154619';
-import * as M from './meta.js?v=20261027154619';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027154619';
-import { url as imgUrl } from './sprites.js?v=20261027154619';
-import { Net } from './net.js?v=20261027154619';
-import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027154619';
-import { fillPlates, gemIc } from './res.js?v=20261027154619';
-import { gemHtml } from './gem3d.js?v=20261027154619';
-import { Wallet } from './wallet.js?v=20261027154619';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027154821';
+import * as D from './data.js?v=20261027154821';
+import * as M from './meta.js?v=20261027154821';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027154821';
+import { url as imgUrl } from './sprites.js?v=20261027154821';
+import { Net } from './net.js?v=20261027154821';
+import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027154821';
+import { fillPlates, gemIc } from './res.js?v=20261027154821';
+import { gemHtml } from './gem3d.js?v=20261027154821';
+import { Wallet } from './wallet.js?v=20261027154821';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -273,21 +273,23 @@ export class Menus {
         </div>
         ${unlocked ? '' : `<div class="dlock"><img src="${iconUrl(glyphIcon('skulllock', { size: 96, bg: PALETTE.lock, frame: 'dark' }))}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}
         <div class="dbody"><div class="dsub">Испытания</div>${rows}<div class="dsub">Лучшие на этом рубеже</div><div class="dtop">${'<div class="skel"></div>'.repeat(3)}</div></div>
-        <div class="dfoot"><button class="btn big play">Играть</button></div>`;
-      card.querySelector('.play').onclick = () => { if (!unlocked) { c.sfx.play('error'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); return; } c.sfx.play('click'); c.startLevel(l.id, i); };
-      car.appendChild(card); return card;
+        `;
+      const foot = el('div', 'dfoot', '<button class="btn big play">Играть</button>');           // кнопка стоит под плитой, а не поверх прокручиваемого текста
+      const col = el('div', 'dcol'); col.append(card, foot);
+      foot.querySelector('.play').onclick = () => { if (!unlocked) { c.sfx.play('error'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); return; } c.sfx.play('click'); c.startLevel(l.id, i); };
+      car.appendChild(col); card.col = col; return card;
     });
     const dots = $('#ddots'); dots.innerHTML = D.DIFFS.map(() => '<i></i>').join('');
     let cur = -1;
     const setCur = () => {
       const mid = car.scrollLeft + car.clientWidth / 2; let best = 0, bd = 1e9;
-      cards.forEach((cd, i) => { const d = Math.abs(cd.offsetLeft + cd.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = i; } });
+      cards.forEach((cd, i) => { const d = Math.abs(cd.col.offsetLeft + cd.col.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = i; } });
       if (best === cur) return; cur = best;
-      cards.forEach((cd, i) => cd.classList.toggle('cur', i === best));
+      cards.forEach((cd, i) => { cd.classList.toggle('cur', i === best); cd.col.classList.toggle('cur', i === best); });
       [...dots.children].forEach((d, i) => d.classList.toggle('on', i === best)); dots.style.setProperty('--c', D.DIFFS[best].color);
       $('#d-prev').disabled = best === 0; $('#d-next').disabled = best === cards.length - 1;
     };
-    const go = (i, smooth = true) => { i = Math.max(0, Math.min(cards.length - 1, i)); const cd = cards[i]; car.scrollTo({ left: cd.offsetLeft - (car.clientWidth - cd.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'auto' }); };
+    const go = (i, smooth = true) => { i = Math.max(0, Math.min(cards.length - 1, i)); const cd = cards[i].col; car.scrollTo({ left: cd.offsetLeft - (car.clientWidth - cd.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'auto' }); };
     let raf = 0; car.onscroll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(setCur); };
     $('#d-prev').onclick = () => { c.sfx.play('click'); go(cur - 1); }; $('#d-next').onclick = () => { c.sfx.play('click'); go(cur + 1); };
     const start = this.startDiff(l.id);
