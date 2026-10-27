@@ -1,5 +1,5 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=20261027144449';
+import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261027145539';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
@@ -29,7 +29,24 @@ export const Net = {
   async levelRank(levelId, diff) { const me = this.me(); if (!me) return null; const r = await rpc('level_rank', { p_level: levelId, p_diff: diff, p_tg: me.id }); return r[0] || null; },
   globalBoard(offset = 0, limit = 50) { return rpc('global_board', { p_limit: limit, p_offset: offset }); },
   async globalRank() { const me = this.me(); if (!me) return null; const r = await rpc('global_rank', { p_tg: me.id }); return r[0] || null; },
-  invalidate(levelId) { cache.delete('tops:' + levelId); },
+  invalidate(levelId) { cache.delete('tops:' + levelId); cache.forEach((_, k) => { if (k.startsWith('fr:' + levelId + ':')) cache.delete(k); }); },
+  // друзья: я и приглашённые мной/пригласившие меня, по местам на уровне (нужна подпись Telegram; без неё и без серверных функций — null)
+  async levelFriends(levelId, diff) { if (!this.canSubmit()) return null; return cached(`fr:${levelId}:${diff}`, 15000, () => rpc('level_friends', { init_data: tg.initData, p_level: levelId, p_diff: diff })); },
+  // друг открыл игру по ссылке-приглашению «?startapp=f<id>»: записываем дружбу (один раз на приглашение)
+  async claimInvite() {
+    const sp = tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param, m = /^f(\d{3,15})$/.exec(sp || '');
+    if (!m || !this.canSubmit()) return null;
+    const key = 'bk_inv_' + m[1]; try { if (localStorage.getItem(key)) return null; } catch (e) { /* без хранилища */ }
+    try { const r = await rpc('friend_add', { init_data: tg.initData, p_friend: Number(m[1]) }); if (r && r.ok) { try { localStorage.setItem(key, '1'); } catch (e) { /* ок */ } cache.clear(); return r; } } catch (e) { /* нет связи */ }
+    return null;
+  },
+  // окно «поделиться» Telegram со ссылкой-приглашением; false — ссылка на приложение ещё не задана в config.js
+  invite() {
+    const me = this.me(); if (!APP_LINK || !me) return false;
+    const link = `${APP_LINK}?startapp=f${me.id}`, url = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent('Сыграй в Baalgor — сравним, кто лучше!');
+    if (tg && tg.openTelegramLink) tg.openTelegramLink(url); else window.open(url, '_blank');
+    return true;
+  },
 
   // кошелёк и магазин (серверные функции из supabase/schema.sql и supabase/functions)
   call(fn, body) { return rpc(fn, body, { timeout: 10000 }); },

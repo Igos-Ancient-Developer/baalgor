@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027144449';
-import * as D from './data.js?v=20261027144449';
-import * as M from './meta.js?v=20261027144449';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027144449';
-import { url as imgUrl } from './sprites.js?v=20261027144449';
-import { Net } from './net.js?v=20261027144449';
-import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027144449';
-import { fillPlates, gemIc } from './res.js?v=20261027144449';
-import { gemHtml } from './gem3d.js?v=20261027144449';
-import { Wallet } from './wallet.js?v=20261027144449';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027145539';
+import * as D from './data.js?v=20261027145539';
+import * as M from './meta.js?v=20261027145539';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027145539';
+import { url as imgUrl } from './sprites.js?v=20261027145539';
+import { Net } from './net.js?v=20261027145539';
+import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027145539';
+import { fillPlates, gemIc } from './res.js?v=20261027145539';
+import { gemHtml } from './gem3d.js?v=20261027145539';
+import { Wallet } from './wallet.js?v=20261027145539';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -57,11 +57,11 @@ export function runRow(r, cls = 'brow') {
   const meU = Net.me(), box = el('div', 'rwrap'), d = el('div', `${cls} rrow` + (meU && r.tg_id === meU.id ? ' me' : ''));
   d.appendChild(el('div', `rk${r.rank <= 3 ? ' r' + r.rank : ''}`, r.rank)); d.appendChild(avatar(r.photo_url || r.photo, r.name, r.tg_id));
   d.appendChild(el('div', 'nm', `${String(r.name).replace(/</g, '&lt;')}${r.username ? `<small>@${r.username}</small>` : ''}`));
-  d.appendChild(el('div', 'rs', `<img src="${SC()}" alt="">${fmt(r.score)}`));
+  d.appendChild(el('div', 'rs', r.score || r.wave ? `<img src="${SC()}" alt="">${fmt(r.score)}` : '—'));
   const arrow = el('button', 'rarr', '<i></i>'); arrow.setAttribute('aria-label', 'Подробнее'); d.appendChild(arrow);
   const items = String(r.loadout || '').split(',').filter((t) => D.TOWERS[t] || D.ECON[t]);
   const more = el('div', 'rmore', `<div class="rslots">${items.length ? items.map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 3))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('') : '<span class="rnone">набор неизвестен</span>'}</div>
-    <div class="rinfo"><div class="rl"><b>${r.lv || '–'}</b><small>${lvName(r.lv)}</small></div><div class="rt"><img src="${bareGlyphUrl('hourglass', 18)}" alt="">${clock(r.duration || 0)}<small>время забега</small></div></div>`);
+    <div class="rinfo">${r.lv ? `<div class="rl"><b>${r.lv}</b><small>${lvName(r.lv)}</small></div>` : `<div class="rl"><b>${r.wave || '–'}</b><small>волна</small></div>`}<div class="rt"><img src="${bareGlyphUrl('hourglass', 18)}" alt="">${r.duration ? clock(r.duration) : '—'}<small>${r.lv ? 'время забега' : 'время'}</small></div></div>`);
   arrow.onclick = () => { box.classList.toggle('open'); };
   box.append(d, more); return box;
 }
@@ -137,7 +137,7 @@ export class Menus {
     const s = this.save, c = this.c;
     const sc = $('#worldscroll'), map = $('#worldmap'), img = $('#worldimg');
     const H = Math.max(560, Math.min(900, (sc.clientHeight || window.innerHeight - 60) * 1.0)), f = H / MAP_H;
-    map.style.width = Math.round(MAP_W * f) + 'px'; map.style.height = Math.round(H) + 'px';
+    map.style.width = Math.round(MAP_W * f) + 'px'; map.style.height = Math.round(H) + 'px'; map.style.setProperty('--lvh', Math.round(H) + 'px');
     if (!img.src) img.src = imgUrl('ui/worldmap.webp');
     this.f = f;
     // подписи секторов
@@ -153,86 +153,118 @@ export class Menus {
       g.strokeStyle = 'rgba(255,214,90,.38)'; g.lineWidth = 15; trace();                                    // тёплое свечение пройденного пути
       g.setLineDash([2, 11]); g.strokeStyle = '#fff4b8'; g.lineWidth = 5; trace();
     }
-    // рубежи
-    const nodes = $('#nodes'); nodes.innerHTML = '';
+    // рубежи: маленькие тихие медальоны на нарисованных площадках; подробности — в плашке по нажатию
+    this.closeLevel(); const nodes = $('#nodes'); nodes.innerHTML = '';
     for (const l of D.MAPS) {
       const unlocked = M.levelUnlocked(s, l), cleared = M.levelCleared(s, l.id);
       const state = !unlocked ? 'locked' : cleared ? 'cleared' : 'avail';
       const glyph = state === 'locked' ? 'skulllock' : state === 'cleared' ? 'flag' : 'dmg';
       const bg = state === 'locked' ? PALETTE.lock : state === 'cleared' ? PALETTE.special : PALETTE.danger;
       const frame = state === 'locked' ? 'dark' : state === 'cleared' ? 'nature' : 'blood';
-      const n = el('button', `node ${state}${l.tutorial ? ' tutnode' : ''}`, `<img class="ni" src="${iconUrl(glyphIcon(l.tutorial ? 'book' : glyph, { bg, frame }))}" alt=""><div class="nl">${l.name}</div>${unlocked && !l.tutorial ? `<div class="nsk">${[0, 1, 2, 3, 4].map((i) => `<img class="${M.diffCleared(s, l.id, i) ? 'on' : ''}" src="${bareGlyphUrl('skull', 11)}" alt="">`).join('')}</div>` : ''}`);
+      const n = el('button', `node ${state}${l.tutorial ? ' tutnode' : ''}`, `<img class="ni" src="${iconUrl(glyphIcon(l.tutorial ? 'book' : glyph, { bg, frame }))}" alt="">${state === 'locked' ? '' : `<div class="nl">${l.name}</div>`}`);
+      n.dataset.id = l.id;
       const lp = P(l.pos); n.style.left = (lp[0] / MAP_W) * 100 + '%'; n.style.top = (lp[1] / MAP_H) * 100 + '%';
-      n.onclick = () => { if (state === 'locked') { c.sfx.play('error'); n.classList.remove('shake'); void n.offsetWidth; n.classList.add('shake'); return; } c.sfx.play('select'); if (l.tutorial) { c.startLevel(l.id, 1); return; } this.openDiff(l.id); };
+      n.onclick = (e) => { e.stopPropagation(); if (state === 'locked') { c.sfx.play('error'); n.classList.remove('shake'); void n.offsetWidth; n.classList.add('shake'); return; } c.sfx.play('select'); if (l.tutorial) { c.startLevel(l.id, 1); return; } if (this.lpId === l.id) this.closeLevel(); else this.openLevel(l.id); };
       nodes.appendChild(n);
     }
+    map.onclick = (e) => { if (!e.target.closest('#lvp')) this.closeLevel(); };            // тап по пустому месту карты закрывает плашку
     // прокрутка к текущему рубежу
     const target = D.MAPS.find((l) => l.id === focus) || D.MAPS.find((l) => M.levelUnlocked(s, l) && !M.levelCleared(s, l.id)) || D.MAPS[D.MAPS.length - 1];
     requestAnimationFrame(() => { const tp = P(target.pos); sc.scrollLeft = Math.max(0, tp[0] * f - sc.clientWidth / 2); sc.scrollTop = Math.max(0, tp[1] * f - sc.clientHeight / 2); });
   }
   fitWorld() { /* размер карты считается в buildWorld */ }
 
-  // ───── выбор сложности: карусель ─────
-  openDiff(levelId) {
-    const l = D.MAPS.find((q) => q.id === levelId), s = this.save, c = this.c, seq = ++this.diffSeq;
-    this.level = l; if (c.warm) c.warm(levelId);              // пока игрок выбирает сложность, готовим листы врагов и фон карты
-    $('#ds-title').textContent = l.name;
-    const car = $('#dcar'); car.innerHTML = '';
-    const cards = D.DIFFS.map((d, i) => {
-      const unlocked = M.diffUnlocked(s, l, i), best = M.bestScore(s, l.id, i);
-      const rows = diffLines(d, i).map((r) => r.k === 'sep' ? `<div class="dsub">${r.t}</div>` : `<div class="mrow ${r.cls}"><img src="${bareGlyphUrl(r.icon, 24)}" alt=""><div class="mt">${r.t}<small>${r.s}</small></div><b>${r.v}</b></div>`).join('');
-      const card = el('div', `dcard${unlocked ? '' : ' locked'}${i === 4 ? ' hc' : ''}`);
-      card.style.setProperty('--c', d.color);
-      card.innerHTML = `<div class="dport"><div class="arch"><img src="${imgUrl('ui/portrait_' + d.demon + '.webp')}" alt=""></div>
-          <div class="dname">${d.name}</div>
-          <div class="dskulls">${[0, 1, 2, 3, 4].map((k) => `<img class="${k <= i ? '' : 'off'}" src="${bareGlyphUrl('skull', 22)}" alt="">`).join('')}</div>
-          ${best ? `<div class="dbest"><img src="${SC()}" alt="">${fmt(best)}</div>` : ''}
-        </div>
-        ${unlocked ? '' : `<div class="dlock"><img src="${iconUrl(glyphIcon('skulllock', { size: 96, bg: PALETTE.lock, frame: 'dark' }))}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}
-        <div class="dbody"><div class="dsub">Испытания</div>${rows}<div class="dsub">Лучшие на этом рубеже</div><div class="dtop">${'<div class="skel"></div>'.repeat(3)}</div></div>
-        <div class="dfoot"><button class="btn big play">Играть</button><button class="btn ghost board"><img src="${bareGlyphUrl('crown', 22)}" alt="" style="width:26px;height:26px"></button></div>`;
-      card.querySelector('.play').onclick = () => { if (!unlocked) { c.sfx.play('error'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); return; } c.sfx.play('click'); c.startLevel(l.id, i); };
-      card.querySelector('.board').onclick = () => { c.sfx.play('click'); this.openBoard({ level: l.id, diff: i }); };
-      car.appendChild(card); return card;
-    });
-    const dots = $('#ddots'); dots.innerHTML = D.DIFFS.map(() => '<i></i>').join('');
-    let cur = -1;
-    const setCur = () => {
-      const mid = car.scrollLeft + car.clientWidth / 2; let best = 0, bd = 1e9;
-      cards.forEach((cd, i) => { const d = Math.abs(cd.offsetLeft + cd.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = i; } });
-      if (best === cur) return; cur = best;
-      cards.forEach((cd, i) => cd.classList.toggle('cur', i === best));
-      [...dots.children].forEach((d, i) => d.classList.toggle('on', i === best)); dots.style.setProperty('--c', D.DIFFS[best].color);
-      $('#d-prev').disabled = best === 0; $('#d-next').disabled = best === cards.length - 1;
-    };
-    const go = (i, smooth = true) => { i = Math.max(0, Math.min(cards.length - 1, i)); const cd = cards[i]; car.scrollTo({ left: cd.offsetLeft - (car.clientWidth - cd.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'auto' }); };
-    let raf = 0; car.onscroll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(setCur); };
-    $('#d-prev').onclick = () => { c.sfx.play('click'); go(cur - 1); }; $('#d-next').onclick = () => { c.sfx.play('click'); go(cur + 1); };
-    // начинаем со сложности, на которой этот уровень играли в последний раз; иначе с самой высокой пройденной; иначе с первой
-    let start = 0;
+  // ───── плашка уровня рядом с рубежом ─────
+  lvOpen() { return !!this.lpId; }
+  closeLevel(quiet) {
+    const was = !!this.lpId; this.lpId = null; this.diffSeq++;
+    if (this.lpEl) { this.lpEl.remove(); this.lpEl = null; }
+    document.querySelectorAll('#nodes .node.sel').forEach((n) => n.classList.remove('sel'));
+    return was;
+  }
+  openLevel(levelId) {
+    const l = D.MAPS.find((q) => q.id === levelId), s = this.save, c = this.c;
+    this.closeLevel(); const seq = ++this.diffSeq;
+    this.lpId = levelId; if (c.warm) c.warm(levelId);              // пока игрок смотрит плашку, готовим листы врагов и фон карты
+    const map = $('#worldmap'), sc = $('#worldscroll'), f = this.f || 1;
+    document.querySelectorAll('#nodes .node').forEach((n) => n.classList.toggle('sel', n.dataset.id === levelId));
+    // сложность: где играли в последний раз; иначе самая высокая пройденная; иначе первая
+    let diff = 0;
     const ld = (s.lastDiff || {})[l.id];
-    if (Number.isInteger(ld) && ld >= 0 && ld < D.DIFFS.length) start = ld;
-    else if (s.last && s.last.level === l.id && Number.isInteger(s.last.diff)) start = s.last.diff;
-    else D.DIFFS.forEach((d, i) => { if (M.diffCleared(s, l.id, i)) start = i; });
-    this.show('#diffsheet');
-    requestAnimationFrame(() => { go(start, false); setCur(); });
-    // топ-3 каждой сложности (всегда на виду)
-    const fill = (tops) => {
-      if (seq !== this.diffSeq) return;
-      cards.forEach((card, i) => {
-        const box = card.querySelector('.dtop'); box.innerHTML = '';
-        const rows = (tops && tops[i]) || [];
-        for (let k = 0; k < 3; k++) {
-          const r = rows[k];
-          if (!r) { box.appendChild(el('div', 'trow empty', '—')); continue; }
-          const row = el('div', 'trow' + (Net.me() && r.tg_id === Net.me().id ? ' me' : ''));
-          row.appendChild(el('div', `rk r${k + 1}`, k + 1)); row.appendChild(avatar(r.photo, r.name, r.tg_id));
-          row.appendChild(el('div', 'nm', r.name.replace(/</g, '&lt;'))); row.appendChild(el('div', 'sc', fmt(r.score)));
-          box.appendChild(row);
-        }
-      });
+    if (Number.isInteger(ld) && ld >= 0 && ld < D.DIFFS.length) diff = ld;
+    else if (s.last && s.last.level === l.id && Number.isInteger(s.last.diff)) diff = s.last.diff;
+    else D.DIFFS.forEach((d, i) => { if (M.diffCleared(s, l.id, i)) diff = i; });
+    const wrap = el('div', 'lvp'); wrap.id = 'lvp'; this.lpEl = wrap;
+    const card = el('div', 'lvp-card'), go = el('button', 'btn big lvp-go', 'Начать');
+    wrap.append(card, go); map.appendChild(wrap);
+    wrap.onclick = (e) => e.stopPropagation();
+    go.onclick = () => { c.sfx.play('click'); c.startLevel(l.id, diff); };
+    const SECT = { grave: 'Погост', forest: 'Лес', desert: 'Пустыня', ice: 'Лёд', hell: 'Ад' };
+    const nameEsc = (t) => String(t).replace(/</g, '&lt;');
+    const lp = P(l.pos), nx = lp[0] * f, ny = lp[1] * f;
+    const place = (scroll) => {
+      const mw = MAP_W * f, mh = (parseFloat(map.style.height) || MAP_H * f), W = wrap.offsetWidth, H = wrap.offsetHeight;
+      let left = nx + 30, side = 'r'; if (left + W > mw - 4) { left = nx - 30 - W; side = 'l'; }
+      left = Math.max(4, left); let top = Math.max(4, Math.min(mh - H - 4, ny - 44));
+      wrap.style.left = left + 'px'; wrap.style.top = top + 'px'; wrap.dataset.side = side; wrap.style.setProperty('--ay', Math.max(18, Math.min(H - 70, ny - top)) + 'px');
+      if (scroll) {
+        const x0 = Math.min(left, nx - 26), x1 = Math.max(left + W, nx + 26), vw = sc.clientWidth;
+        const tx = x1 - x0 <= vw ? x0 - (vw - (x1 - x0)) / 2 : x0;
+        sc.scrollTo({ left: Math.max(0, tx), top: Math.max(0, top - 10), behavior: 'smooth' });
+      }
     };
-    if (!Net.enabled) fill(null); else Net.levelTops(l.id).then(fill).catch(() => fill(null));
+    let data = { top: null, me: null, friends: null, loaded: false };
+    const render = () => {
+      const d = D.DIFFS[diff], best = M.bestScore(s, l.id, diff), my = data.me, meU = Net.me();
+      const chips = D.DIFFS.map((q, i) => `<button class="dchip${i === diff ? ' on' : ''}${M.diffCleared(s, l.id, i) ? ' done' : ''}" style="--c:${q.color}" data-i="${i}" aria-label="${q.name}"><img src="${bareGlyphUrl('skull', 18)}" alt=""></button>`).join('');
+      const sub = `враги ×${x(d.hp)} · орды ×${x(d.horde)}${d.elite ? ` · элита ${Math.round(d.elite * 100)}%` : ''}${d.lives ? ' · одна жизнь' : ''}`;
+      const items = my && my.loadout ? String(my.loadout).split(',').filter((t) => D.TOWERS[t] || D.ECON[t]) : [];
+      const mine = best || my ? `<div class="lvp-me"><div class="lvp-sc"><img src="${SC()}" alt=""><b>${fmt(Math.max(best, my ? my.score : 0))}</b>${my && my.rank ? `<span class="lvp-rk">место #${my.rank}</span>` : ''}</div>
+          ${my && (my.duration || my.wave) ? `<div class="lvp-meta">${my.wave ? `волна ${my.wave}` : ''}${my.wave && my.duration ? ' · ' : ''}${my.duration ? `<img src="${bareGlyphUrl('hourglass', 14)}" alt="">${clock(my.duration)}` : ''}</div>` : ''}
+          ${items.length ? `<div class="lvp-set">${items.map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 3))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('')}</div>` : ''}</div>`
+        : `<div class="lvp-none">Не пройдено на этой сложности</div>`;
+      card.innerHTML = `<div class="lvp-h"><div class="lvp-t"><b>${l.name}</b><small>${SECT[l.sector] || ''} · рубеж ${l.lvl}</small></div><button class="lvp-x" aria-label="Закрыть">×</button></div>
+        <div class="dchips">${chips}</div><div class="dnm" style="--c:${d.color}"><b>${d.name}</b><small>${sub}</small></div>
+        <div class="lvp-st">Твой результат</div>${mine}
+        <div class="lvp-st">Лучшие игроки</div><div class="lvp-top"></div>
+        <div class="lvp-st">Друзья</div><div class="lvp-fr"></div>`;
+      card.querySelector('.lvp-x').onclick = () => { c.sfx.play('back'); this.closeLevel(); };
+      card.querySelectorAll('.dchip').forEach((b) => { b.onclick = () => { const i = +b.dataset.i; if (i === diff) return; c.sfx.play('click'); diff = i; data = { top: null, me: null, friends: null, loaded: false }; render(); load(); }; });
+      // топ-3
+      const tb = card.querySelector('.lvp-top');
+      if (!Net.enabled) tb.innerHTML = '<div class="trow empty">Нет связи</div>';
+      else if (!data.loaded) tb.innerHTML = '<div class="skel"></div>'.repeat(3);
+      else { tb.innerHTML = ''; for (let k = 0; k < 3; k++) { const r = data.top && data.top[k]; if (!r) { tb.appendChild(el('div', 'trow empty', '—')); continue; } tb.appendChild(runRow({ ...r, rank: k + 1 }, 'trow')); } }
+      // друзья
+      const fb = card.querySelector('.lvp-fr'), fr = data.friends;
+      const invite = el('button', 'btn ghost lvp-inv', 'Пригласить друга');
+      invite.onclick = () => { c.sfx.play('click'); if (!Net.invite()) c.note('Ссылка на игру ещё не задана'); };
+      if (!Net.enabled || !Net.canSubmit()) fb.innerHTML = '<div class="trow empty">Друзья доступны в Telegram</div>';
+      else if (!data.loaded) fb.innerHTML = '<div class="skel"></div>'.repeat(2);
+      else if (!fr || fr.length < 2) { fb.innerHTML = '<div class="lvp-hint">Здесь будут твои друзья и твоё место среди них. Друг появляется, когда заходит в игру по твоей ссылке.</div>'; fb.appendChild(invite); }
+      else {
+        const i = fr.findIndex((r) => meU && r.tg_id === meU.id), mr = fr[i], lines = [];
+        const ahead = i > 0 ? fr[i - 1] : null, behind = i >= 0 && i < fr.length - 1 ? fr[i + 1] : null;
+        let msg = '';
+        if (i === 0) msg = `<b>Ты впереди всех друзей</b>${behind && behind.score ? `, ${nameEsc(behind.name)} отстаёт на ${fmt(mr.score - behind.score)}` : ''}`;
+        else if (i > 0) msg = `Ты <b>${i + 1}-й из ${fr.length}</b>: ${nameEsc(ahead.name)} впереди на ${fmt(Math.max(0, ahead.score - (mr.score || 0)))}${behind && behind.score ? `, ${nameEsc(behind.name)} позади` : ''}`;
+        fb.innerHTML = `${msg ? `<div class="lvp-cmp">${msg}</div>` : ''}`;
+        fr.slice(0, 8).forEach((r, k) => fb.appendChild(runRow({ ...r, rank: k + 1 }, 'trow')));
+        fb.appendChild(invite);
+      }
+      place(false);
+    };
+    const load = () => {
+      const mySeq = seq, myDiff = diff;
+      const ok = () => mySeq === this.diffSeq && myDiff === diff;
+      const done = () => { if (!ok()) return; data.loaded = true; render(); };
+      if (!Net.enabled) { data.loaded = true; return; }
+      let left = 3; const fin = () => { if (--left === 0) done(); };
+      Net.levelBoard(l.id, diff, 0, 3).then((r) => { if (ok()) data.top = r; }).catch(() => {}).then(fin);
+      (Net.me() ? Net.levelRank(l.id, diff) : Promise.resolve(null)).then((r) => { if (ok() && r) data.me = r; }).catch(() => {}).then(fin);
+      Net.levelFriends(l.id, diff).then((r) => { if (ok()) data.friends = r; }).catch(() => {}).then(fin);
+    };
+    render(); place(true); load();
   }
 
   // ───── рейтинговый забег ─────
