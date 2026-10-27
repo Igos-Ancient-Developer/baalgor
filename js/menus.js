@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027152801';
-import * as D from './data.js?v=20261027152801';
-import * as M from './meta.js?v=20261027152801';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027152801';
-import { url as imgUrl } from './sprites.js?v=20261027152801';
-import { Net } from './net.js?v=20261027152801';
-import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027152801';
-import { fillPlates, gemIc } from './res.js?v=20261027152801';
-import { gemHtml } from './gem3d.js?v=20261027152801';
-import { Wallet } from './wallet.js?v=20261027152801';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027153037';
+import * as D from './data.js?v=20261027153037';
+import * as M from './meta.js?v=20261027153037';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027153037';
+import { url as imgUrl } from './sprites.js?v=20261027153037';
+import { Net } from './net.js?v=20261027153037';
+import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027153037';
+import { fillPlates, gemIc } from './res.js?v=20261027153037';
+import { gemHtml } from './gem3d.js?v=20261027153037';
+import { Wallet } from './wallet.js?v=20261027153037';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -234,9 +234,9 @@ export class Menus {
         : `<div class="lvp-none">Не пройдено на этой сложности</div>`;
       card.innerHTML = `<div class="lvp-h"><div class="lvp-t"><b>${l.name}</b><small>${SECT[l.sector] || ''} · рубеж ${l.lvl}</small></div></div>
         <div class="dchips">${chips}</div><div class="dnm" style="--c:${d.color}"><b>${d.name}</b><small>${sub}</small></div>
-        <div class="lvp-st">Твой результат</div>${mine}
-        <div class="lvp-st">Лучшие игроки<i class="lvp-dn" style="--c:${d.color}">${d.name}</i></div><div class="lvp-top"></div>
-        <div class="lvp-st">Друзья<i class="lvp-dn" style="--c:${d.color}">${d.name}</i></div><div class="lvp-fr"></div>`;
+        <div class="lvp-st">Лучший результат</div>${mine}
+        <div class="lvp-st">Лучшие игроки</div><div class="lvp-top"></div>
+        <div class="lvp-st">Друзья</div><div class="lvp-fr"></div>`;
       card.querySelectorAll('.dchip').forEach((b) => { b.onclick = () => { const i = +b.dataset.i; if (i === diff) return; c.sfx.play('click'); diff = i; data = { top: null, me: null, friends: null, loaded: false }; render(); load(); }; });
       // топ-3
       const tb = card.querySelector('.lvp-top');
