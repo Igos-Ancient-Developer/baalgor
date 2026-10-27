@@ -1,5 +1,5 @@
 // Мета-прогресс: души, дары кузницы, открытие башен, достижения. Не зависит от DOM (можно тестировать в Node).
-import * as D from './data.js?v=20261027153037';
+import * as D from './data.js?v=20261027154057';
 
 export const SOUL_K = 0.5;                  // общий множитель душ: души дают прокачку, поэтому капают вдвое скупее прежнего
 export const DIFF_SOULS = [0.7, 1, 1.8];   // множитель душ по сложности (индекс как в DIFFS)
@@ -105,7 +105,7 @@ export const ACH = [
   { id: 'wave20', name: 'Ветеран', desc: 'Дойди до 20 волны', goal: 20, val: L('bestWave'), reward: 25 },
   { id: 'win', name: 'Редут стоит', desc: 'Победи в кампании (30 волн)', goal: 1, val: L('wins'), reward: 60 },
   { id: 'hell_win', name: 'Хозяин Ада', desc: 'Победи на сложности «Ад»', goal: 1, val: L('hellWin'), reward: 120 },
-  { id: 'hardcore_win', name: 'Бессмертный', desc: 'Победи на «Хардкоре»: одна жизнь', goal: 1, val: L('hardcoreWin'), reward: 250 },
+  { id: 'hardcore_win', name: 'Бессмертный', desc: 'Победи на «Ночном кошмаре»: одна жизнь', goal: 1, val: L('hardcoreWin'), reward: 250 },
   { id: 'levels10', name: 'Путешественник', desc: 'Пройди 10 уровней кампании', goal: 10, val: (c) => clearedCount(c.save), reward: 50 },
   { id: 'levels_all', name: 'Повелитель карты', desc: 'Пройди все уровни кампании', goal: D.CAMPAIGN.length, val: (c) => clearedCount(c.save), reward: 150 },
   { id: 'score_40', name: 'Счёт пошёл', desc: 'Набери 40 очков за один уровень', goal: 40, val: R('score'), reward: 30 },

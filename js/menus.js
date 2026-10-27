@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027153037';
-import * as D from './data.js?v=20261027153037';
-import * as M from './meta.js?v=20261027153037';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027153037';
-import { url as imgUrl } from './sprites.js?v=20261027153037';
-import { Net } from './net.js?v=20261027153037';
-import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027153037';
-import { fillPlates, gemIc } from './res.js?v=20261027153037';
-import { gemHtml } from './gem3d.js?v=20261027153037';
-import { Wallet } from './wallet.js?v=20261027153037';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027154057';
+import * as D from './data.js?v=20261027154057';
+import * as M from './meta.js?v=20261027154057';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027154057';
+import { url as imgUrl } from './sprites.js?v=20261027154057';
+import { Net } from './net.js?v=20261027154057';
+import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027154057';
+import { fillPlates, gemIc } from './res.js?v=20261027154057';
+import { gemHtml } from './gem3d.js?v=20261027154057';
+import { Wallet } from './wallet.js?v=20261027154057';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -61,7 +61,6 @@ export function runRow(r, cls = 'brow', ctx = null) {
   const arrow = el('button', 'rarr', '<i></i>'); arrow.setAttribute('aria-label', 'Подробнее'); d.appendChild(arrow);
   const items = String(r.loadout || '').split(',').filter((t) => D.TOWERS[t] || D.ECON[t]);
   const more = el('div', 'rmore', `<div class="rslots">${items.length ? items.map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 3))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('') : '<span class="rnone">набор неизвестен</span>'}</div>
-    ${ctx && ctx.diff ? `<div class="rdiff" style="--c:${ctx.diff.color}"><img src="${bareGlyphUrl('skull', 14)}" alt="">Сложность: <b>${ctx.diff.name}</b></div>` : ''}
     <div class="rinfo">${r.lv ? `<div class="rl"><b>${r.lv}</b><small>${lvName(r.lv)}</small></div>` : `<div class="rl${ctx && ctx.total && r.wave >= ctx.total ? ' full' : ''}"><b>${r.wave || '–'}${ctx && ctx.total ? `/${ctx.total}` : ''}</b><small>волн пройдено</small></div>`}<div class="rt"><img src="${bareGlyphUrl('hourglass', 18)}" alt="">${r.duration ? clock(r.duration) : '—'}<small>${r.lv ? 'время забега' : 'время'}</small></div></div>`);
   arrow.onclick = () => { box.classList.toggle('open'); };
   box.append(d, more); return box;
@@ -192,17 +191,12 @@ export class Menus {
     this.lpId = levelId; if (c.warm) c.warm(levelId);              // пока игрок смотрит плашку, готовим листы врагов и фон карты
     const map = $('#worldmap'), sc = $('#worldscroll'), f = this.f || 1;
     document.querySelectorAll('#nodes .node').forEach((n) => n.classList.toggle('sel', n.dataset.id === levelId));
-    // сложность: где играли в последний раз; иначе самая высокая пройденная; иначе первая
-    let diff = 0;
-    const ld = (s.lastDiff || {})[l.id];
-    if (Number.isInteger(ld) && ld >= 0 && ld < D.DIFFS.length) diff = ld;
-    else if (s.last && s.last.level === l.id && Number.isInteger(s.last.diff)) diff = s.last.diff;
-    else D.DIFFS.forEach((d, i) => { if (M.diffCleared(s, l.id, i)) diff = i; });
+    const diff = this.startDiff(l.id);      // результаты на плашке — по сложности, с которой обычно открывается уровень
     const wrap = el('div', 'lvp'); wrap.id = 'lvp'; this.lpEl = wrap;
     const card = el('div', 'lvp-card'), go = el('button', 'btn big lvp-go', 'Начать');
     wrap.append(card, go); map.appendChild(wrap);
     wrap.onclick = (e) => { e.stopPropagation(); if (e.target.closest('.rarr')) setTimeout(() => place(false), 0); };      // раскрыли строку — плашка могла вырасти, подвинем, чтобы не вылезала за экран
-    go.onclick = () => { c.sfx.play('click'); c.startLevel(l.id, diff); };
+    go.onclick = () => { c.sfx.play('click'); this.closeLevel(); this.openDiff(l.id); };      // дальше — экран выбора сложности
     const SECT = { grave: 'Погост', forest: 'Лес', desert: 'Пустыня', ice: 'Лёд', hell: 'Ад' };
     const nameEsc = (t) => String(t).replace(/</g, '&lt;');
     const lp = P(l.pos), nx = lp[0] * f, ny = lp[1] * f;
@@ -223,21 +217,17 @@ export class Menus {
     };
     let data = { top: null, me: null, friends: null, loaded: false };
     const render = () => {
-      const d = D.DIFFS[diff], best = M.bestScore(s, l.id, diff), my = data.me, meU = Net.me(), ctx = { total: l.waves, diff: d };
+      const d = D.DIFFS[diff], best = M.bestScore(s, l.id, diff), my = data.me, meU = Net.me(), ctx = { total: l.waves };
       const wv = (n) => `<span class="${n >= l.waves ? 'wfull' : ''}">волна ${n}/${l.waves}</span>`;
-      const chips = D.DIFFS.map((q, i) => `<button class="dchip${i === diff ? ' on' : ''}${M.diffCleared(s, l.id, i) ? ' done' : ''}" style="--c:${q.color}" data-i="${i}" aria-label="${q.name}"><img src="${bareGlyphUrl('skull', 18)}" alt=""></button>`).join('');
-      const sub = `враги ×${x(d.hp)} · орды ×${x(d.horde)}${d.elite ? ` · элита ${Math.round(d.elite * 100)}%` : ''}${d.lives ? ' · одна жизнь' : ''}`;
       const items = my && my.loadout ? String(my.loadout).split(',').filter((t) => D.TOWERS[t] || D.ECON[t]) : [];
       const mine = best || my ? `<div class="lvp-me"><div class="lvp-sc"><img src="${SC()}" alt=""><b>${fmt(Math.max(best, my ? my.score : 0))}</b>${my && my.rank ? `<span class="lvp-rk">место #${my.rank}</span>` : ''}</div>
           ${my && (my.duration || my.wave) ? `<div class="lvp-meta">${my.wave ? wv(my.wave) : ''}${my.wave && my.duration ? ' · ' : ''}${my.duration ? `<img src="${bareGlyphUrl('hourglass', 14)}" alt="">${clock(my.duration)}` : ''}</div>` : ''}
           ${items.length ? `<div class="lvp-set">${items.map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 3))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('')}</div>` : ''}</div>`
         : `<div class="lvp-none">Не пройдено на этой сложности</div>`;
       card.innerHTML = `<div class="lvp-h"><div class="lvp-t"><b>${l.name}</b><small>${SECT[l.sector] || ''} · рубеж ${l.lvl}</small></div></div>
-        <div class="dchips">${chips}</div><div class="dnm" style="--c:${d.color}"><b>${d.name}</b><small>${sub}</small></div>
-        <div class="lvp-st">Лучший результат</div>${mine}
+                <div class="lvp-st">Лучший результат</div>${mine}
         <div class="lvp-st">Лучшие игроки</div><div class="lvp-top"></div>
         <div class="lvp-st">Друзья</div><div class="lvp-fr"></div>`;
-      card.querySelectorAll('.dchip').forEach((b) => { b.onclick = () => { const i = +b.dataset.i; if (i === diff) return; c.sfx.play('click'); diff = i; data = { top: null, me: null, friends: null, loaded: false }; render(); load(); }; });
       // топ-3
       const tb = card.querySelector('.lvp-top');
       if (!Net.enabled) tb.innerHTML = '<div class="trow empty">Нет связи</div>';
@@ -266,6 +256,73 @@ export class Menus {
     render(); place(true); load();
   }
 
+  // ───── выбор сложности: карусель ─────
+  openDiff(levelId) {
+    const l = D.MAPS.find((q) => q.id === levelId), s = this.save, c = this.c, seq = ++this.diffSeq;
+    this.level = l; if (c.warm) c.warm(levelId);              // пока игрок выбирает сложность, готовим листы врагов и фон карты
+    $('#ds-title').textContent = l.name;
+    const car = $('#dcar'); car.innerHTML = '';
+    const cards = D.DIFFS.map((d, i) => {
+      const unlocked = M.diffUnlocked(s, l, i), best = M.bestScore(s, l.id, i);
+      const rows = diffLines(d, i).map((r) => r.k === 'sep' ? `<div class="dsub">${r.t}</div>` : `<div class="mrow ${r.cls}"><img src="${bareGlyphUrl(r.icon, 24)}" alt=""><div class="mt">${r.t}<small>${r.s}</small></div><b>${r.v}</b></div>`).join('');
+      const card = el('div', `dcard${unlocked ? '' : ' locked'}${i === 4 ? ' hc' : ''}`);
+      card.style.setProperty('--c', d.color);
+      card.innerHTML = `<div class="dport"><div class="arch"><img src="${imgUrl('ui/portrait_' + d.demon + '.webp')}" alt=""></div>
+          <div class="dname">${d.name}</div>
+          <div class="dskulls">${[0, 1, 2, 3, 4].map((k) => `<img class="${k <= i ? '' : 'off'}" src="${bareGlyphUrl('skull', 22)}" alt="">`).join('')}</div>
+          ${best ? `<div class="dbest"><img src="${SC()}" alt="">${fmt(best)}</div>` : ''}
+        </div>
+        ${unlocked ? '' : `<div class="dlock"><img src="${iconUrl(glyphIcon('skulllock', { size: 96, bg: PALETTE.lock, frame: 'dark' }))}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}
+        <div class="dbody"><div class="dsub">Испытания</div>${rows}<div class="dsub">Лучшие на этом рубеже</div><div class="dtop">${'<div class="skel"></div>'.repeat(3)}</div></div>
+        <div class="dfoot"><button class="btn big play">Играть</button><button class="btn ghost board"><img src="${bareGlyphUrl('crown', 22)}" alt="" style="width:26px;height:26px"></button></div>`;
+      card.querySelector('.play').onclick = () => { if (!unlocked) { c.sfx.play('error'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); return; } c.sfx.play('click'); c.startLevel(l.id, i); };
+      card.querySelector('.board').onclick = () => { c.sfx.play('click'); this.openBoard({ level: l.id, diff: i }); };
+      car.appendChild(card); return card;
+    });
+    const dots = $('#ddots'); dots.innerHTML = D.DIFFS.map(() => '<i></i>').join('');
+    let cur = -1;
+    const setCur = () => {
+      const mid = car.scrollLeft + car.clientWidth / 2; let best = 0, bd = 1e9;
+      cards.forEach((cd, i) => { const d = Math.abs(cd.offsetLeft + cd.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = i; } });
+      if (best === cur) return; cur = best;
+      cards.forEach((cd, i) => cd.classList.toggle('cur', i === best));
+      [...dots.children].forEach((d, i) => d.classList.toggle('on', i === best)); dots.style.setProperty('--c', D.DIFFS[best].color);
+      $('#d-prev').disabled = best === 0; $('#d-next').disabled = best === cards.length - 1;
+    };
+    const go = (i, smooth = true) => { i = Math.max(0, Math.min(cards.length - 1, i)); const cd = cards[i]; car.scrollTo({ left: cd.offsetLeft - (car.clientWidth - cd.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'auto' }); };
+    let raf = 0; car.onscroll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(setCur); };
+    $('#d-prev').onclick = () => { c.sfx.play('click'); go(cur - 1); }; $('#d-next').onclick = () => { c.sfx.play('click'); go(cur + 1); };
+    const start = this.startDiff(l.id);
+    this.show('#diffsheet');
+    requestAnimationFrame(() => { go(start, false); setCur(); });
+    // топ-3 каждой сложности (всегда на виду)
+    const fill = (tops) => {
+      if (seq !== this.diffSeq) return;
+      cards.forEach((card, i) => {
+        const box = card.querySelector('.dtop'); box.innerHTML = '';
+        const rows = (tops && tops[i]) || [];
+        for (let k = 0; k < 3; k++) {
+          const r = rows[k];
+          if (!r) { box.appendChild(el('div', 'trow empty', '—')); continue; }
+          const row = el('div', 'trow' + (Net.me() && r.tg_id === Net.me().id ? ' me' : ''));
+          row.appendChild(el('div', `rk r${k + 1}`, k + 1)); row.appendChild(avatar(r.photo, r.name, r.tg_id));
+          row.appendChild(el('div', 'nm', r.name.replace(/</g, '&lt;'))); row.appendChild(el('div', 'sc', fmt(r.score)));
+          box.appendChild(row);
+        }
+      });
+    };
+    if (!Net.enabled) fill(null); else Net.levelTops(l.id).then(fill).catch(() => fill(null));
+  }
+  // сложность, с которой открываем уровень: где играли в последний раз; иначе самая высокая пройденная; иначе первая
+  startDiff(levelId) {
+    const s = this.save; let start = 0;
+    const ld = (s.lastDiff || {})[levelId];
+    if (Number.isInteger(ld) && ld >= 0 && ld < D.DIFFS.length) start = ld;
+    else if (s.last && s.last.level === levelId && Number.isInteger(s.last.diff)) start = s.last.diff;
+    else D.DIFFS.forEach((d, i) => { if (M.diffCleared(s, levelId, i)) start = i; });
+    return start;
+  }
+
   // ───── рейтинговый забег ─────
   openRanked() {
     const c = this.c, s = this.save, body = $('#rankedbody'), seq = ++this.diffSeq;
@@ -283,7 +340,7 @@ export class Menus {
       ${bestHtml}
       <div class="rk-rules">
         ${row('flag', 'Рубежей подряд', 'Все уровни кампании по порядку, общий таймер на весь забег', n)}
-        ${row('skull', 'Сложность', `«${d.name}»: враги крепче ×${x(d.hp)}, быстрее на ${Math.round((d.spd - 1) * 100)}%, орды ×${x(d.horde)}, ${Math.round(d.elite * 100)}% элитных`, '', 'bad').replace('<b></b>', '<b>Хардкор</b>')}
+        ${row('skull', 'Сложность', `«${d.name}»: враги крепче ×${x(d.hp)}, быстрее на ${Math.round((d.spd - 1) * 100)}%, орды ×${x(d.horde)}, ${Math.round(d.elite * 100)}% элитных`, '', 'bad').replace('<b></b>', `<b>${d.name}</b>`)}
         ${row('heart', 'Жизнь', 'Один пропущенный враг — забег окончен', '1', 'bad')}
         ${row('coins', 'Золото', 'Из всех источников', '+' + Math.round(d.gold * 100) + '%', 'good')}
         ${row('star', 'Очки', 'За победу над волной, за сильных врагов и за скорость прохождения уровня. Чем дальше уровень, тем больше очков. Итог каждого уровня умножается на сложность', '×' + x(d.score), 'good').replace('mrow good', 'mrow good tokrow').replace(`<img src="${bareGlyphUrl('star', 24)}" alt="">`, `<img src="${SC()}" alt="" class="scimg">`)}

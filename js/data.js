@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261027153037';
+import { COLS, ROWS } from './layouts.js?v=20261027154057';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD = 80;
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261027153037';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261027154057';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -29,11 +29,11 @@ export { SECTORS };
 // hp — множитель здоровья, spd — скорости, score — очки, gold — прибавка ко всему золоту, lives — жизней (null = обычно),
 // horde — множитель численности орд, elite — шанс «элитного» врага, souls — множитель душ.
 export const DIFFS = [
-  { id: 'squire', name: 'Послушник', hp: 0.75, spd: 1, score: 0.8, gold: 0, lives: null, horde: 1, elite: 0, souls: 0.7, demon: 'imp', color: '#8fd86a' },
-  { id: 'warrior', name: 'Воин', hp: 1, spd: 1, score: 1, gold: 0, lives: null, horde: 1, elite: 0, souls: 1, demon: 'brute', color: '#ffd24a' },
-  { id: 'nightmare', name: 'Кошмар', hp: 1.3, spd: 1.05, score: 1.6, gold: 0, lives: null, horde: 1.15, elite: 0.06, souls: 1.5, demon: 'succubus', color: '#ff9a3a' },
+  { id: 'squire', name: 'Страх', hp: 0.75, spd: 1, score: 0.8, gold: 0, lives: null, horde: 1, elite: 0, souls: 0.7, demon: 'imp', color: '#8fd86a' },
+  { id: 'warrior', name: 'Ужас', hp: 1, spd: 1, score: 1, gold: 0, lives: null, horde: 1, elite: 0, souls: 1, demon: 'brute', color: '#ffd24a' },
+  { id: 'nightmare', name: 'Пекло', hp: 1.3, spd: 1.05, score: 1.6, gold: 0, lives: null, horde: 1.15, elite: 0.06, souls: 1.5, demon: 'succubus', color: '#ff9a3a' },
   { id: 'hell', name: 'Ад', hp: 1.6, spd: 1.1, score: 2.4, gold: 0, lives: null, horde: 1.3, elite: 0.12, souls: 2.2, demon: 'pitlord', color: '#ff4a3a' },
-  { id: 'hardcore', name: 'Хардкор', hp: 1.8, spd: 1.12, score: 4, gold: 0.25, lives: 1, horde: 1.5, elite: 0.2, souls: 3.5, demon: 'archdemon', color: '#c01a2a' },
+  { id: 'hardcore', name: 'Ночной кошмар', hp: 1.8, spd: 1.12, score: 4, gold: 0.25, lives: 1, horde: 1.5, elite: 0.2, souls: 3.5, demon: 'archdemon', color: '#c01a2a' },
 ];
 
 // ───────────────────────── Башни ─────────────────────────
@@ -581,7 +581,7 @@ export const FIRST_BONUS = 2;                                                   
 export const DAILY = [3, 3, 5, 3, 6, 8, 15];                                            // ежедневный подарок — ДУШИ (не кристаллы), серия 7 дней
 export const BOOSTS = {
   gold:  { name: 'Золотой старт', short: '+100 золота на старте уровня', base: 3 },
-  lives: { name: 'Запас жизней',  short: '+5 жизней (не действует на Хардкоре)', base: 5 },
+  lives: { name: 'Запас жизней',  short: '+5 жизней (не действует на «Ночном кошмаре»)', base: 5 },
   souls: { name: 'Свиток душ',    short: 'Души за уровень ×1,5', base: 6 },
 };
 export const REVIVE = { lives: 5 };                                                       // возрождение у ворот: столько жизней за цену усилителя «Запас жизней» (цену считает сервер)
