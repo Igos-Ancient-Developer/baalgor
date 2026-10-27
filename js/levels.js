@@ -1,5 +1,5 @@
 // Уровни кампании: секторы, раскладки, связи (after = открывается после прохождения ЛЮБОГО из перечисленных).
-import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261026175845';
+import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261027144449';
 
 export const SECTORS = [
   { id: 'grave', name: 'Проклятый погост', theme: 'grave', color: '#7fa86a' },
@@ -69,29 +69,30 @@ function autoDecor(paths, theme, seed, lvl = 1) {
 // Больше 15 волн на уровне не бывает: долгие уровни грели телефон. В SPEC «волн» — задуманная длина: уровень сжимается до 15, а каждая волна
 // получает силу той, что стояла бы на этом месте в полной версии (genWave берёт wavesFull), так что рост сложности не теряется.
 export const MAX_WAVES = 15;
-// [id, имя, сектор, раскладка, тема, волн, множитель здоровья, after, позиция на карте мира]
+// [id, имя, сектор, раскладка, тема, волн, множитель здоровья, after, позиция на карте мира (пиксели картинки 1376×768, центр нарисованной площадки)]
+// after — по нарисованным дорогам: развилки на карте мира сделаны ответвлениями (g2b, f2b), ледяной сектор — тупиковая ветка от i1, к Аду ведёт дорога от i1
 // Множители здоровья подобраны так, чтобы общая «масса» врагов уровня строго росла от рубежа к рубежу (шаг не меньше ~12%), без провалов;
 // при смене волн или врагов пересчитай: node tools/curve.mjs
 const SPEC = [
-  ['g1', 'Погост', 'grave', 'snake', 'grave', 8, 0.77, ['tut'], [327, 737]],
-  ['g2a', 'Склеп', 'grave', 'crypt', 'grave', 9, 0.70, ['g1'], [207, 653]],
-  ['g2b', 'Часовня', 'grave', 'hook', 'grave', 9, 0.75, ['g1'], [453, 700]],
-  ['g3', 'Могильный холм', 'grave', 'frame', 'grave', 10, 0.81, ['g2a', 'g2b'], [327, 560]],
-  ['f1', 'Тёмная опушка', 'forest', 'twist', 'forest', 11, 0.78, ['g3'], [167, 447]],
-  ['f2a', 'Гнилые топи', 'forest', 'wave', 'forest', 12, 0.73, ['f1'], [107, 320]],
-  ['f2b', 'Волчья тропа', 'forest', 'dhook', 'forest', 12, 0.67, ['f1'], [300, 397]],
-  ['f3', 'Сердце чащи', 'forest', 'merge', 'forest', 13, 0.61, ['f2a', 'f2b'], [467, 467]],
-  ['d1', 'Караванный путь', 'desert', 'zigzag', 'desert', 14, 0.64, ['f3'], [647, 469]],
-  ['d2a', 'Дюны костей', 'desert', 'stairs', 'desert', 15, 0.57, ['d1'], [820, 560]],
-  ['d2b', 'Пересохшее русло', 'desert', 'saw', 'desert', 15, 0.59, ['d1'], [980, 423]],
-  ['d3', 'Храм песков', 'desert', 'trap', 'desert', 16, 0.53, ['d2a', 'd2b'], [900, 331]],
-  ['i1', 'Замёрзший перевал', 'ice', 'organ', 'ice', 17, 0.57, ['d3'], [696, 300]],
-  ['i2a', 'Ледяной перекрёсток', 'ice', 'cross', 'ice', 18, 0.53, ['i1'], [440, 251]],
-  ['i2b', 'Метель', 'ice', 'poker', 'ice', 18, 0.51, ['i1'], [329, 129]],
-  ['i3', 'Ледяной трон', 'ice', 'snail', 'ice', 19, 0.51, ['i2a', 'i2b'], [573, 133]],
-  ['h1', 'Врата Ада', 'hell', 'triple', 'lava', 20, 0.47, ['i3'], [840, 200]],
-  ['h2', 'Река огня', 'hell', 'lanes', 'lava', 21, 0.48, ['h1'], [997, 160]],
-  ['h3', 'Скотобойня', 'hell', 'spiral', 'slaughter', 22, 0.46, ['h2'], [1117, 80]],
+  ['g1', 'Погост', 'grave', 'snake', 'grave', 8, 0.77, ['tut'], [312, 641]],
+  ['g2a', 'Склеп', 'grave', 'crypt', 'grave', 9, 0.70, ['g1'], [219, 567]],
+  ['g2b', 'Часовня', 'grave', 'hook', 'grave', 9, 0.75, ['g1'], [472, 598]],
+  ['g3', 'Могильный холм', 'grave', 'frame', 'grave', 10, 0.81, ['g2a'], [316, 483]],
+  ['f1', 'Тёмная опушка', 'forest', 'twist', 'forest', 11, 0.78, ['g3'], [172, 423]],
+  ['f2a', 'Гнилые топи', 'forest', 'wave', 'forest', 12, 0.73, ['f1'], [310, 346]],
+  ['f2b', 'Волчья тропа', 'forest', 'dhook', 'forest', 12, 0.67, ['f2a'], [146, 273]],
+  ['f3', 'Сердце чащи', 'forest', 'merge', 'forest', 13, 0.61, ['f2a'], [479, 413]],
+  ['d1', 'Караванный путь', 'desert', 'zigzag', 'desert', 14, 0.64, ['f3'], [663, 423]],
+  ['d2a', 'Дюны костей', 'desert', 'stairs', 'desert', 15, 0.57, ['d1'], [843, 489]],
+  ['d2b', 'Пересохшее русло', 'desert', 'saw', 'desert', 15, 0.59, ['d2a'], [990, 395]],
+  ['d3', 'Храм песков', 'desert', 'trap', 'desert', 16, 0.53, ['d2b'], [895, 340]],
+  ['i1', 'Замёрзший перевал', 'ice', 'organ', 'ice', 17, 0.57, ['d3'], [729, 227]],
+  ['i2a', 'Ледяной перекрёсток', 'ice', 'cross', 'ice', 18, 0.53, ['i1'], [545, 129]],
+  ['i2b', 'Метель', 'ice', 'poker', 'ice', 18, 0.51, ['i2a'], [373, 104]],
+  ['i3', 'Ледяной трон', 'ice', 'snail', 'ice', 19, 0.51, ['i2b'], [444, 217]],
+  ['h1', 'Врата Ада', 'hell', 'triple', 'lava', 20, 0.47, ['i1'], [850, 162]],
+  ['h2', 'Река огня', 'hell', 'lanes', 'lava', 21, 0.48, ['h1'], [1060, 113]],
+  ['h3', 'Скотобойня', 'hell', 'spiral', 'slaughter', 22, 0.46, ['h2'], [1148, 74]],
 ];
 
 export const LEVELS = SPEC.map(([id, name, sector, layout, theme, waves, hp, after, pos], i) => {
@@ -101,7 +102,7 @@ export const LEVELS = SPEC.map(([id, name, sector, layout, theme, waves, hp, aft
 // Обучение: самая простая карта, 3 волны из простых врагов. Стоит в конце массива, чтобы не сдвигать номера остальных уровней.
 {
   const paths = LAYOUTS.tutor, w = (...g) => g;
-  LEVELS.push({ id: 'tut', name: 'Обучение', sector: 'grave', theme: 'grave', layout: 'tutor', paths, block: blockCells(paths), decor: autoDecor(paths, 'grave', 77, 0), waves: 3, hp: 0.55, after: [], pos: [185, 758], index: LEVELS.length, lvl: 0, tutorial: true,
+  LEVELS.push({ id: 'tut', name: 'Обучение', sector: 'grave', theme: 'grave', layout: 'tutor', paths, block: blockCells(paths), decor: autoDecor(paths, 'grave', 77, 0), waves: 3, hp: 0.55, after: [], pos: [185, 666], index: LEVELS.length, lvl: 0, tutorial: true,
     waveList: [w(['skeleton', 4, 1.7]), w(['skeleton', 6, 1.4]), w(['skeleton', 5, 1.2], ['zombie', 2, 1.6])] });
 }
 export const CAMPAIGN = LEVELS.filter((l) => !l.tutorial);

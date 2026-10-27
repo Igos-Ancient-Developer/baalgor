@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261026175845';
-import * as D from './data.js?v=20261026175845';
-import * as M from './meta.js?v=20261026175845';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261026175845';
-import { url as imgUrl } from './sprites.js?v=20261026175845';
-import { Net } from './net.js?v=20261026175845';
-import { towerIcon, econIcon, itemChips } from './ui.js?v=20261026175845';
-import { fillPlates, gemIc } from './res.js?v=20261026175845';
-import { gemHtml } from './gem3d.js?v=20261026175845';
-import { Wallet } from './wallet.js?v=20261026175845';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027144449';
+import * as D from './data.js?v=20261027144449';
+import * as M from './meta.js?v=20261027144449';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027144449';
+import { url as imgUrl } from './sprites.js?v=20261027144449';
+import { Net } from './net.js?v=20261027144449';
+import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027144449';
+import { fillPlates, gemIc } from './res.js?v=20261027144449';
+import { gemHtml } from './gem3d.js?v=20261027144449';
+import { Wallet } from './wallet.js?v=20261027144449';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -16,8 +16,29 @@ const fmt = (n) => Math.round(n).toLocaleString('ru-RU');
 const x = (v) => (Math.round(v * 100) / 100).toString().replace('.', ',');
 export const clock = (t) => { t = Math.max(0, Math.floor(t)); const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), q = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(q).padStart(2, '0'); };
 export const MAP_W = 1376, MAP_H = 768;
-const BASE_W = 1356, BASE_H = 828;           // в этой сетке заданы координаты рубежей и подписей; на картинку переносим пропорционально
-const P = (p) => [p[0] * MAP_W / BASE_W, p[1] * MAP_H / BASE_H];
+const P = (p) => [p[0], p[1] + 8];           // координаты рубежей заданы в пикселях картинки карты; +8 — иконка стоит чуть выше якоря
+// дороги нарисованы на самой карте: здесь опорные точки по ним (пиксели картинки), по которым подсвечиваем пройденный путь
+const ROADS = {
+  'tut>g1': [[185, 666], [240, 672], [290, 655], [312, 641]],
+  'g1>g2a': [[312, 641], [285, 610], [250, 585], [219, 567]],
+  'g1>g2b': [[312, 641], [340, 635], [380, 615], [420, 600], [472, 598]],
+  'g2a>g3': [[219, 567], [230, 550], [245, 535], [270, 515], [290, 495], [316, 483]],
+  'g3>f1': [[316, 483], [280, 465], [230, 445], [195, 435], [172, 423]],
+  'f1>f2a': [[172, 423], [205, 400], [245, 390], [285, 365], [310, 346]],
+  'f2a>f2b': [[310, 346], [255, 330], [225, 315], [210, 290], [180, 275], [146, 273]],
+  'f2a>f3': [[310, 346], [350, 360], [390, 380], [430, 400], [460, 410], [479, 413]],
+  'f3>d1': [[479, 413], [540, 420], [600, 422], [663, 423]],
+  'd1>d2a': [[663, 423], [700, 447], [767, 477], [843, 489]],
+  'd2a>d2b': [[843, 489], [900, 453], [950, 447], [987, 430], [990, 395]],
+  'd2b>d3': [[990, 395], [967, 373], [933, 350], [895, 340]],
+  'd3>i1': [[895, 340], [867, 335], [833, 328], [800, 317], [767, 300], [733, 280], [717, 250], [729, 227]],
+  'i1>i2a': [[729, 227], [712, 212], [677, 187], [625, 165], [597, 147], [559, 129]],
+  'i2a>i2b': [[545, 129], [520, 138], [470, 150], [420, 146], [385, 125], [373, 104]],
+  'i2b>i3': [[373, 104], [345, 108], [335, 125], [350, 167], [397, 197], [444, 217]],
+  'i1>h1': [[729, 227], [763, 230], [800, 218], [830, 190], [850, 162]],
+  'h1>h2': [[850, 162], [905, 150], [965, 135], [1000, 125], [1030, 118], [1060, 113]],
+  'h2>h3': [[1060, 113], [1105, 100], [1135, 85], [1148, 74]],
+};
 const SC = () => imgUrl('ui/score.webp');
 const lvName = (lv) => (D.CAMPAIGN[lv - 1] || {}).name || '';
 export const RUN = { level: 'run', diff: 4 };      // рейтинговый забег хранится в таблице как уровень «run» на сложности «Хардкор»
@@ -125,12 +146,12 @@ export class Menus {
     // дороги между рубежами
     const cv = $('#worldcv'); cv.width = MAP_W; cv.height = MAP_H; const g = cv.getContext('2d'); g.clearRect(0, 0, MAP_W, MAP_H);
     for (const l of D.MAPS) for (const a of l.after) {
-      const p0 = P(D.MAPS.find((q) => q.id === a).pos), p1 = P(l.pos), open = M.levelUnlocked(s, l);
-      const mx = (p0[0] + p1[0]) / 2 + (p1[1] - p0[1]) * 0.12, my = (p0[1] + p1[1]) / 2 - (p1[0] - p0[0]) * 0.12;
-      g.lineCap = 'round'; g.setLineDash([]);
-      g.strokeStyle = 'rgba(0,0,0,.75)'; g.lineWidth = 13; g.beginPath(); g.moveTo(p0[0], p0[1]); g.quadraticCurveTo(mx, my, p1[0], p1[1]); g.stroke();                       // тёмная подложка
-      if (open) { g.strokeStyle = 'rgba(255,214,90,.45)'; g.lineWidth = 11; g.beginPath(); g.moveTo(p0[0], p0[1]); g.quadraticCurveTo(mx, my, p1[0], p1[1]); g.stroke(); }          // тёплое свечение пройденного пути
-      g.setLineDash([3, 11]); g.strokeStyle = open ? '#fff4b8' : '#c7cdd3'; g.lineWidth = 7; g.beginPath(); g.moveTo(p0[0], p0[1]); g.quadraticCurveTo(mx, my, p1[0], p1[1]); g.stroke();
+      const pts = ROADS[a + '>' + l.id]; if (!pts || !M.levelUnlocked(s, l)) continue;               // подсвечиваем только открытые участки; сама дорога нарисована на карте
+      const q = pts.map((v) => P(v));
+      const trace = () => { g.beginPath(); g.moveTo(q[0][0], q[0][1]); for (let i = 1; i < q.length - 1; i++) g.quadraticCurveTo(q[i][0], q[i][1], (q[i][0] + q[i + 1][0]) / 2, (q[i][1] + q[i + 1][1]) / 2); g.lineTo(q[q.length - 1][0], q[q.length - 1][1]); g.stroke(); };
+      g.lineCap = 'round'; g.lineJoin = 'round'; g.setLineDash([]);
+      g.strokeStyle = 'rgba(255,214,90,.38)'; g.lineWidth = 15; trace();                                    // тёплое свечение пройденного пути
+      g.setLineDash([2, 11]); g.strokeStyle = '#fff4b8'; g.lineWidth = 5; trace();
     }
     // рубежи
     const nodes = $('#nodes'); nodes.innerHTML = '';
