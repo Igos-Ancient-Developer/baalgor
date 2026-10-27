@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027145926';
-import * as D from './data.js?v=20261027145926';
-import * as M from './meta.js?v=20261027145926';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027145926';
-import { url as imgUrl } from './sprites.js?v=20261027145926';
-import { Net } from './net.js?v=20261027145926';
-import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027145926';
-import { fillPlates, gemIc } from './res.js?v=20261027145926';
-import { gemHtml } from './gem3d.js?v=20261027145926';
-import { Wallet } from './wallet.js?v=20261027145926';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027151410';
+import * as D from './data.js?v=20261027151410';
+import * as M from './meta.js?v=20261027151410';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027151410';
+import { url as imgUrl } from './sprites.js?v=20261027151410';
+import { Net } from './net.js?v=20261027151410';
+import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027151410';
+import { fillPlates, gemIc } from './res.js?v=20261027151410';
+import { gemHtml } from './gem3d.js?v=20261027151410';
+import { Wallet } from './wallet.js?v=20261027151410';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -54,7 +54,7 @@ export function avatar(photo, name, id) {
 
 // строка таблицы рейтингового забега: аватар, ник и очки; стрелка раскрывает слоты, время и уровень с названием
 export function runRow(r, cls = 'brow') {
-  const meU = Net.me(), box = el('div', 'rwrap'), d = el('div', `${cls} rrow` + (meU && r.tg_id === meU.id ? ' me' : ''));
+  const meU = Net.me(), box = el('div', 'rwrap' + (r.rank >= 1 && r.rank <= 3 ? ' top' + r.rank : '')), d = el('div', `${cls} rrow` + (meU && r.tg_id === meU.id ? ' me' : ''));
   d.appendChild(el('div', `rk${r.rank <= 3 ? ' r' + r.rank : ''}`, r.rank)); d.appendChild(avatar(r.photo_url || r.photo, r.name, r.tg_id));
   d.appendChild(el('div', 'nm', `${String(r.name).replace(/</g, '&lt;')}${r.username ? `<small>@${r.username}</small>` : ''}`));
   d.appendChild(el('div', 'rs', r.score || r.wave ? `<img src="${SC()}" alt="">${fmt(r.score)}` : '—'));
@@ -125,6 +125,9 @@ export class Menus {
     body.appendChild(el('div', 'sect-title', 'Бой'));
     row('Числа над врагами', 'Урон и золото при убийстве', toggle(() => st.dmg, (v) => { st.dmg = v; }));
     row('Подтверждать выход из боя', 'Telegram спросит перед закрытием', toggle(() => st.confirm, (v) => { st.confirm = v; }));
+    body.appendChild(el('div', 'sect-title', 'Друзья'));
+    const inv = el('button', 'stn', 'Пригласить'); inv.onclick = () => { c.sfx.play('click'); if (!Net.invite()) c.note('Ссылка на игру ещё не задана'); };
+    row('Пригласить друга', 'Друг откроет игру по твоей ссылке, и вы появитесь в списках друг у друга', inv);
     body.appendChild(el('div', 'sect-title', 'Язык'));
     const grid = el('div', 'langgrid');
     for (const [id, name] of LANGS) { const b = el('button', 'stn' + (id === curLang ? ' on' : ''), `<span>${name}</span>`); b.onclick = () => { if (id === curLang) return; c.sfx.play('click'); setLang(id); }; grid.appendChild(b); }
@@ -202,15 +205,19 @@ export class Menus {
     const SECT = { grave: 'Погост', forest: 'Лес', desert: 'Пустыня', ice: 'Лёд', hell: 'Ад' };
     const nameEsc = (t) => String(t).replace(/</g, '&lt;');
     const lp = P(l.pos), nx = lp[0] * f, ny = lp[1] * f;
+    // плашка всегда целиком в видимой части карты: вертикаль считаем от верха видимой области, а не от верха всей картинки
+    const vh = sc.clientHeight || 600, mh = parseFloat(map.style.height) || MAP_H * f;
+    let vTop = sc.scrollTop; if (ny < vTop + 50 || ny > vTop + vh - 50) vTop = Math.max(0, Math.min(mh - vh, ny - vh / 2));      // рубеж у края экрана — сначала подвозим его к середине
     const place = (scroll) => {
-      const mw = MAP_W * f, mh = (parseFloat(map.style.height) || MAP_H * f), W = wrap.offsetWidth, H = wrap.offsetHeight;
+      card.style.maxHeight = Math.max(200, vh - go.offsetHeight - 28) + 'px';
+      const mw = MAP_W * f, W = wrap.offsetWidth, H = wrap.offsetHeight;
       let left = nx + 30, side = 'r'; if (left + W > mw - 4) { left = nx - 30 - W; side = 'l'; }
-      left = Math.max(4, left); let top = Math.max(4, Math.min(mh - H - 4, ny - 44));
+      left = Math.max(4, left); const top = Math.max(vTop + 8, Math.min(vTop + vh - H - 8, ny - 44));
       wrap.style.left = left + 'px'; wrap.style.top = top + 'px'; wrap.dataset.side = side; wrap.style.setProperty('--ay', Math.max(18, Math.min(H - 70, ny - top)) + 'px');
       if (scroll) {
         const x0 = Math.min(left, nx - 26), x1 = Math.max(left + W, nx + 26), vw = sc.clientWidth;
         const tx = x1 - x0 <= vw ? x0 - (vw - (x1 - x0)) / 2 : x0;
-        sc.scrollTo({ left: Math.max(0, tx), top: Math.max(0, top - 10), behavior: 'smooth' });
+        sc.scrollTo({ left: Math.max(0, tx), top: vTop, behavior: 'smooth' });
       }
     };
     let data = { top: null, me: null, friends: null, loaded: false };
@@ -236,14 +243,11 @@ export class Menus {
       else { tb.innerHTML = ''; for (let k = 0; k < 3; k++) { const r = data.top && data.top[k]; if (!r) { tb.appendChild(el('div', 'trow empty', '—')); continue; } tb.appendChild(runRow({ ...r, rank: k + 1 }, 'trow')); } }
       // друзья
       const fb = card.querySelector('.lvp-fr'), fr = data.friends;
-      const invite = el('button', 'btn ghost lvp-inv', 'Пригласить друга');
-      invite.onclick = () => { c.sfx.play('click'); if (!Net.invite()) c.note('Ссылка на игру ещё не задана'); };
       if (!Net.enabled || !Net.canSubmit()) fb.innerHTML = '<div class="trow empty">Друзья доступны в Telegram</div>';
       else if (!data.loaded) fb.innerHTML = '<div class="skel"></div>'.repeat(2);
-      else if (!fr || fr.length < 2) { fb.innerHTML = '<div class="lvp-hint">Здесь будут твои друзья и твоё место среди них. Друг появляется, когда заходит в игру по твоей ссылке.</div>'; fb.appendChild(invite); }
+      else if (!fr || fr.length < 2) { fb.innerHTML = '<div class="lvp-hint">Здесь будут твои друзья и твоё место среди них. Пригласить друга можно в настройках.</div>'; }
       else {
         fr.slice(0, 6).forEach((r, k) => fb.appendChild(runRow({ ...r, rank: k + 1 }, 'trow')));
-        fb.appendChild(invite);
       }
       place(false);
     };
