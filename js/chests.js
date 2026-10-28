@@ -2,16 +2,16 @@
 // Деревянный: за души или за немного кристаллов, в основном души. Серебряный: только за кристаллы, в основном кристаллы.
 // Золотой: самый дорогой, лучшая добыча, редкие премиум-башни. Каждая башня — отдельная строка таблицы (js/chesttable.js).
 // Для кристаллов бросок делает сервер (supabase/chests.sql, функция chest_open) — по этой же таблице; здесь бросок нужен для оплаты душами (души хранятся в сохранении) и для локального режима вне Telegram.
-import { gemUrl } from './gem3d.js?v=20261028204133';
-import * as D from './data.js?v=20261028204133';
-import * as M from './meta.js?v=20261028204133';
-import { Net } from './net.js?v=20261028204133';
-import { Wallet } from './wallet.js?v=20261028204133';
-import { towerIcon, econIcon } from './ui.js?v=20261028204133';
-import { iconUrl } from './icons.js?v=20261028204133';
-import { url as imgUrl } from './sprites.js?v=20261028204133';
-import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261028204133';
-import { createChest3D } from './chest3d.js?v=20261028204133';
+import { gemUrl } from './gem3d.js?v=20261028205221';
+import * as D from './data.js?v=20261028205221';
+import * as M from './meta.js?v=20261028205221';
+import { Net } from './net.js?v=20261028205221';
+import { Wallet } from './wallet.js?v=20261028205221';
+import { towerIcon, econIcon } from './ui.js?v=20261028205221';
+import { iconUrl } from './icons.js?v=20261028205221';
+import { url as imgUrl } from './sprites.js?v=20261028205221';
+import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261028205221';
+import { createChest3D } from './chest3d.js?v=20261028205221';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -166,14 +166,14 @@ export async function playOpening(kind, loot, ctrl, { again = null } = {}) {
   let c3 = null; try { c3 = createChest3D(stage, c.theme, c.color); } catch (e) { c3 = null; }
   if (c3) root.classList.add('has3d');
   let tapped = false, skipped = false;
-  stage.onclick = () => { tapped = true; }; root.onclick = () => { if (root.classList.contains('spin')) skipped = true; };
+  stage.onclick = () => { tapped = true; };                         // один тап по сундуку запускает анимацию, дальше ждём: пропустить или ускорить нельзя
   root.addEventListener('pointermove', (e) => { if (!c3 || root.classList.contains('burst')) return; const r = root.getBoundingClientRect(); c3.tilt((0.5 - (e.clientY - r.top) / r.height) * 0.35, ((e.clientX - r.left) / r.width - 0.5) * 0.7); });
   const wait = async (ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms && !skipped) await sleep(40); };
   // 1. сундук падает на круг
   requestAnimationFrame(() => root.classList.add('in')); sfx.play('select');
   if (c3) await c3.drop(); else { root.classList.add('flat-in'); await sleep(900); }
   // 2. ждём нажатия (само откроется через пару секунд)
-  root.classList.add('idle'); { const t0 = Date.now(); while (!tapped && Date.now() - t0 < 2200) await sleep(40); }
+  root.classList.add('idle'); { const t0 = Date.now(); while (!tapped) await sleep(40); }
   // 3. накал: сундук взлетает, раскручивается, трясётся, лучи света
   root.classList.remove('idle'); root.classList.add('charge'); sfx.play('upgrade'); if (c3) c3.charge(1400); await sleep(1400);
   // 4. взрыв света

@@ -1,27 +1,27 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261028204133';
-import * as A from './art.js?v=20261028204133';
-import { Sim } from './sim.js?v=20261028204133';
-import { Gore } from './gore.js?v=20261028204133';
-import { Renderer } from './render.js?v=20261028204133';
-import { GameUI } from './ui.js?v=20261028204133';
-import { Tutorial } from './tutorial.js?v=20261028204133';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261028204133';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261028204133';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261028204133';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261028204133';
-import { mapBG, releaseBG } from './env.js?v=20261028204133';
-import { MENU_SPEC } from './music.js?v=20261028204133';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261028204133';
-import { renderForge, renderAchs } from './screens.js?v=20261028204133';
-import { renderShop } from './shop.js?v=20261028204133';
-import { freeChestReady } from './chests.js?v=20261028204133';
-import { Wallet } from './wallet.js?v=20261028204133';
-import { initLang, pickLang } from './i18n.js?v=20261028204133';
-import { Menus, RUN, clock } from './menus.js?v=20261028204133';
-import { Net } from './net.js?v=20261028204133';
-import { gemIc } from './res.js?v=20261028204133';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261028204133';
+import * as D from './data.js?v=20261028205221';
+import * as A from './art.js?v=20261028205221';
+import { Sim } from './sim.js?v=20261028205221';
+import { Gore } from './gore.js?v=20261028205221';
+import { Renderer } from './render.js?v=20261028205221';
+import { GameUI } from './ui.js?v=20261028205221';
+import { Tutorial } from './tutorial.js?v=20261028205221';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261028205221';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261028205221';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261028205221';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261028205221';
+import { mapBG, releaseBG } from './env.js?v=20261028205221';
+import { MENU_SPEC } from './music.js?v=20261028205221';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261028205221';
+import { renderForge, renderAchs } from './screens.js?v=20261028205221';
+import { renderShop } from './shop.js?v=20261028205221';
+import { freeChestReady } from './chests.js?v=20261028205221';
+import { Wallet } from './wallet.js?v=20261028205221';
+import { initLang, pickLang } from './i18n.js?v=20261028205221';
+import { Menus, RUN, clock } from './menus.js?v=20261028205221';
+import { Net } from './net.js?v=20261028205221';
+import { gemIc } from './res.js?v=20261028205221';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261028205221';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -50,8 +50,8 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261028204133').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261028204133').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261028205221').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261028205221').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев

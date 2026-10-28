@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261028204133';
-import * as A from './art.js?v=20261028204133';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261028204133';
-import { tile } from './iconmap.js?v=20261028204133';
-import { img } from './sprites.js?v=20261028204133';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261028204133';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261028205221';
+import * as A from './art.js?v=20261028205221';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261028205221';
+import { tile } from './iconmap.js?v=20261028205221';
+import { img } from './sprites.js?v=20261028205221';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261028205221';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -472,7 +472,7 @@ export class Renderer {
     if (u >= 1) return null;
     const hx = Math.cos(st.h), hy = Math.sin(st.h) * 0.5, hl = Math.hypot(hx, hy) || 1, lam = 0.42 * D;
     const cx = st.M.x + hx / hl * lam, cy = st.M.y + hy / hl * lam, mx = (st.sx + tx) / 2, my = (st.sy + ty) / 2;
-    const str = p.kind === 'bolt';                       // болты и гарпуны летят строго по прямой: смещение от дула гаснет линейно
+    const str = p.kind === 'bolt' || p.kind === 'shard';                       // болты и гарпуны летят строго по прямой: смещение от дула гаснет линейно
     const q = str ? 1 - u : (1 - u) * (1 - u), w = str ? 0 : 2 * u * (1 - u), dx = q * (st.M.x - st.sx) + w * (cx - mx), dy = q * (st.M.y - st.sy) + w * (cy - my);
     const vx = p.x + dx, vy = p.y + sy + dy;
     let dirx = null, diry = null;

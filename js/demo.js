@@ -32,7 +32,7 @@ export async function buildAll(ctrl) {
   const go = document.querySelector('#lo-go'); if (go) go.click(); await sleep(2200);
   const s = ctrl.sim; if (!s) return;
   s.locked.clear(); s.allowed = null; s.limits = {}; s.gold = 99999; s.hold = true;
-  const D = await import('./data.js?v=20261028204133');
+  const D = await import('./data.js?v=20261028205221');
   const types = [...Object.keys(D.TOWERS).map((t) => ['tower', t]), ...Object.keys(D.ECON).map((t) => ['econ', t])];
   const free = []; for (let r = 0; r < s.grid.length; r++) for (let c = 0; c < s.grid[0].length; c++) if (s.canBuild(c, r)) free.push([c, r]);
   // клетки вперемешку не нужны: идём по рядам сверху вниз через одну, чтобы здания не слипались

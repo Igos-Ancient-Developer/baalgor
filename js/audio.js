@@ -1,5 +1,14 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261028204133';
+import { createTrack, MENU_SPEC } from './music.js?v=20261028205221';
+// группы записей (сколько файлов) и кто какой группой умирает: [группа, скорость воспроизведения]
+const MON_FILES = { slime: 6, golem: 7, brute: 7, squeal: 6, bat: 5, ghost: 5, man: 3, roar: 8, wolf: 4, dry: 6, bone: 5 };
+const MON_OF = {
+  slime: ['slime', 1], slimelet: ['slime', 1.3], sandgolem: ['golem', 0.9], snowgolem: ['golem', 1], lavagolem: ['golem', 0.78], skeleton: ['bone', 1], iceskel: ['bone', 1.15],
+  zombie: ['brute', 1], ogre: ['brute', 0.8], butcher: ['brute', 0.7], goblin: ['squeal', 1], imp: ['squeal', 1.25], bat: ['bat', 1], gargoyle: ['bat', 0.75],
+  reaper: ['ghost', 0.9], djinn: ['ghost', 1.05], lich: ['ghost', 0.8], anubis: ['ghost', 0.95], knight: ['man', 0.85], pinky: ['roar', 1], baron: ['roar', 0.8], berserker: ['roar', 0.9],
+  yeti: ['roar', 0.85], ultrayeti: ['roar', 0.7], wolf: ['wolf', 1], hound: ['wolf', 0.85], mummy: ['dry', 1], pharaoh: ['dry', 0.8],
+};
+const LAYER = new Set(['goo', 'stone', 'ice', 'lava', 'bone', 'metal', 'dust']);      // у этих видов поверх записи тихо идёт синтез: хруст, треск, лязг
 export class Sfx {
   constructor() {
     this.ctx = null; this.sfxOn = true; this.musOn = true;
@@ -31,6 +40,7 @@ export class Sfx {
     const len = this.ctx.sampleRate * 1.5, buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     this.noiseBuf = buf;
+    this.loadMon();
     // эхо для музыки
     this.delay = this.ctx.createDelay(1.2); this.delay.delayTime.value = 0.42; const fb = this.ctx.createGain(); fb.gain.value = 0.38; const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800;
     this.delay.connect(lp); lp.connect(fb); fb.connect(this.delay); lp.connect(this.musBus);
@@ -103,6 +113,16 @@ export class Sfx {
     o.connect(f); o2.connect(f); f.connect(g); g.connect(this.sfxBus); o.start(t); o2.start(t); o.stop(t + d + 0.03); o2.stop(t + d + 0.03);
     this.noise('bandpass', 1500, 500, d * 0.8, 0.07 * v, 0, 1.2);
   }
+  // Записи смерти монстров (CC0, audio/mon/<группа><N>.m4a, см. audio/README.txt): грузятся один раз после первого нажатия
+  loadMon() {
+    if (this.mon) return; const mon = this.mon = {}, c = this.ctx;
+    for (const [g, n] of Object.entries(MON_FILES)) { mon[g] = []; for (let i = 1; i <= n; i++) fetch(new URL(`../audio/mon/${g}${i}.m4a`, import.meta.url)).then((r) => r.arrayBuffer()).then((ab) => new Promise((ok, no) => c.decodeAudioData(ab, ok, no))).then((b) => mon[g].push(b)).catch(() => {}); }
+  }
+  sample(g, rate, vol) {
+    const arr = this.mon && this.mon[g]; if (!arr || !arr.length) return false;
+    const c = this.ctx, s = c.createBufferSource(), gn = c.createGain(); s.buffer = arr[(Math.random() * arr.length) | 0]; s.playbackRate.value = rate * (0.94 + Math.random() * 0.12); gn.gain.value = vol;
+    s.connect(gn); gn.connect(this.sfxBus); s.start(); return true;
+  }
   // Смерть по видам: у каждого вида своё звучание, чтобы по слуху было понятно, кто погиб
   death(type, v = 1) {
     if (!this.ctx || !this.sfxOn || !this.gate('death', 0.06)) return;
@@ -111,6 +131,8 @@ export class Sfx {
       goblin: 'squeal', imp: 'squeal', bat: 'screech', gargoyle: 'screech', reaper: 'wail', djinn: 'wail', lich: 'wail', anubis: 'wail', knight: 'metal',
       pinky: 'roar', baron: 'roar', berserker: 'roar', yeti: 'roar', ultrayeti: 'roar', wolf: 'yelp', hound: 'yelp', mummy: 'dust', pharaoh: 'dust',
     }[type] || 'zombie';
+    const M = MON_OF[type];
+    if (M && this.sample(M[0], M[1], 0.95 * v)) { if (!LAYER.has(G)) { if (G === 'zombie') this.slop(0.35 * v, 0.1, 0.8 * r); return; } v *= 0.45; }
     switch (G) {
       case 'goo': this.slop(1 * v, 0, 0.7 * r); this.slop(0.7 * v, 0.12, 0.9 * r); for (let i = 0; i < 6; i++) this.tone('sine', 200 + Math.random() * 300, 700, 0.06, 0.12 * v, 0.05 + i * 0.06); break;
       case 'stone': this.tone('sine', 70 * r, 28, 0.5, 0.8 * v); this.noise('lowpass', 900, 80, 0.5, 0.5 * v); this.crunch(9, 1.2 * v, 0.02, 400, 2200); this.noise('bandpass', 300, 120, 0.35, 0.4 * v, 0.1, 2); break;
@@ -135,7 +157,7 @@ export class Sfx {
       case 'bolt': if (!this.gate('bolt', 0.05)) return; this.tone('triangle', 900, 260, 0.09, 0.13 * v); this.noise('highpass', 3500, 3000, 0.05, 0.07 * v); break;
       case 'mortar': if (!this.gate('mortar', 0.1)) return; this.noise('lowpass', 700, 90, 0.28, 0.4 * v); this.tone('sine', 130, 45, 0.25, 0.5 * v); break;
       case 'tesla': if (!this.gate('tesla', 0.06)) return; this.noise('bandpass', 2600, 1200, 0.2, 0.18 * v, 0, 2); this.tone('sawtooth', 1900, 200, 0.16, 0.06 * v); break;
-      case 'frost': if (!this.gate('frost', 0.06)) return; this.tone('sine', 2000, 1000, 0.12, 0.08 * v); this.tone('sine', 3000, 2200, 0.08, 0.04 * v, 0.02); break;
+      case 'frost': if (!this.gate('frost', 0.08)) return; this.noise('bandpass', 2400, 900, 0.12, 0.09 * v, 0, 1.2); this.tone('sine', 640, 320, 0.09, 0.05 * v); break;
       case 'toxic': if (!this.gate('toxic', 0.08)) return; this.tone('sine', 260, 640, 0.14, 0.16 * v); this.noise('lowpass', 900, 400, 0.1, 0.1 * v); break;
       case 'saw': if (!this.gate('saw', 0.1)) return; this.tone('sawtooth', 300, 800, 0.18, 0.07 * v); this.noise('bandpass', 4000, 2500, 0.15, 0.08 * v, 0, 3); break;
       case 'sawhit': if (!this.gate('sawhit', 0.05)) return; this.tone('sawtooth', 700, 350, 0.06, 0.07 * v); break;
