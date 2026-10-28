@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261028194558';
-import * as A from './art.js?v=20261028194558';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261028194558';
-import { tile } from './iconmap.js?v=20261028194558';
-import { img } from './sprites.js?v=20261028194558';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261028194558';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261028201959';
+import * as A from './art.js?v=20261028201959';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261028201959';
+import { tile } from './iconmap.js?v=20261028201959';
+import { img } from './sprites.js?v=20261028201959';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261028201959';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -565,30 +565,41 @@ export class Renderer {
       }
     }
   }
-  // монета рудника и банка вращается вокруг вертикальной оси, как в Марио: анфас золотой диск с чеканкой, ребром — тонкая полоска. Банк крупнее и ярче.
+  // Рудник выбрасывает мешок с золотом, банк — крупную объёмную монету: она вращается вокруг вертикальной оси, у неё настоящее ребро (стопка тёмных эллипсов), лицо с чеканкой и блик.
+  // Обе висят заметно выше здания, чтобы не прятаться за ним.
   drawBags(ctx, t) {
+    const bag = bagSprite(), coin = coinSprite(30);
     this.sim.bags.forEach((bg, i) => {
-      const sky = bg.kind === 'sky', bank = bg.kind === 'bank', fall = sky ? Math.max(0, 1 - bg.t / 0.7) : 0, rise = !sky ? Math.min(12, bg.t * 50) : 0;
-      const by = bg.y - 16 - rise - fall * fall * 90 + Math.sin(t * 4 + i) * 2.2 - Math.abs(Math.sin(t * 2.4 + i)) * 3, left = 1 - bg.t / bg.life, hurry = bg.life - bg.t < 3;
-      const R = bank ? 15 : 11.5, ph = t * 3.4 + i * 1.7, cs = Math.cos(ph), w = Math.max(0.09, Math.abs(cs));
+      const sky = bg.kind === 'sky', bank = bg.kind === 'bank', fall = sky ? Math.max(0, 1 - bg.t / 0.7) : 0, rise = !sky ? Math.min(26, bg.t * 70) : 0;
+      const by = bg.y - 22 - rise - fall * fall * 90 + Math.sin(t * 4 + i) * 2.2, left = 1 - bg.t / bg.life, hurry = bg.life - bg.t < 3;
       ctx.save(); ctx.translate(bg.x, by);
-      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (bank ? 0.75 : 0.55) + 0.2 * Math.sin(t * 6 + i); ctx.drawImage(glowSprite(bank ? '#ffe9a0' : '#ffd24a'), -R * 2.3, -R * 2.3, R * 4.6, R * 4.6); ctx.globalCompositeOperation = 'source-over';
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.2 * Math.sin(t * 6 + i); const gs = glowSprite(bank ? '#ffe9a0' : '#ffd24a'); const G = bank ? 56 : 48; ctx.drawImage(gs, -G / 2, -G / 2, G, G); ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = hurry ? 0.45 + 0.55 * Math.abs(Math.sin(t * 14)) : 1;
-      // ребро монеты (толщина) и лицевая сторона
-      const th = R * 0.34 * (1 - w) + 1;
-      ctx.fillStyle = '#9a6a10'; ctx.strokeStyle = '#2a1804'; ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.ellipse(th * Math.sign(cs || 1) * -0.5, 0, R * w, R, 0, 0, T2); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(th * Math.sign(cs || 1) * 0.5, 0, R * w, R, 0, 0, T2);
-      const gr = ctx.createLinearGradient(-R * w, -R, R * w, R); gr.addColorStop(0, bank ? '#fff3b0' : '#ffe888'); gr.addColorStop(0.5, '#f2b81e'); gr.addColorStop(1, '#b8780c');
-      ctx.fillStyle = gr; ctx.fill(); ctx.stroke();
-      if (w > 0.35) {                                                              // чеканка видна, пока монета повёрнута лицом
-        ctx.save(); ctx.translate(th * Math.sign(cs || 1) * 0.5, 0); ctx.scale(w, 1); ctx.strokeStyle = 'rgba(120,70,0,.85)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(0, 0, R * 0.7, 0, T2); ctx.stroke();
-        ctx.fillStyle = 'rgba(120,70,0,.9)'; ctx.font = `bold ${Math.round(R * 1.1)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(bank ? '$' : '●', 0, 1);
-        ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.ellipse(-R * 0.35, -R * 0.45, R * 0.22, R * 0.12, -0.6, 0, T2); ctx.fill(); ctx.restore();
+      if (bank) this.drawCoin3d(ctx, t * 3.2 + i * 1.7, 15);
+      else {
+        const sc = (sky ? 1 : 1.15) * (1 + 0.07 * Math.sin(t * 6 + i)); ctx.scale(sc * (sky ? Math.abs(Math.cos(t * 3 + i)) * 0.55 + 0.45 : 1), sc);
+        const ic = tile('bag_gold'); if (ic) { ctx.imageSmoothingQuality = 'high'; ctx.drawImage(ic, -13, -14, 26, 26); } else { const sp = sky ? coin : bag; ctx.drawImage(sp, -sp.lw / 2, -sp.lh / 2, sp.lw, sp.lh); }
       }
       ctx.restore();
-      ctx.save(); ctx.strokeStyle = hurry ? 'rgba(255,120,90,.95)' : 'rgba(255,236,150,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(bg.x, by, R + 5, -Math.PI / 2, -Math.PI / 2 + T2 * left); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.strokeStyle = hurry ? 'rgba(255,120,90,.95)' : 'rgba(255,236,150,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(bg.x, by, (bank ? 20 : 17), -Math.PI / 2, -Math.PI / 2 + T2 * left); ctx.stroke(); ctx.restore();
     });
+  }
+  // монета с ребром: ph — угол поворота; при повороте ребро выглядит стопкой эллипсов тёмного золота, лицо — светлым диском поверх
+  drawCoin3d(ctx, ph, R) {
+    const cs = Math.cos(ph), sn = Math.sin(ph), w = Math.max(0.12, Math.abs(cs)), T = R * 0.42, N = 7, side = cs >= 0 ? 1 : -1;
+    ctx.lineWidth = 1.4; ctx.strokeStyle = '#2a1804';
+    for (let k = 0; k < N; k++) {                                               // ребро: слои от задней грани к передней
+      const f = k / (N - 1) - 0.5, ox = -sn * T * f * 1.0;
+      ctx.fillStyle = k % 2 ? '#b8800f' : '#8a5a08'; ctx.beginPath(); ctx.ellipse(ox, 0, R * w, R, 0, 0, T2); ctx.fill(); if (k === 0 || k === N - 1) ctx.stroke();
+    }
+    const ox = sn * T * 0.5 * -1;                                                // лицевая грань
+    ctx.beginPath(); ctx.ellipse(ox, 0, R * w, R, 0, 0, T2);
+    const gr = ctx.createLinearGradient(ox - R * w, -R, ox + R * w, R); gr.addColorStop(0, '#fff3b0'); gr.addColorStop(0.5, '#f2b81e'); gr.addColorStop(1, '#b8780c'); ctx.fillStyle = gr; ctx.fill(); ctx.stroke();
+    if (w > 0.3) {
+      ctx.save(); ctx.translate(ox, 0); ctx.scale(w * side, 1); ctx.strokeStyle = 'rgba(120,70,0,.85)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(0, 0, R * 0.72, 0, T2); ctx.stroke();
+      ctx.fillStyle = 'rgba(120,70,0,.92)'; ctx.font = `bold ${Math.round(R * 1.15)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('$', 0, 1);
+      ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.ellipse(-R * 0.36, -R * 0.46, R * 0.22, R * 0.12, -0.6, 0, T2); ctx.fill(); ctx.restore();
+    }
   }
 
   drawParticles(ctx, gore, t) {

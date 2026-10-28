@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261028194558';
+import { createTrack, MENU_SPEC } from './music.js?v=20261028201959';
 export class Sfx {
   constructor() {
     this.ctx = null; this.sfxOn = true; this.musOn = true;
@@ -102,6 +102,30 @@ export class Sfx {
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16 * v, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
     o.connect(f); o2.connect(f); f.connect(g); g.connect(this.sfxBus); o.start(t); o2.start(t); o.stop(t + d + 0.03); o2.stop(t + d + 0.03);
     this.noise('bandpass', 1500, 500, d * 0.8, 0.07 * v, 0, 1.2);
+  }
+  // Смерть по видам: у каждого вида своё звучание, чтобы по слуху было понятно, кто погиб
+  death(type, v = 1) {
+    if (!this.ctx || !this.sfxOn || !this.gate('death', 0.06)) return;
+    const r = 0.88 + Math.random() * 0.26, G = {
+      slime: 'goo', slimelet: 'goo', sandgolem: 'stone', snowgolem: 'ice', lavagolem: 'lava', skeleton: 'bone', iceskel: 'bone', zombie: 'zombie', ogre: 'zombie', butcher: 'zombie',
+      goblin: 'squeal', imp: 'squeal', bat: 'screech', gargoyle: 'screech', reaper: 'wail', djinn: 'wail', lich: 'wail', anubis: 'wail', knight: 'metal',
+      pinky: 'roar', baron: 'roar', berserker: 'roar', yeti: 'roar', ultrayeti: 'roar', wolf: 'yelp', hound: 'yelp', mummy: 'dust', pharaoh: 'dust',
+    }[type] || 'zombie';
+    switch (G) {
+      case 'goo': this.slop(1 * v, 0, 0.7 * r); this.slop(0.7 * v, 0.12, 0.9 * r); for (let i = 0; i < 6; i++) this.tone('sine', 200 + Math.random() * 300, 700, 0.06, 0.12 * v, 0.05 + i * 0.06); break;
+      case 'stone': this.tone('sine', 70 * r, 28, 0.5, 0.8 * v); this.noise('lowpass', 900, 80, 0.5, 0.5 * v); this.crunch(9, 1.2 * v, 0.02, 400, 2200); this.noise('bandpass', 300, 120, 0.35, 0.4 * v, 0.1, 2); break;
+      case 'ice': this.crunch(6, 1 * v, 0, 3000, 7000); [3400, 4300, 5200, 4700].forEach((f, i) => this.tone('sine', f * r, f * r * 0.7, 0.14, 0.09 * v, i * 0.035)); this.tone('sine', 120, 45, 0.3, 0.5 * v); this.noise('highpass', 5500, 3500, 0.2, 0.2 * v); break;
+      case 'lava': this.tone('sine', 60 * r, 25, 0.55, 0.8 * v); this.noise('lowpass', 700, 60, 0.5, 0.5 * v); this.noise('highpass', 5000, 2500, 0.55, 0.16 * v, 0.05); this.crunch(6, 0.9 * v, 0.03, 500, 2600); this.slop(0.4 * v, 0.1, 0.6); break;
+      case 'bone': for (let i = 0; i < 7; i++) { this.noise('bandpass', 1800 + Math.random() * 3200, 900, 0.025, 0.4 * v, i * 0.03 + Math.random() * 0.02, 5); this.tone('triangle', (700 + Math.random() * 900) * r, 300, 0.04, 0.12 * v, i * 0.03); } this.tone('sine', 140 * r, 60, 0.12, 0.35 * v); break;
+      case 'zombie': this.groan(1.2 * v, 0.7 * r); this.slop(0.7 * v, 0.12, 0.8 * r); this.punch(0.5 * v, 0.7); break;
+      case 'squeal': this.tone('square', 1100 * r, 2400 * r, 0.09, 0.1 * v); this.tone('square', 2400 * r, 800 * r, 0.14, 0.09 * v, 0.09); this.slop(0.45 * v, 0.12, 1.3); break;
+      case 'screech': { for (let i = 0; i < 3; i++) this.tone('sawtooth', (2400 + i * 350) * r, (1500 + i * 200) * r, 0.1, 0.07 * v, i * 0.07); this.noise('bandpass', 3000, 1200, 0.25, 0.14 * v, 0, 2); this.slop(0.4 * v, 0.12, 1.2); break; }
+      case 'wail': { const c = this.ctx, t = c.currentTime, o = c.createOscillator(), lf = c.createOscillator(), lg = c.createGain(), g = c.createGain(), f0 = 520 * r; o.type = 'triangle'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * 0.4, t + 0.6); lf.frequency.value = 7; lg.gain.value = 14; lf.connect(lg); lg.connect(o.frequency); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.14 * v, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.62); o.connect(g); g.connect(this.sfxBus); o.start(t); lf.start(t); o.stop(t + 0.7); lf.stop(t + 0.7); this.noise('bandpass', 2200, 600, 0.5, 0.1 * v, 0, 2); break; }
+      case 'metal': [820, 1230, 1840, 2650].forEach((f, i) => this.tone('sine', f * r, f * r * 0.96, 0.4 - i * 0.06, 0.13 * v / (1 + i * 0.3))); this.noise('highpass', 4500, 3000, 0.04, 0.3 * v); this.groan(0.8 * v, 0.6 * r); this.punch(0.5 * v, 0.8); break;
+      case 'roar': { const c = this.ctx, t = c.currentTime, d = 0.5, o = c.createOscillator(), o2 = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain(), ws = c.createWaveShaper(), cv = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = i / 128 - 1; cv[i] = Math.tanh(x * 3); } ws.curve = cv; o.type = 'sawtooth'; o2.type = 'square'; o.frequency.setValueAtTime(110 * r, t); o.frequency.exponentialRampToValueAtTime(48 * r, t + d); o2.frequency.setValueAtTime(55 * r, t); o2.frequency.exponentialRampToValueAtTime(30 * r, t + d); f.type = 'lowpass'; f.Q.value = 3; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(220, t + d); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.2 * v, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(ws); o2.connect(ws); ws.connect(f); f.connect(g); g.connect(this.sfxBus); o.start(t); o2.start(t); o.stop(t + d + 0.03); o2.stop(t + d + 0.03); this.noise('lowpass', 800, 120, 0.4, 0.35 * v); this.slop(0.5 * v, 0.2, 0.7); break; }
+      case 'yelp': this.tone('square', 900 * r, 1700 * r, 0.07, 0.09 * v); this.tone('square', 1700 * r, 500 * r, 0.16, 0.09 * v, 0.07); this.slop(0.5 * v, 0.1, 1.0); break;
+      case 'dust': this.noise('bandpass', 2600, 700, 0.5, 0.2 * v, 0, 1.5); this.noise('highpass', 4500, 2500, 0.35, 0.14 * v, 0.02); this.groan(0.5 * v, 0.55 * r); this.crunch(3, 0.5 * v, 0.1, 900, 2400); break;
+    }
   }
 
   play(name, vol = 1) {
@@ -207,7 +231,7 @@ export class Sfx {
 export function attachSfx(sim, sfx) {
   sim.on('shot', (d) => sfx.play({ bolt: 'bolt', mortar: 'mortar', tesla: 'tesla', frost: 'frost', toxic: 'toxic', saw: 'saw', flame: 'flame', void: 'void', harpoon: 'harpoon', magnet: 'void', grinder: 'crack', giant: 'mortar' }[d.kind]));
   sim.on('explosion', (d) => { if (d.kind === 'meteor') sfx.play('meteor'); else if (d.kind === 'pop' || d.kind === 'shatter') sfx.play('crack', 0.6); else if (d.kind === 'vial') sfx.play('splat', 0.8); else sfx.play(d.kind === 'bomblet' ? 'boomsmall' : 'boom', d.big ? 1.2 : 1); });
-  sim.on('kill', (d) => { sfx.play('death', d.big ? 1 : 0.7); });
+  sim.on('kill', (d) => sfx.death(d.e && d.e.type, 0.8));
   sim.on('upgrade', () => sfx.play('upgrade'));
   sim.on('bag', (d) => sfx.play(d.tapped ? 'bag' : 'coin', 0.8));
 }

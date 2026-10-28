@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261028194558';
+import * as D from './data.js?v=20261028201959';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -306,7 +306,7 @@ export class Sim {
     return bonus || 1;
   }
   callAllWaves() { let n = 0; while (this.canCallWave()) { this.callWave(true); n++; } return n; }
-  // золото за ранний вызов: только за время сверх половины паузы (раньше платили за всё оставшееся время)
+  // золото за ранний вызов: за всё оставшееся до волны время (EARLY_FROM — доля паузы, за которую не платят)
   earlyBonus() { const gap = D.waveGap(this.idx(this.wave)), t = Math.max(0, this.nextWaveT - gap * D.EARLY_FROM); return Math.round(t * (0.8 + 0.03 * this.idx(this.wave)) * (1 + this.D.gold)); }
   waveBonus() { return this.qi < this.queue.length ? 0 : this.earlyBonus(); }
   canCallWave() { return this.state === 'play' && this.wave < this.total && this.nextWaveT > 2; }

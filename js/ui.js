@@ -1,11 +1,11 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261028194558';
-import * as A from './art.js?v=20261028194558';
-import { uiIcon } from './env.js?v=20261028194558';
-import { SPR } from './sprites.js?v=20261028194558';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261028194558';
-import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261028194558';
-import { TARGET_MODES } from './sim.js?v=20261028194558';
+import * as D from './data.js?v=20261028201959';
+import * as A from './art.js?v=20261028201959';
+import { uiIcon } from './env.js?v=20261028201959';
+import { SPR } from './sprites.js?v=20261028201959';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261028201959';
+import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261028201959';
+import { TARGET_MODES } from './sim.js?v=20261028201959';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -54,7 +54,7 @@ export const towerIcon = (type, lvl = 1, br = null, picks = null, o = {}) => {
   const raster = SPR.ok && SPR.towers[bt], crop = raster && !o.noCrop ? headCrop(bt, lvl, br) : null;
   return spriteIcon(`t:${type}:${lvl}:${br || ''}:${picks ? picks.join('') : ''}:${o.k || ''}`, composite(bt, lvl, br, picks), { bg: tintBg(type), frame: prem ? 'arcane' : 'gold', badge: prem ? 'crown' : null, badgeCol: '#ffd24a', spriteScale: 1.4, crop, ...o });
 };
-export const econIcon = (type, lvl = 3, o = {}) => spriteIcon(`e:${type}:${lvl}:${o.k || ''}`, A.econBody(type, lvl), { bg: tintBg(type), spriteScale: 1.5, ...o });
+export const econIcon = (type, lvl = 1, o = {}) => spriteIcon(`e:${type}:${lvl}:${o.k || ''}`, A.econBody(type, lvl), { bg: tintBg(type), spriteScale: 1.5, ...o });
 
 const STAT_LABEL = { coin: 'Монета банка', buff: 'Прибавка соседям', dmg: 'Урон', rate: 'Скорострельность', range: 'Дальность', splash: 'Радиус взрыва', burn: 'Горение', poison: 'Яд', chains: 'Прыжков молнии', pierce: 'Пробивает целей', critMult: 'Сила крита', execute: 'Казнь раненых', slow: 'Замедление', freeze: 'Шанс заморозки', brittle: 'Уязвимость ко льду', shatter: 'Осколки льда', stacks: 'Слоёв яда', plague: 'Радиус чумы', shred: 'Снятие брони', orbit: 'Лезвий вокруг', bounce: 'Рикошетов', stun: 'Шанс оглушения', cluster: 'Бомб в кассете', fire: 'Огонь', spread: 'Заражение огнём', trail: 'Огонь за целью', pull: 'Отбрасывание', collapseMult: 'Мощь схлопывания', anchor: 'Пригвождение', heavyMult: 'Урон по тяжёлым', armorPierce: 'Пробитие брони', rateBuff: 'Скорость союзников', dmgBuff: 'Урон союзников', mark: 'Метка на врагах', income: 'Золото с монеты', cap: 'Потолок монеты', bonus: 'Золото за убийство' };
 const UNIT = { rate: ' /с', range: ' кл.', splash: ' кл.', plague: ' кл.' };

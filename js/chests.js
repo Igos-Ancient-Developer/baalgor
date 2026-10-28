@@ -2,14 +2,15 @@
 // Деревянный: за души или за немного кристаллов, в основном души. Серебряный: только за кристаллы, в основном кристаллы.
 // Золотой: самый дорогой, лучшая добыча, редкие премиум-башни. Каждая башня — отдельная строка таблицы (js/chesttable.js).
 // Для кристаллов бросок делает сервер (supabase/chests.sql, функция chest_open) — по этой же таблице; здесь бросок нужен для оплаты душами (души хранятся в сохранении) и для локального режима вне Telegram.
-import * as D from './data.js?v=20261028194558';
-import * as M from './meta.js?v=20261028194558';
-import { Net } from './net.js?v=20261028194558';
-import { Wallet } from './wallet.js?v=20261028194558';
-import { towerIcon, econIcon } from './ui.js?v=20261028194558';
-import { iconUrl } from './icons.js?v=20261028194558';
-import { url as imgUrl } from './sprites.js?v=20261028194558';
-import { CHEST_ROWS, POOL_OF } from './chesttable.js?v=20261028194558';
+import * as D from './data.js?v=20261028201959';
+import * as M from './meta.js?v=20261028201959';
+import { Net } from './net.js?v=20261028201959';
+import { Wallet } from './wallet.js?v=20261028201959';
+import { towerIcon, econIcon } from './ui.js?v=20261028201959';
+import { iconUrl } from './icons.js?v=20261028201959';
+import { url as imgUrl } from './sprites.js?v=20261028201959';
+import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261028201959';
+import { createChest3D } from './chest3d.js?v=20261028201959';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -36,12 +37,32 @@ export function rollChest(kind, pay, save, rnd = Math.random) {
   let x = rnd() * rows.reduce((s, r) => s + r.w, 0), row = rows[rows.length - 1];
   for (const r of rows) { if ((x -= r.w) < 0) { row = r; break; } }
   if (row.t === 'unlock') return have(save, row.id) ? dupLoot(kind, row.id, row.pool) : { t: 'unlock', id: row.id, pool: row.pool };
+  if (row.t === 'stars') return { t: 'stars', n: row.min };
   return { t: row.t, n: rint(row.min, row.max, rnd) };
 }
-const rowRar = (r) => (r.t === 'unlock' ? (r.pool === 'prem' ? 'l' : r.pool === 'mid' ? 'r' : 'u') : r.t === 'gems' ? (r.max >= 250 ? 'e' : r.max >= 90 ? 'r' : 'u') : r.max >= 800 ? 'e' : r.max >= 300 ? 'r' : r.max >= 90 ? 'u' : 'c');
-// шансы для показа игроку: список строк «что — сколько процентов — редкость»
+// редкость строки по её шансу, как в кейсах: чем реже, тем «краснее» и «золотее»
+const rarOfChance = (p) => (p >= 8 ? 'c' : p >= 2 ? 'u' : p >= 0.5 ? 'r' : p >= 0.05 ? 'e' : 'l');
+const rowRar = (kind, r) => rarOfChance(chanceOf(kind, r));
+const RARNAME = { c: 'Обычное', u: 'Необычное', r: 'Редкое', e: 'Эпическое', l: 'Легендарное' };
+const RARCOL = { c: '#aab0b8', u: '#5ab0ff', r: '#8a6aff', e: '#ff5ad0', l: '#ffcf3a' };
+
+// ───── картинки и значки добычи ─────
+const IC = (n) => imgUrl('ui/ic/' + n + '.webp');
+export const chestImg = (theme, st = 'closed') => IC(`chest_${theme}_${st}`);
+export const chestHtml = (theme) => `<img src="${chestImg(theme)}" alt="">`;
+const gemPic = (n) => IC(n >= 250 ? 'loot_gem3' : n >= 90 ? 'loot_gem2' : 'loot_gem1');
+const unlockIcon = (id) => iconUrl(D.ECON[id] ? econIcon(id, 1, { size: 128, k: 'chest' }) : towerIcon(id, 1, null, null, { size: 128, k: 'chest' }));
+const starPic = () => IC('cont_cup');
+const lootIcon = (l) => (l.t === 'souls' ? `<img src="${IC('loot_souls')}" alt="">` : l.t === 'gems' ? `<img src="${gemPic(l.n)}" alt="">` : l.t === 'stars' ? `<img src="${starPic()}" alt="">` : `<img src="${unlockIcon(l.id)}" alt="" ${D.isPremium(l.id) ? 'class="prem"' : ''}>`);
+const rowPic = (r) => (r.t === 'souls' ? IC('loot_souls') : r.t === 'gems' ? gemPic(r.max) : r.t === 'stars' ? starPic() : unlockIcon(r.id));
+const lootName = (l) => (l.t === 'souls' ? `+${fmt(l.n)} душ` : l.t === 'gems' ? `+${fmt(l.n)} кристаллов` : l.t === 'stars' ? `${l.n} Telegram Stars` : nameOf(l.id));
+const lootSub = (l) => (l.dup ? `У тебя уже есть «${nameOf(l.dup)}», вместо него — компенсация` : l.t === 'stars' ? 'Главный приз! Мы свяжемся с тобой' : l.t === 'unlock' ? (D.isPremium(l.id) ? 'Премиум-башня, навсегда' : 'Новое здание, навсегда') : l.t === 'gems' ? 'Кристаллы на счёт' : 'Души в Кузницу');
+// какая строка таблицы выпала (для подсветки и подписи «шанс N%»)
+const winRow = (kind, loot) => CHESTS[kind].table.findIndex((r) => (loot.dup ? r.t === 'unlock' && r.id === loot.dup : loot.t === 'unlock' ? r.t === 'unlock' && r.id === loot.id : loot.t === 'stars' ? r.t === 'stars' : r.t === loot.t && loot.n >= r.min && loot.n <= r.max));
+const rarOf = (kind, loot) => { const i = winRow(kind, loot); return i >= 0 ? rowRar(kind, CHESTS[kind].table[i]) : loot.dup ? 'c' : 'u'; };
+// шансы для показа игроку (карточка сундука в магазине)
 export function oddsOf(kind) {
-  return CHESTS[kind].table.map((r) => [r.t === 'souls' ? `${fmt(r.min)}–${fmt(r.max)} душ` : r.t === 'gems' ? `${fmt(r.min)}–${fmt(r.max)} кристаллов` : nameOf(r.id), r.w, rowRar(r)]);
+  return CHESTS[kind].table.map((r) => [r.t === 'souls' ? `${fmt(r.min)}–${fmt(r.max)} душ` : r.t === 'gems' ? `${fmt(r.min)}–${fmt(r.max)} кристаллов` : r.t === 'stars' ? `${r.min} Telegram Stars` : nameOf(r.id), pctText(chanceOf(kind, r)), rowRar(kind, r), rowPic(r)]);
 }
 
 // ───── применить добычу к сохранению (души — всегда на клиенте; кристаллы и здания уже записал сервер, если платили кристаллами онлайн) ─────
@@ -51,116 +72,147 @@ export function applyLoot(save, loot, { server = false } = {}) {
   else if (loot.t === 'unlock') { if (!server || !D.isPremium(loot.id)) save.unlocked[loot.id] = 1; }
 }
 
-// ───── картинки и значки добычи ─────
-const IC = (n) => imgUrl('ui/ic/' + n + '.webp');
-export const chestImg = (theme, st = 'closed') => IC(`chest_${theme}_${st}`);
-export const chestHtml = (theme) => `<img src="${chestImg(theme)}" alt="">`;
-const gemPic = (n) => IC(n >= 250 ? 'loot_gem3' : n >= 90 ? 'loot_gem2' : 'loot_gem1');
-const unlockIcon = (id) => iconUrl(D.ECON[id] ? econIcon(id, 3, { size: 128, k: 'chest' }) : towerIcon(id, 1, null, null, { size: 128, k: 'chest' }));
-const lootIcon = (l) => (l.t === 'souls' ? `<img src="${IC('loot_souls')}" alt="">` : l.t === 'gems' ? `<img src="${gemPic(l.n)}" alt="">` : `<img src="${unlockIcon(l.id)}" alt="" ${D.isPremium(l.id) ? 'class="prem"' : ''}>`);
-const rowPic = (r) => (r.t === 'souls' ? IC('loot_souls') : r.t === 'gems' ? gemPic(r.max) : unlockIcon(r.id));
-const lootName = (l) => (l.t === 'souls' ? `+${fmt(l.n)} душ` : l.t === 'gems' ? `+${fmt(l.n)} кристаллов` : nameOf(l.id));
-const lootSub = (l) => (l.dup ? `У тебя уже есть «${nameOf(l.dup)}», вместо него — компенсация` : l.t === 'unlock' ? (D.isPremium(l.id) ? 'Премиум-башня, навсегда' : 'Новое здание, навсегда') : l.t === 'gems' ? 'Кристаллы на счёт' : 'Души в Кузницу');
-const rarOf = (l) => {
-  if (l.t === 'unlock') return l.pool === 'prem' ? 'l' : l.pool === 'mid' ? 'r' : 'u';
-  if (l.dup) return 'u';
-  if (l.t === 'gems') return l.n >= 250 ? 'e' : l.n >= 90 ? 'r' : 'u';
-  return l.n >= 800 ? 'e' : l.n >= 300 ? 'r' : l.n >= 90 ? 'u' : 'c';
-};
-const RARNAME = { c: 'Обычное', u: 'Необычное', r: 'Редкое', e: 'Эпическое', l: 'Легендарное' };
-// какая строка таблицы выпала (для подсветки и подписи «шанс N%»)
-const winRow = (kind, loot) => CHESTS[kind].table.findIndex((r) => (loot.dup ? r.t === 'unlock' && r.id === loot.dup : loot.t === 'unlock' ? r.t === 'unlock' && r.id === loot.id : r.t === loot.t && loot.n >= r.min && loot.n <= r.max));
-const rowSmall = (r) => (r.t === 'unlock' ? '' : `${fmt(r.min)}–${fmt(r.max)}`);
+// ───── склад сундуков: души → склад в сохранении, кристаллы → склад на сервере (вне Telegram — тоже в сохранении) ─────
+export const stockOf = (save, kind) => ((save.stock || {})[kind] || 0) + ((save.chestsSrv || {})[kind] || 0);
+export async function refreshStock(save) {
+  if (!Wallet.online) return;
+  try { const r = await Net.call('chest_stock', { init_data: Net.initData() }); if (r && r.chests) save.chestsSrv = r.chests; } catch (e) { /* без связи */ }
+}
+// купить n сундуков про запас
+export async function buyChests(save, kind, pay, n) {
+  const c = CHESTS[kind]; save.stock = save.stock || {};
+  if (pay === 'souls') {
+    if (!c.souls) return { error: 'bad' };
+    if ((save.souls || 0) < c.souls * n) return { error: 'souls', price: c.souls * n };
+    save.souls -= c.souls * n; save.stock[kind] = (save.stock[kind] || 0) + n; Wallet.onChange(); return { ok: true };
+  }
+  if (Wallet.online) {
+    try {
+      const r = await Net.call('chest_buy', { init_data: Net.initData(), p: { kind, n } });
+      if (r && r.ok) { Wallet.apply(r); if (r.chests) save.chestsSrv = r.chests; Wallet.onChange(); return { ok: true }; }
+      return r || { error: 'net' };
+    } catch (e) { return { error: 'net' }; }
+  }
+  if ((save.gems || 0) < c.gems * n) return { error: 'gems', price: c.gems * n };
+  save.gems -= c.gems * n; save.stock[kind] = (save.stock[kind] || 0) + n; Wallet.onChange(); return { ok: true };
+}
+// открыть n сундуков со склада: сначала купленные за души (бросок на клиенте), затем кристальные (бросок на сервере)
+export async function openChests(save, kind, n) {
+  save.stock = save.stock || {}; const loots = []; let left = Math.min(n, stockOf(save, kind));
+  const local = Math.min(left, save.stock[kind] || 0);
+  for (let i = 0; i < local; i++) { const l = rollChest(kind, Wallet.online ? 'souls' : 'gems', save); applyLoot(save, l); loots.push(l); }
+  save.stock[kind] = (save.stock[kind] || 0) - local; left -= local;
+  if (left > 0) {
+    const owned = Object.keys(save.unlocked || {}).filter((id) => save.unlocked[id]);
+    try {
+      const r = await Net.call('chest_open', { init_data: Net.initData(), p: { kind, n: left, from: 'stock', owned } });
+      if (!(r && r.ok)) { Wallet.onChange(); return { error: (r && r.error) || 'net', loots }; }
+      Wallet.apply(r); if (r.chests) save.chestsSrv = r.chests;
+      for (const l of r.loots || []) { applyLoot(save, l, { server: true }); loots.push(l); }
+    } catch (e) { Wallet.onChange(); return { error: 'net', loots }; }
+  }
+  Wallet.onChange(); return loots.length ? { ok: true, loots } : { error: 'stock' };
+}
 
+// ───── окно открытия ─────
 const countUp = (e, to, ms, suffix) => new Promise((res) => {
   const t0 = performance.now(), f = (t) => { const k = Math.min(1, (t - t0) / ms), q = 1 - Math.pow(1 - k, 3); e.textContent = '+' + fmt(to * q) + suffix; if (k < 1) requestAnimationFrame(f); else res(); };
   requestAnimationFrame(f);
 });
 // предмет вылетает из сундука по дуге, вращаясь, и падает обратно
-function fling(layer, src, dx, dy, big = false) {
-  const im = el('img', 'cfx-fly'); im.src = src; if (big) im.classList.add('big'); layer.appendChild(im);
-  const peak = 150 + Math.random() * 130, N = 18, rot = (Math.random() - 0.5) * 900, kf = [];
-  for (let i = 0; i <= N; i++) { const t = i / N; kf.push({ transform: `translate(${dx * t}px, ${-4 * peak * t * (1 - t) * 1 + dy * t * t * 0}px) translate(-50%, -50%) rotate(${rot * t}deg) scale(${0.3 + Math.sin(Math.min(1, t * 1.4) * Math.PI / 2) * 0.8})`, opacity: t < 0.08 ? t / 0.08 : t > 0.8 ? (1 - t) / 0.2 : 1, offset: t }); }
+function fling(layer, src, dx) {
+  const im = el('img', 'cfx-fly'); im.src = src; layer.appendChild(im);
+  const peak = 140 + Math.random() * 120, N = 18, rot = (Math.random() - 0.5) * 900, kf = [];
+  for (let i = 0; i <= N; i++) { const t = i / N; kf.push({ transform: `translate(${dx * t}px, ${-4 * peak * t * (1 - t)}px) translate(-50%, -50%) rotate(${rot * t}deg) scale(${0.3 + Math.sin(Math.min(1, t * 1.4) * Math.PI / 2) * 0.8})`, opacity: t < 0.08 ? t / 0.08 : t > 0.8 ? (1 - t) / 0.2 : 1, offset: t }); }
   const a = im.animate(kf, { duration: 1100 + Math.random() * 500, easing: 'linear', fill: 'forwards' }); a.onfinish = () => im.remove();
 }
-
-// ───── окно открытия: весь экран затемнён, по центру объёмный сундук на магическом круге. Падает, поворачивается за пальцем, раскручивается и взлетает,
-// вспышка, крышка открыта, из сундука разлетаются предметы, главная добыча поднимается над ним ─────
-export async function playOpening(kind, loot, ctrl, { again = null } = {}) {
-  const c = CHESTS[kind], sfx = ctrl.sfx, rar = rarOf(loot), wi = winRow(kind, loot), row = wi >= 0 ? c.table[wi] : null;
-  const RC = { c: '#aab0b8', u: '#6adf6a', r: '#4aa8ff', e: '#b46aff', l: '#ffcf3a' }[rar];
-  const odds = c.table.map((r, i) => `<div class="od r-${rowRar(r)}${i === wi ? ' win' : ''}"><img src="${rowPic(r)}" alt=""><b>${r.w}%</b>${rowSmall(r) ? `<small>${rowSmall(r)}</small>` : ''}</div>`).join('');
-  const closed = chestImg(c.theme), opened = chestImg(c.theme, 'open');
-  [closed, opened].forEach((u) => { const im = new Image(); im.src = u; });      // прогрев: при вспышке картинка уже готова
-  const ext = (u) => Array.from({ length: 7 }, (_, i) => `<img class="ex" style="transform: translateZ(${-(i + 1) * 3.2}px)" src="${u}" alt="">`).join('');      // слои глубины: при повороте сундук выглядит объёмным
-  const root = el('div', 'cfx'); root.id = 'cfx'; root.style.setProperty('--cc', c.color); root.style.setProperty('--rc', RC);
-  root.innerHTML = `<div class="cfx-rays"></div><div class="cfx-glow"></div><div class="cfx-title">${c.name}</div>
-    <div class="cfx-stage"><div class="cfx-circle"><i></i><i></i></div><div class="cfx-beams"><i></i><i></i><i></i><i></i><i></i></div>
-      <div class="cfx-chestw"><div class="cfx-tilt"><div class="cfx-shake"><div class="cfx-spin">
-        <div class="grp closed">${ext(closed)}<img class="fr" src="${closed}" alt=""></div><div class="grp open">${ext(opened)}<img class="fr" src="${opened}" alt=""></div>
-      </div></div></div></div>
-      <div class="cfx-fly-layer"></div><div class="cfx-hint">Нажми на сундук</div></div>
-    <div class="cfx-loot${loot.t === 'unlock' ? ' tw' : ''}">${lootIcon(loot)}</div><div class="cfx-ring"></div>
-    <div class="cfx-result"><div class="rr">${RARNAME[rar]}</div><div class="rn"></div><div class="rc">${row ? `Шанс выпадения: <b>${row.w}%</b>` : ''}</div><div class="rs">${lootSub(loot)}</div></div>
-    <div class="cfx-odds">${odds}</div><div class="cfx-actions"></div><div class="cfx-flash"></div><div class="cfx-sparks"></div>`;
-  $('#app').appendChild(root);
-  const q = (s) => root.querySelector(s), chestW = q('.cfx-chestw'), tilt = q('.cfx-tilt'), sparks = q('.cfx-sparks'), acts = q('.cfx-actions'), nm = q('.rn'), layer = q('.cfx-fly-layer');
-  let tapped = false, skipped = false;
-  chestW.onclick = () => { tapped = true; }; root.onclick = () => { if (root.classList.contains('burst')) skipped = true; };
-  // сундук поворачивается за пальцем (или курсором)
-  root.addEventListener('pointermove', (e) => { if (root.classList.contains('burst')) return; const r = root.getBoundingClientRect(); tilt.style.setProperty('--ty', ((e.clientX - r.left) / r.width - 0.5) * 46 + 'deg'); tilt.style.setProperty('--tx', (0.5 - (e.clientY - r.top) / r.height) * 22 + 'deg'); });
-  const wait = async (ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms && !skipped) await sleep(40); };
-  const cx = () => { const a = layer.getBoundingClientRect(); return [a.width / 2, a.height / 2]; };
-  // 1. сундук падает на круг
-  requestAnimationFrame(() => root.classList.add('in')); sfx.play('select'); await sleep(900);
-  // 2. ждём нажатия (само откроется через пару секунд): сундук покачивается, круг светится
-  root.classList.add('idle'); { const t0 = Date.now(); while (!tapped && Date.now() - t0 < 2800) await sleep(40); }
-  // 3. накал: сундук взлетает над кругом, раскручивается и трясётся всё сильнее, лучи света бьют вверх
-  root.classList.remove('idle'); root.classList.add('charge'); sfx.play('upgrade'); await sleep(1500);
-  // 4. взрыв света: вспышка, волна, крышка открыта, искры и предметы разлетаются
-  root.classList.remove('charge'); root.classList.add('burst', 'quake'); sfx.play('win');
-  const cols = ['#fff6c0', '#ffd24a', '#fff', c.color, RC], n = rar === 'l' ? 74 : rar === 'e' ? 58 : 44;
-  for (let i = 0; i < n; i++) {
-    const s = el('i', i % 3 === 0 ? 'st' : ''), a = Math.random() * Math.PI * 2, d = 110 + Math.random() * Math.min(window.innerWidth, 520) * 0.55;
-    s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d * 0.85 - 30 + 'px'); s.style.setProperty('--c', cols[i % cols.length]); s.style.setProperty('--t', 0.7 + Math.random() * 0.7 + 's'); s.style.animationDelay = Math.random() * 0.12 + 's';
-    sparks.appendChild(s);
+// карточка рулетки: значок, подпись, цвет редкости
+const amountOf = (r) => (r.t === 'unlock' || r.t === 'stars' ? 0 : Math.round(r.min + Math.random() * (r.max - r.min)));
+const cardLabel = (r, amt) => (r.t === 'souls' ? fmt(amt) : r.t === 'gems' ? fmt(amt) : r.t === 'stars' ? '150 ⭐' : nameOf(r.id));
+const cardHtml = (kind, r, amt, extra = '') => `<div class="rc ${extra}" style="--rc:${RARCOL[rowRar(kind, r)]}"><img src="${rowPic(r)}" alt=""><small>${cardLabel(r, amt)}</small></div>`;
+// строка рулетки: случайные карточки по весам таблицы (с поправкой, чтобы редкие тоже мелькали), на заданном месте — выпавшая
+function buildStrip(kind, loot, wi, N, WIN) {
+  const rows = CHESTS[kind].table, ws = rows.map((r) => Math.pow(r.w, 0.55)), tot = ws.reduce((a, b) => a + b, 0), out = [];
+  for (let i = 0; i < N; i++) {
+    if (i === WIN) { const r = rows[wi >= 0 ? wi : 0]; out.push(cardHtml(kind, r, loot.n || 0, 'win')); continue; }
+    let x = Math.random() * tot, k = 0; for (; k < rows.length - 1; k++) { x -= ws[k]; if (x < 0) break; } out.push(cardHtml(kind, rows[k], amountOf(rows[k])));
   }
-  { const [x0, y0] = cx(); layer.style.setProperty('--x0', x0 + 'px'); layer.style.setProperty('--y0', y0 * 0.82 + 'px');
-    const pool = c.table.slice().sort(() => Math.random() - 0.5).slice(0, 9);
-    pool.forEach((r, i) => setTimeout(() => { const side = (i % 2 ? 1 : -1) * (40 + Math.random() * 130); fling(layer, rowPic(r), side, 0); }, 60 + i * 70)); }
-  await wait(900);
-  // 5. главная добыча поднимается над сундуком
-  root.classList.add('rise'); sfx.play(rar === 'l' || rar === 'e' ? 'upgrade' : 'select'); await wait(950);
-  // 6. итог: название (числа считаются вверх), редкость, шанс; в ленте шансов подсвечена выпавшая строка
-  root.classList.add('got', 'r-' + rar);
-  if (loot.t === 'unlock') nm.textContent = lootName(loot);
-  else { nm.textContent = '+0'; await countUp(nm, loot.n, 800, loot.t === 'souls' ? ' душ' : ' кристаллов'); }
-  sfx.play(rar === 'l' || rar === 'e' ? 'win' : 'upgrade', 0.8);
-  await wait(rar === 'l' || rar === 'e' ? 350 : 150);
+  return out.join('');
+}
+const stageHtml = (c) => `<div class="cfx-stage"><div class="cfx-circle"><i></i><i></i></div><div class="cfx-flat"><img class="fc" src="${chestImg(c.theme)}" alt=""><img class="fo" src="${chestImg(c.theme, 'open')}" alt=""></div><div class="cfx-fly-layer"></div><div class="cfx-hint">Нажми на сундук</div></div>`;
+
+// ───── один сундук: 3D-сундук падает на магический круг, раскручивается, вспышка, крышка открыта; снизу рулетка, как в кейсах, останавливается на выпавшем предмете ─────
+export async function playOpening(kind, loot, ctrl, { again = null } = {}) {
+  const c = CHESTS[kind], sfx = ctrl.sfx, wi = winRow(kind, loot), rar = rarOf(kind, loot), row = wi >= 0 ? c.table[wi] : null, RC = RARCOL[rar];
+  const root = el('div', 'cfx'); root.id = 'cfx'; root.style.setProperty('--cc', c.color); root.style.setProperty('--rc', RC);
+  root.innerHTML = `<div class="cfx-rays"></div><div class="cfx-glow"></div><div class="cfx-title">${c.name}</div>${stageHtml(c)}
+    <div class="cfx-loot${loot.t === 'unlock' ? ' tw' : ''}">${lootIcon(loot)}</div><div class="cfx-ring"></div>
+    <div class="cfx-rl"><div class="rl-view"><i class="rl-mark"></i><div class="rl-strip"></div></div></div>
+    <div class="cfx-result"><div class="rr">${RARNAME[rar]}</div><div class="rn"></div><div class="rc2">${row ? `Шанс выпадения: <b>${pctText(chanceOf(kind, row))}%</b>` : ''}</div><div class="rs">${lootSub(loot)}</div></div>
+    <div class="cfx-actions"></div><div class="cfx-flash"></div><div class="cfx-sparks"></div>`;
+  $('#app').appendChild(root);
+  const q = (s) => root.querySelector(s), stage = q('.cfx-stage'), sparks = q('.cfx-sparks'), acts = q('.cfx-actions'), nm = q('.rn'), layer = q('.cfx-fly-layer'), strip = q('.rl-strip'), view = q('.rl-view');
+  let c3 = null; try { c3 = createChest3D(stage, c.theme, c.color); } catch (e) { c3 = null; }
+  if (c3) root.classList.add('has3d');
+  let tapped = false, skipped = false;
+  stage.onclick = () => { tapped = true; }; root.onclick = () => { if (root.classList.contains('spin')) skipped = true; };
+  root.addEventListener('pointermove', (e) => { if (!c3 || root.classList.contains('burst')) return; const r = root.getBoundingClientRect(); c3.tilt((0.5 - (e.clientY - r.top) / r.height) * 0.35, ((e.clientX - r.left) / r.width - 0.5) * 0.7); });
+  const wait = async (ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms && !skipped) await sleep(40); };
+  // 1. сундук падает на круг
+  requestAnimationFrame(() => root.classList.add('in')); sfx.play('select');
+  if (c3) await c3.drop(); else { root.classList.add('flat-in'); await sleep(900); }
+  // 2. ждём нажатия (само откроется через пару секунд)
+  root.classList.add('idle'); { const t0 = Date.now(); while (!tapped && Date.now() - t0 < 2200) await sleep(40); }
+  // 3. накал: сундук взлетает, раскручивается, трясётся, лучи света
+  root.classList.remove('idle'); root.classList.add('charge'); sfx.play('upgrade'); if (c3) c3.charge(1400); await sleep(1400);
+  // 4. взрыв света
+  root.classList.remove('charge'); root.classList.add('burst', 'quake'); sfx.play('win'); if (c3) c3.burst();
+  { const cols = ['#fff6c0', '#ffd24a', '#fff', c.color, RC];
+    for (let i = 0; i < 40; i++) { const s = el('i', i % 3 === 0 ? 'st' : ''), a = Math.random() * Math.PI * 2, d = 110 + Math.random() * Math.min(window.innerWidth, 520) * 0.55; s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d * 0.85 - 30 + 'px'); s.style.setProperty('--c', cols[i % cols.length]); s.style.setProperty('--t', 0.7 + Math.random() * 0.7 + 's'); s.style.animationDelay = Math.random() * 0.12 + 's'; sparks.appendChild(s); }
+    const a = layer.getBoundingClientRect(); layer.style.setProperty('--x0', a.width / 2 + 'px'); layer.style.setProperty('--y0', a.height * 0.4 + 'px');
+    c.table.slice().sort(() => Math.random() - 0.5).slice(0, 6).forEach((r, i) => setTimeout(() => fling(layer, rowPic(r), (i % 2 ? 1 : -1) * (40 + Math.random() * 120)), 80 + i * 90)); }
+  await wait(650);
+  // 5. рулетка снизу: быстро едет и плавно останавливается на выпавшем предмете
+  const N = 70, WIN = 56, CW = 96, GAP = 6;
+  strip.innerHTML = buildStrip(kind, loot, wi, N, WIN); root.classList.add('spin');
+  await sleep(60);
+  { const vw = view.clientWidth, jitter = (Math.random() - 0.5) * CW * 0.7, target = -(WIN * (CW + GAP) + CW / 2 - vw / 2 + jitter);
+    strip.style.transform = 'translateX(0px)'; void strip.offsetWidth; strip.style.transition = 'transform 6s cubic-bezier(.07,.72,.1,1)'; strip.style.transform = `translateX(${target}px)`;
+    let lastI = -1; const t0 = performance.now();
+    while (performance.now() - t0 < 6100 && !skipped) {
+      const m = new DOMMatrix(getComputedStyle(strip).transform), idx = Math.floor((-m.m41 + vw / 2) / (CW + GAP)); if (idx !== lastI) { lastI = idx; sfx.play('click', 0.3); } await sleep(30);
+    }
+    if (skipped) { strip.style.transition = 'none'; strip.style.transform = `translateX(${target}px)`; } }
+  root.classList.add('stopped'); sfx.play(rar === 'l' || rar === 'e' ? 'win' : 'upgrade', 0.8); await wait(700);
+  // 6. итог
+  root.classList.add('got', 'r-' + rar); if (c3) c3.got(); root.classList.add('rise');
+  if (loot.t === 'unlock' || loot.t === 'stars') nm.textContent = lootName(loot);
+  else { nm.textContent = '+0'; await countUp(nm, loot.n, 700, loot.t === 'souls' ? ' душ' : ' кристаллов'); }
+  await wait(rar === 'l' || rar === 'e' ? 300 : 120);
   return new Promise((done) => {
-    const close = (reroll) => { root.classList.add('out'); setTimeout(() => { root.remove(); done(reroll); }, 300); };
+    const close = (reroll) => { root.classList.add('out'); setTimeout(() => { if (c3) c3.dispose(); root.remove(); done(reroll); }, 300); };
     const ok = el('button', 'btn big', 'Забрать'); ok.onclick = () => { sfx.play('click'); close(false); }; acts.appendChild(ok);
     if (again) { const ag = el('button', 'btn ghost', again.label); ag.onclick = () => { sfx.play('click'); close(true); }; acts.appendChild(ag); }
     root.classList.add('done');
   });
 }
 
-// ───── покупка: души (бросок на клиенте) или кристаллы (бросок на сервере; вне Telegram — локально для разработки) ─────
-export async function buyChest(save, kind, pay) {
-  const c = CHESTS[kind];
-  if (pay === 'souls') {
-    if (!c.souls) return { error: 'bad' };
-    if ((save.souls || 0) < c.souls) return { error: 'souls', price: c.souls };
-    save.souls -= c.souls; const loot = rollChest(kind, 'souls', save); applyLoot(save, loot); Wallet.onChange(); return { ok: true, loot };
-  }
-  if (Wallet.online) {
-    const owned = Object.keys(save.unlocked || {}).filter((id) => save.unlocked[id]);
-    try {
-      const r = await Net.call('chest_open', { init_data: Net.initData(), p: { kind, owned } });
-      if (r && r.ok) { Wallet.apply(r); applyLoot(save, r.loot, { server: true }); Wallet.onChange(); return { ok: true, loot: r.loot }; }
-      return r || { error: 'net' };
-    } catch (e) { return { error: 'net' }; }
-  }
-  if ((save.gems || 0) < c.gems) return { error: 'gems', price: c.gems };
-  save.gems -= c.gems; const loot = rollChest(kind, 'gems', save); applyLoot(save, loot); Wallet.onChange(); return { ok: true, loot };
+// ───── несколько сундуков разом: один взрыв, затем сетка всей добычи со сводкой ─────
+export async function playBatch(kind, loots, ctrl) {
+  const c = CHESTS[kind], sfx = ctrl.sfx, root = el('div', 'cfx batch'); root.id = 'cfx'; root.style.setProperty('--cc', c.color); root.style.setProperty('--rc', c.color);
+  const agg = new Map();
+  for (const l of loots) { const key = l.t === 'unlock' ? 'u:' + l.id : l.t === 'stars' ? 'stars' : (l.dup ? 'd:' + l.dup + l.t : l.t); const e = agg.get(key) || { l, n: 0, sum: 0 }; e.n++; e.sum += l.n || 0; agg.set(key, e); }
+  const RO = { l: 0, e: 1, r: 2, u: 3, c: 4 }, list = [...agg.values()].map((e) => ({ ...e, rar: rarOf(kind, e.l) })).sort((a, b) => RO[a.rar] - RO[b.rar]);
+  const cardOf = (e) => { const l = e.l, big = l.t === 'unlock' ? (e.n > 1 ? '×' + e.n : '') : l.t === 'stars' ? l.n + '⭐' : '+' + fmt(e.sum); const name = l.t === 'unlock' ? nameOf(l.id) : l.t === 'souls' ? 'Души' : l.t === 'gems' ? 'Кристаллы' : 'Stars'; return `<div class="bc" style="--rc:${RARCOL[e.rar]}">${lootIcon(l)}<b>${big}</b><small>${name}${l.dup ? ' (повтор)' : ''}</small></div>`; };
+  const souls = loots.filter((l) => l.t === 'souls').reduce((s, l) => s + l.n, 0), gems = loots.filter((l) => l.t === 'gems').reduce((s, l) => s + l.n, 0), towers = loots.filter((l) => l.t === 'unlock').length;
+  root.innerHTML = `<div class="cfx-rays"></div><div class="cfx-glow"></div><div class="cfx-title">${c.name} ×${loots.length}</div>${stageHtml(c)}<div class="cfx-flash"></div><div class="cfx-sparks"></div>
+    <div class="cfx-batch"><div class="bgrid">${list.map(cardOf).join('')}</div><div class="bsum">${souls ? `<span><img src="${IC('loot_souls')}" alt="">+${fmt(souls)}</span>` : ''}${gems ? `<span><img src="${gemPic(100)}" alt="">+${fmt(gems)}</span>` : ''}${towers ? `<span>Новых зданий: ${towers}</span>` : ''}</div></div><div class="cfx-actions"></div>`;
+  $('#app').appendChild(root);
+  const stage = root.querySelector('.cfx-stage'), acts = root.querySelector('.cfx-actions'); let c3 = null; try { c3 = createChest3D(stage, c.theme, c.color); } catch (e) { c3 = null; } if (c3) root.classList.add('has3d');
+  requestAnimationFrame(() => root.classList.add('in')); sfx.play('select');
+  if (c3) await c3.drop(); else await sleep(700);
+  root.classList.add('charge'); sfx.play('upgrade'); if (c3) c3.charge(1100); await sleep(1100);
+  root.classList.remove('charge'); root.classList.add('burst', 'quake'); sfx.play('win'); if (c3) c3.burst();
+  await sleep(600); root.classList.add('showb'); sfx.play('upgrade', 0.7);
+  return new Promise((done) => { const ok = el('button', 'btn big', 'Забрать'); ok.onclick = () => { sfx.play('click'); root.classList.add('out'); setTimeout(() => { if (c3) c3.dispose(); root.remove(); done(); }, 300); }; acts.appendChild(ok); root.classList.add('done'); });
 }

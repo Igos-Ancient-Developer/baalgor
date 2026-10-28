@@ -1,13 +1,13 @@
 // Экраны меню: Кузница душ и Достижения (иконки в стиле WC3).
-import * as D from './data.js?v=20261028194558';
-import { uiIcon } from './env.js?v=20261028194558';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261028194558';
-import { towerIcon, econIcon } from './ui.js?v=20261028194558';
-import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261028194558';
-import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261028194558';
-import { ACH_IMG } from './iconmap.js?v=20261028194558';
-import { url as imgUrl } from './sprites.js?v=20261028194558';
-import { Wallet } from './wallet.js?v=20261028194558';
+import * as D from './data.js?v=20261028201959';
+import { uiIcon } from './env.js?v=20261028201959';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261028201959';
+import { towerIcon, econIcon } from './ui.js?v=20261028201959';
+import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261028201959';
+import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261028201959';
+import { ACH_IMG } from './iconmap.js?v=20261028201959';
+import { url as imgUrl } from './sprites.js?v=20261028201959';
+import { Wallet } from './wallet.js?v=20261028201959';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -44,7 +44,7 @@ export function renderForge(save, sfx, onChange, openShop) {
   for (const t of [...D.TOWER_ORDER, ...D.ECON_ORDER]) {
     const u = D.unlockOf(t); if (!u) continue;
     const d = D.TOWERS[t] || D.ECON[t], open = itemUnlocked(save, t);
-    const icon = D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 3);
+    const icon = D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 1);
     const row = el('div', 'frow' + (open ? ' max' : ''));
     row.innerHTML = `<img class="fi" src="${iconUrl(icon)}" alt=""><div class="ft"><div class="fn">${d.name}</div><div class="fd">${d.short}</div></div>`;
     if (open) row.appendChild(el('div', 'fbuy', '✓'));

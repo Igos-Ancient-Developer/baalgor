@@ -1,8 +1,8 @@
 // Кошелёк донат-кристаллов. В Telegram баланс, покупки и цены живут на сервере (supabase/schema.sql), клиент только показывает.
 // Вне Telegram (обычный браузер) работает локальный режим для разработки: траты считаются в сохранении, пополнение только с ?debug.
-import * as D from './data.js?v=20261028194558';
-import { Net } from './net.js?v=20261028194558';
-import { TG } from './tg.js?v=20261028194558';
+import * as D from './data.js?v=20261028201959';
+import { Net } from './net.js?v=20261028201959';
+import { TG } from './tg.js?v=20261028201959';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const debug = () => location.search.includes('debug');
@@ -15,6 +15,7 @@ export const Wallet = {
   // сервер → сохранение (баланс, открытое, слоты, пакеты, серия)
   apply(w) {
     const s = this.save; s.gems = w.gems; s.slots = Math.max(s.slots || 2, w.slots || 2); s.packs = w.packs || []; s.starterBought = !!w.starter; s.dailyReady = !!w.daily_ready; s.streak = w.streak || 0;
+    if (w.chests) s.chestsSrv = w.chests;
     const have = new Set(w.unlocked || []);
     for (const id of have) s.unlocked[id] = 1;
     for (const id of D.PREMIUM_ORDER) if (!have.has(id)) delete s.unlocked[id];                 // премиум берётся только с сервера
