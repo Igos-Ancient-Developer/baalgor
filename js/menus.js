@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028203434';
-import * as D from './data.js?v=20261028203434';
-import * as M from './meta.js?v=20261028203434';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028203434';
-import { url as imgUrl } from './sprites.js?v=20261028203434';
-import { Net } from './net.js?v=20261028203434';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261028203434';
-import { fillPlates, gemIc } from './res.js?v=20261028203434';
-import { gemHtml } from './gem3d.js?v=20261028203434';
-import { Wallet } from './wallet.js?v=20261028203434';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028203642';
+import * as D from './data.js?v=20261028203642';
+import * as M from './meta.js?v=20261028203642';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028203642';
+import { url as imgUrl } from './sprites.js?v=20261028203642';
+import { Net } from './net.js?v=20261028203642';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261028203642';
+import { fillPlates, gemIc } from './res.js?v=20261028203642';
+import { gemHtml } from './gem3d.js?v=20261028203642';
+import { Wallet } from './wallet.js?v=20261028203642';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };

@@ -1,6 +1,6 @@
 // Растровые иконки из листа (img/icons/*.webp, нарезка — tools/build_icons.py) вместо нарисованных кодом.
 // Имя глифа игры → файл иконки. Если файла нет, остаётся запасной рисунок из icons.js / env.js.
-import { img } from './sprites.js?v=20261028203434';
+import { img } from './sprites.js?v=20261028203642';
 
 // имя глифа в игре → имя иконки на листе
 export const GLYPH_IMG = {

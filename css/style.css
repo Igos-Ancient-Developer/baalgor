@@ -1120,3 +1120,7 @@ body.hastabs .title-actions { margin-top: auto; margin-bottom: 14px; }
 #title .title-actions .stn:not(.ranked) span { font-size: 16px; letter-spacing: .04em; white-space: nowrap; }
 body.hastabs #title .title-actions { margin-top: 34px; margin-bottom: auto; }
 .chcard .chb.go { white-space: nowrap; font-size: 14px; padding: 0 4px; }
+/* рейтинговый забег: плита с руками. Каменная часть 720 из 789 px по ширине и 175 из 225 по высоте: ширина кнопки = ширина остальных / .913, надпись по центру плиты */
+#title .title-actions .stn.ranked { width: 109.5%; margin: 0 -4.75% 4px; min-height: 0; height: auto; aspect-ratio: 789 / 225; border: 0; border-image: none; padding: 0 6% 6%; gap: 6px; justify-content: center; align-items: center; box-sizing: border-box; flex: none; background: url(../img/ui/plate_hands.webp) 0 0 / 100% 100% no-repeat !important; }
+#title .title-actions .stn.ranked .tk { width: 24px; height: 24px; margin: 0; flex: none; border-radius: 4px; }
+#title .title-actions .stn.ranked span { font-size: 13.5px; letter-spacing: 0; white-space: nowrap; }
