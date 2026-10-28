@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261027154821';
-import { TOWERS } from './data.js?v=20261027154821';
+import { SPR, img } from './sprites.js?v=20261028174922';
+import { TOWERS } from './data.js?v=20261028174922';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -580,29 +580,31 @@ function towerIdx(type, lvl, br) {
 // Здание не больше клетки по ширине и клетки с небольшим запасом по высоте: соседние здания не закрывают друг друга.
 // Масштаб один на весь ряд уровней (рост по уровням остаётся), считается по самой большой картинке ряда.
 // предельные размеры (ширина, высота) здания на карте; узкие и низкие здания разрешено делать крупнее
-const CAPS = { mortar: [56, 78], mine: [50, 58], bolt: [56, 72], frost: [56, 72], tesla: [56, 72], saw: [56, 70], banner: [56, 72], flame: [56, 78], voidwell: [56, 70], toxic: [56, 68], bank: [56, 70], altar: [56, 66], harpoon: [56, 78],
-  gold_bolt: [56, 78], storm_tesla: [56, 72], hell_flame: [56, 78], magnet: [56, 72], grinder: [62, 68], giant: [68, 74] }, CAP_DEF = [56, 64], GK = {};
+const CAPS = { mortar: [56, 78], mine: [50, 58], bolt: [56, 72], frost: [56, 72], tesla: [56, 72], saw: [64, 76], banner: [56, 72], flame: [56, 78], voidwell: [56, 70], toxic: [66, 78], bank: [56, 70], altar: [56, 66], harpoon: [56, 78],
+  gold_bolt: [56, 78], storm_tesla: [56, 72], hell_flame: [56, 78], magnet: [56, 72], grinder: [66, 78], giant: [68, 74] }, CAP_DEF = [56, 64], GK = {};
 // Размер спрайта считается по каждой картинке отдельно: ранние уровни (маленькие хижины, низкие постаменты) растягиваются до доли предельной высоты (HF), чтобы не казаться крошечными; ширина ограничена CAPS.
 const HF = [0.86, 0.93, 1, 1, 1], TS_MAX = 0.46, SK = {};
+// горизонтальная растяжка спрайта: дом алхимика, пилорама и гриндер нарисованы узкими и высокими — делаем их «потолще», чтобы стоять в одном ряду с башнями
+const XS = { toxic: 1.4, saw: 1.12, grinder: 1.3 }, xsOf = (t) => XS[t] || 1;
 function spriteK(type, lvl, br) {
   const i = towerIdx(type, lvl, br), key = type + ':' + i + ':' + Math.min(lvl, 5); if (SK[key]) return SK[key];
   const [l, t, r, b] = SPR.towers[type].boxes[i], [cw, ch] = CAPS[type] || CAP_DEF, hf = HF[Math.min(lvl, 5) - 1];
-  return (SK[key] = Math.min(TS_MAX, cw / (r - l), (ch * hf) / (b - t)));
+  return (SK[key] = Math.min(TS_MAX, cw / ((r - l) * xsOf(type)), (ch * hf) / (b - t)));
 }
 // точка картинки башни (пикселы ячейки 192×240) в координатах карты относительно якоря здания (x - TW_AX, y - TW_AY добавляет вызывающий)
-export function towerPt(type, lvl, br, px, py) { const k = spriteK(type, lvl, br); return { x: 40 - 96 * k + px * k - TW_AX, y: TW_BASE_Y - 240 * k + py * k - TW_AY }; }
+export function towerPt(type, lvl, br, px, py) { const k = spriteK(type, lvl, br), xs = xsOf(type); return { x: 40 - 96 * k * xs + px * k * xs - TW_AX, y: TW_BASE_Y - 240 * k + py * k - TW_AY }; }
 export function towerDoors(type, lvl, br) { const m = SPR.ok && SPR.towers[type]; return (m && m.doors && m.doors[towerIdx(type, lvl, br)]) || []; }
 export function towerGeo(type, lvl, br) {
   const i = towerIdx(type, lvl, br), [l, t, r, b] = SPR.towers[type].boxes[i], k = spriteK(type, lvl, br);
-  const x0 = 40 - 96 * k, y0 = TW_BASE_Y - 240 * k;
-  return { top: y0 + t * k, bottom: y0 + b * k, left: x0 + l * k, right: x0 + r * k };
+  const xs = xsOf(type), x0 = 40 - 96 * k * xs, y0 = TW_BASE_Y - 240 * k;
+  return { top: y0 + t * k, bottom: y0 + b * k, left: x0 + l * k * xs, right: x0 + r * k * xs };
 }
 const BR_TINT = { A: '#4aa8ff', B: '#ff3a3a' };
 // светлая кайма и мягкий свет под основанием: здание отделяется от земли и читается на любом фоне
 const RIM = { frost: '#d4f0ff', tesla: '#c4e4ff', toxic: '#e0ffb8', flame: '#ffd8a8', voidwell: '#e6d0ff', banner: '#ffd0d0', saw: '#ffe6c0', mine: '#fff0b8' };
 function spriteTower(type, lvl, br, fire = false) {
   const i = towerIdx(type, lvl, br), im = img(`towers/${type}_${fire ? 'f' : ''}${i}.webp`); if (!im) return null;
-  const k = spriteK(type, lvl, br), w = 192 * k, h = 240 * k;
+  const k = spriteK(type, lvl, br), w = 192 * k * xsOf(type), h = 240 * k;
   const rim = RIM[type] || '#fff4d0';
   const body = mk(TW_W, TW_H, (g2) => {
     g2.imageSmoothingQuality = 'high'; g2.drawImage(im, 40 - w / 2, TW_BASE_Y - h, w, h);
@@ -652,7 +654,8 @@ export function rotHead(type, lvl, br) {
   const m = SPR.ok && SPR.towers[type]; if (!m || !m.head) return null;
   const im = img(`towers/${type}_head.webp`); if (!im) return null;
   const i = towerIdx(type, lvl, br), k = spriteK(type, lvl, br), [hx, hy] = m.holes[i], w = 192 * k, h = 240 * k;
-  return { im, cw: m.head.cw, ch: m.head.ch, ax: m.head.ax, ay: m.head.ay, mx: m.head.mx || 0, my: m.head.my || 0, k, dx: 40 - w / 2 + hx * k - TW_AX, dy: TW_BASE_Y - h + hy * k - TW_AY };
+  const hk = k * ((m.head.hr && m.head.hr[i]) || 1);      // голова масштабируется под ширину площадки именно этого уровня башни (у разных уровней верх разной ширины)
+  return { im, cw: m.head.cw, ch: m.head.ch, ax: m.head.ax, ay: m.head.ay, mx: m.head.mx || 0, my: m.head.my || 0, k: hk, dx: 40 - w / 2 + hx * k - TW_AX, dy: TW_BASE_Y - h + hy * k - TW_AY };
 }
 // Дуло повёрнутой головы в тех же координатах, где рисуются снаряды и эффекты: ось плиты + вынос ствола вдоль одного из 8 направлений картинки (эллипс: вдоль экрана 1, вглубь 0.5) и высота дула над плитой.
 export function muzzle(b) {

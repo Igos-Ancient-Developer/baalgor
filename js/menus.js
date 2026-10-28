@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261027154821';
-import * as D from './data.js?v=20261027154821';
-import * as M from './meta.js?v=20261027154821';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261027154821';
-import { url as imgUrl } from './sprites.js?v=20261027154821';
-import { Net } from './net.js?v=20261027154821';
-import { towerIcon, econIcon, itemChips } from './ui.js?v=20261027154821';
-import { fillPlates, gemIc } from './res.js?v=20261027154821';
-import { gemHtml } from './gem3d.js?v=20261027154821';
-import { Wallet } from './wallet.js?v=20261027154821';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028174922';
+import * as D from './data.js?v=20261028174922';
+import * as M from './meta.js?v=20261028174922';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028174922';
+import { url as imgUrl } from './sprites.js?v=20261028174922';
+import { Net } from './net.js?v=20261028174922';
+import { towerIcon, econIcon, itemChips } from './ui.js?v=20261028174922';
+import { fillPlates, gemIc } from './res.js?v=20261028174922';
+import { gemHtml } from './gem3d.js?v=20261028174922';
+import { Wallet } from './wallet.js?v=20261028174922';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -70,10 +70,8 @@ export function runRow(r, cls = 'brow', ctx = null) {
 export function diffLines(d, i) {
   const L = [];
   const mul = (v) => '×' + x(v);
-  L.push({ k: 'hp', icon: 'heart', t: 'Здоровье врагов', v: mul(d.hp), cls: d.hp > 1 ? 'bad' : d.hp < 1 ? 'good' : 'neutral', s: d.hp < 1 ? 'Враги слабее обычного' : d.hp > 1 ? `Каждый враг крепче на ${Math.round((d.hp - 1) * 100)}%` : 'Базовая прочность' });
-  L.push({ k: 'spd', icon: 'fast', t: 'Скорость врагов', v: d.spd > 1 ? '+' + Math.round((d.spd - 1) * 100) + '%' : 'обычная', cls: d.spd > 1 ? 'bad' : 'neutral', s: d.spd > 1 ? 'Быстрее проходят дорогу — меньше времени на урон' : 'Темп по умолчанию' });
   L.push({ k: 'horde', icon: 'horde', t: 'Размер орд', v: d.horde > 1 ? mul(d.horde) : 'обычный', cls: d.horde > 1 ? 'bad' : 'neutral', s: d.horde > 1 ? 'Больше врагов в каждой волне' : 'Состав волн по умолчанию' });
-  L.push({ k: 'elite', icon: 'crown', t: 'Элитные враги', v: d.elite ? Math.round(d.elite * 100) + '%' : 'нет', cls: d.elite ? 'bad' : 'neutral', s: d.elite ? 'Золотая аура: здоровье ×1.6, скорость +15%, награда ×2' : 'Золотых элит в волнах нет' });
+  L.push({ k: 'elite', icon: 'crown', t: 'Элитные враги', v: d.elite ? Math.round(d.elite * 100) + '%' : 'нет', cls: d.elite ? 'bad' : 'neutral', s: d.elite ? `Золотая аура: здоровье ×${x(d.eliteHp)}, скорость +${Math.round((d.eliteSpd - 1) * 100)}%, награда ×2` : 'Золотых элит в волнах нет' });
   L.push({ k: 'lives', icon: 'heart', t: 'Жизни крепости', v: d.lives ? String(d.lives) : String(D.START_LIVES), cls: d.lives ? 'bad' : 'neutral', s: d.lives ? 'Один пропущенный враг — и забег окончен' : 'Враги, дошедшие до ворот, отнимают жизни (тяжёлые — больше). Добавить жизни можно перком «Крепость» в Кузнице и усилителем за кристаллы' });
   L.push({ k: 'sep', t: 'Награды' });
   L.push({ k: 'score', icon: 'star', t: 'Множитель очков', v: mul(d.score), cls: d.score >= 1 ? 'good' : 'bad', s: 'Умножает очки за уровень: волны, сильные враги, время' });
@@ -368,6 +366,7 @@ export class Menus {
     $('#lo-go').onclick = () => {
       const lo = this.lo;
       if (!lo.sel.length) { this.c.sfx.play('error'); $('#lo-slots').classList.remove('shake'); void $('#lo-slots').offsetWidth; $('#lo-slots').classList.add('shake'); return; }
+      if (!lo.sel.some((t) => D.ECON[t])) { this.c.sfx.play('error'); $('#lo-slots').classList.remove('shake'); void $('#lo-slots').offsetWidth; $('#lo-slots').classList.add('shake'); this.c.note('Возьми хотя бы одно здание добычи: без золота не построить оборону'); return; }      // без ресурсного здания золота нет совсем
       this.c.sfx.play('click'); this.hide('#loadout'); lo.onGo(lo.sel, [...lo.bsel]);
     };
     this.refreshLoadout(); this.show('#loadout'); $('#loadout').scrollTop = 0;
@@ -407,11 +406,11 @@ export class Menus {
       }
       gb.appendChild(g);
     };
-    section('Башни', D.TOWER_ORDER); if (!lo.all) section('Премиум', D.PREMIUM_ORDER); section('Добыча', D.ECON_ORDER);
+    section('Добыча', D.ECON_ORDER); section('Башни', D.TOWER_ORDER); if (!lo.all) section('Премиум', D.PREMIUM_ORDER);
     if (lo.boosts) this.boostsSection(gb, shake);
     // описание выбранной карточки
     const inf = $('#lo-info'), t = lo.info;
-    if (!t) inf.innerHTML = `<span class="lo-hint">Слоты: ${lo.sel.length}/${lo.slots}. Выбери здания для уровня</span>`;
+    if (!t) inf.innerHTML = `<span class="lo-hint">Слоты: ${lo.sel.length}/${lo.slots}. ${lo.sel.some((q) => D.ECON[q]) ? 'Выбери здания для уровня' : 'Нужно хотя бы одно здание добычи'}</span>`;
     else {
       const d = D.TOWERS[t] || D.ECON[t], u = D.unlockOf(t), isOpen = open(t);
       inf.innerHTML = `<div class="lo-i"><b>${d.name}</b><span>${d.short}</span><div class="dch">${itemChips(t)}</div></div>`;

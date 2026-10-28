@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261027154821';
+import * as D from './data.js?v=20261028174922';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -139,7 +139,7 @@ export class Sim {
     const ch = this.chest; if (!ch) return false;
     ch.hits++; ch.shake = 0.4;
     if (ch.hits < D.CHEST_HITS) { this.emit('chest', { kind: 'hit', hits: ch.hits, x: ch.x, y: ch.y }); return true; }
-    const g = D.CHEST_GOLD; this.gold += g; this.stats.earned += g; this.chest = null;
+    const g = D.CHEST_GOLD_MIN + Math.floor(this.xrng() * (D.CHEST_GOLD_MAX - D.CHEST_GOLD_MIN + 1)); this.gold += g; this.stats.earned += g; this.chest = null;
     this.emit('chest', { kind: 'open', x: ch.x, y: ch.y, gold: g });
     return true;
   }
@@ -296,7 +296,7 @@ export class Sim {
   callWave(immediate = false) {
     if (!this.canCallWave()) return 0;
     const backlog = this.qi < this.queue.length;
-    const bonus = backlog ? 0 : Math.round(this.nextWaveT * (0.8 + 0.03 * this.idx(this.wave)) * (1 + this.D.gold));
+    const bonus = backlog ? 0 : this.earlyBonus();
     this.gold += bonus; this.stats.earned += bonus;
     this.nextWaveT = 0;
     if (immediate) { this.startWave(); this.nextWaveT = D.waveGap(this.idx(this.wave)); }
@@ -304,7 +304,9 @@ export class Sim {
     return bonus || 1;
   }
   callAllWaves() { let n = 0; while (this.canCallWave()) { this.callWave(true); n++; } return n; }
-  waveBonus() { return this.qi < this.queue.length ? 0 : Math.round(this.nextWaveT * (0.8 + 0.03 * this.idx(this.wave)) * (1 + this.D.gold)); }
+  // золото за ранний вызов: только за время сверх половины паузы (раньше платили за всё оставшееся время)
+  earlyBonus() { const gap = D.waveGap(this.idx(this.wave)), t = Math.max(0, this.nextWaveT - gap * D.EARLY_FROM); return Math.round(t * (0.8 + 0.03 * this.idx(this.wave)) * (1 + this.D.gold)); }
+  waveBonus() { return this.qi < this.queue.length ? 0 : this.earlyBonus(); }
   canCallWave() { return this.state === 'play' && this.wave < this.total && this.nextWaveT > 2; }
   startWave() {
     const n = ++this.wave;
@@ -332,11 +334,11 @@ export class Sim {
     const path = def.air ? this.flyPaths[pathIdx % this.flyPaths.length] : this.paths[pathIdx];
     const n = this.idx(Math.max(1, o.w || this.wave));       // сила врага — по номеру его волны (волны могут стоять в очереди)
     const elite = !o.sent && !def.heavy && !o.noBounty && this.D.elite > 0 && this.rng() < this.D.elite;
-    const hs = D.hpScale(n) * this.map.hp * (this.map.lvl && !this.map.waveList ? 1 + (this.map.lvl - 1) * 0.12 * Math.max(0, ((o.w || this.wave) - 1) / Math.max(1, this.total - 1)) : 1) * this.D.hp * (o.sent ? 0.85 : 1) * (o.hpMult || 1) * (elite ? 1.6 : 1);
+    const hs = D.hpScale(n) * this.map.hp * (this.map.lvl && !this.map.waveList ? 1 + (this.map.lvl - 1) * 0.12 * Math.max(0, ((o.w || this.wave) - 1) / Math.max(1, this.total - 1)) : 1) * (o.sent ? 0.85 : 1) * (o.hpMult || 1) * (elite ? this.D.eliteHp : 1);
     const e = {
       id: ++this.eid, type, def, path, pathIdx, d: o.d || 0, x: 0, y: 0, dx: 0, dy: 1,
       hp: def.hp * hs, maxHp: def.hp * hs, size: def.size,
-      bounty: 0, elite, spdMult: this.D.spd * (elite ? 1.15 : 1) * (o.spdK || 1),
+      bounty: 0, elite, spdMult: (elite ? this.D.eliteSpd : 1) * (o.spdK || 1),
       dead: false, t: this.rng() * 5, slowF: 0, slowT: 0, stunT: 0, freezeT: 0, brittle: 0, shatter: 0,
       poison: [], poisonSrc: null, plague: 0, burnDps: 0, burnT: 0, shred: 0, shredT: 0, mark: 0, markT: 0,
       healCd: 2 + this.rng() * 2, blinkCd: 2 + this.rng() * 2, summonCd: 5, stompCd: 6,

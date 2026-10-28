@@ -1,26 +1,26 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261027154821';
-import * as A from './art.js?v=20261027154821';
-import { Sim } from './sim.js?v=20261027154821';
-import { Gore } from './gore.js?v=20261027154821';
-import { Renderer } from './render.js?v=20261027154821';
-import { GameUI } from './ui.js?v=20261027154821';
-import { Tutorial } from './tutorial.js?v=20261027154821';
-import { Sfx, attachSfx } from './audio.js?v=20261027154821';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261027154821';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261027154821';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261027154821';
-import { mapBG, releaseBG } from './env.js?v=20261027154821';
-import { MENU_SPEC } from './music.js?v=20261027154821';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261027154821';
-import { renderForge, renderAchs } from './screens.js?v=20261027154821';
-import { renderShop } from './shop.js?v=20261027154821';
-import { Wallet } from './wallet.js?v=20261027154821';
-import { initLang, pickLang } from './i18n.js?v=20261027154821';
-import { Menus, RUN, clock } from './menus.js?v=20261027154821';
-import { Net } from './net.js?v=20261027154821';
-import { gemIc } from './res.js?v=20261027154821';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261027154821';
+import * as D from './data.js?v=20261028174922';
+import * as A from './art.js?v=20261028174922';
+import { Sim } from './sim.js?v=20261028174922';
+import { Gore } from './gore.js?v=20261028174922';
+import { Renderer } from './render.js?v=20261028174922';
+import { GameUI } from './ui.js?v=20261028174922';
+import { Tutorial } from './tutorial.js?v=20261028174922';
+import { Sfx, attachSfx } from './audio.js?v=20261028174922';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261028174922';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261028174922';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261028174922';
+import { mapBG, releaseBG } from './env.js?v=20261028174922';
+import { MENU_SPEC } from './music.js?v=20261028174922';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261028174922';
+import { renderForge, renderAchs } from './screens.js?v=20261028174922';
+import { renderShop } from './shop.js?v=20261028174922';
+import { Wallet } from './wallet.js?v=20261028174922';
+import { initLang, pickLang } from './i18n.js?v=20261028174922';
+import { Menus, RUN, clock } from './menus.js?v=20261028174922';
+import { Net } from './net.js?v=20261028174922';
+import { gemIc } from './res.js?v=20261028174922';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261028174922';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -49,8 +49,8 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261027154821').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261027154821').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261028174922').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261028174922').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
@@ -231,7 +231,7 @@ function setupGameUi() {
 function prepareLevel(levelId, diffIdx, again = false) {
   const L = D.MAPS.find((l) => l.id === levelId); ensureLevel(L);
   if (L.tutorial) { startLevel(levelId, diffIdx, false, ['bolt', 'mine']); return; }
-  if (again && save.loadout) { startLevel(levelId, diffIdx, false, getLoadout(save)); return; }
+  if (again && save.loadout && getLoadout(save).some((t) => D.ECON[t])) { startLevel(levelId, diffIdx, false, getLoadout(save)); return; }      // повтор без окна — только если в наборе есть здание добычи
   menus.openLoadout({ title: L.name, slots: slotsOf(save), all: false, initial: getLoadout(save), boosts: true, lvl: L.lvl, diff: diffIdx,
     onGo: async (list, boosts) => {
       save.loadout = list.slice(); persist();

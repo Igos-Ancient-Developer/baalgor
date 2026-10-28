@@ -1,12 +1,13 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261027154821';
-import { Wallet } from './wallet.js?v=20261027154821';
-import { fillPlates, gemIc } from './res.js?v=20261027154821';
-import { towerIcon } from './ui.js?v=20261027154821';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261027154821';
-import { SHOP_IMG } from './iconmap.js?v=20261027154821';
+import * as D from './data.js?v=20261028174922';
+import { Wallet } from './wallet.js?v=20261028174922';
+import { fillPlates, gemIc } from './res.js?v=20261028174922';
+import { towerIcon } from './ui.js?v=20261028174922';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261028174922';
+import { SHOP_IMG } from './iconmap.js?v=20261028174922';
+import { CHESTS, CHEST_ORDER, buyChest, playOpening, oddsOf, chestHtml } from './chests.js?v=20261028174922';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
 
 const $ = (s) => document.querySelector(s);
@@ -34,6 +35,34 @@ export function renderShop(save, ctrl, redraw) {
     row.appendChild(b); grid.appendChild(row);
   });
   body.appendChild(grid);
+
+  // ── сундуки: лутбокс с анимацией; шансы показываются по кнопке ──
+  body.appendChild(el('div', 'sect-title', 'Сундуки'));
+  body.appendChild(el('p', 'sh-note top', 'В сундуках души, кристаллы, здания и редкие премиум-башни. Что падает чаще всего — написано на карточке, полные шансы — по кнопке «Шансы».'));
+  const MAIN = { wood: 'Чаще всего: 90–175 душ. Иногда здания', silver: 'Чаще всего: 23–57 кристаллов. Здания средней редкости', gold: 'Лучшая добыча: до 400 кристаллов, редкие башни' };
+  const cg = el('div', 'sh-chests');
+  for (const kind of CHEST_ORDER) {
+    const c = CHESTS[kind], card = el('div', 'chcard ' + c.theme);
+    card.innerHTML = `<div class="chart">${chestHtml(c.theme)}</div><div class="chn">${c.name}</div><div class="chd">${MAIN[kind]}</div>`;
+    const btns = el('div', 'chbtns');
+    const open = async (pay) => {
+      for (;;) {
+        const r = await buyChest(save, kind, pay);
+        if (!r || !r.ok) { const e = r && r.error; ctrl.sfx.play('error'); ctrl.note(e === 'gems' ? 'Не хватает кристаллов' : e === 'souls' ? 'Не хватает душ' : 'Не получилось, попробуй ещё раз'); if (e === 'gems') $('#shop-packs').scrollIntoView({ behavior: 'smooth' }); redraw(); return; }
+        ctrl.persist();
+        const price = pay === 'souls' ? `${fmt(c.souls)} душ` : `${c.gems} кристаллов`, can = pay === 'souls' ? (save.souls || 0) >= c.souls : (save.gems || 0) >= c.gems;
+        const again = await playOpening(kind, r.loot, ctrl, { again: can ? { label: `Ещё раз · ${price}` } : null });
+        redraw(); if (!again) return;
+      }
+    };
+    if (c.souls) { const b = el('button', 'btn chb', `<img src="${bareGlyphUrl('soul', 22)}" alt="">${fmt(c.souls)}`); b.onclick = () => { ctrl.sfx.play('click'); open('souls'); }; btns.appendChild(b); }
+    const bg = el('button', 'btn chb gem', `${gemIc(22)}${c.gems}`); bg.onclick = () => { ctrl.sfx.play('click'); open('gems'); }; btns.appendChild(bg);
+    card.appendChild(btns);
+    const odds = el('div', 'chodds hidden'); odds.innerHTML = oddsOf(kind).map(([t, p, r]) => `<div class="od r-${r}"><span>${t}</span><b>${p}%</b></div>`).join('') + '<small>Если выпавшее здание у тебя уже есть, оно заменяется на компенсацию.</small>';
+    const tg = el('button', 'chinfo', 'Шансы'); tg.onclick = () => { odds.classList.toggle('hidden'); ctrl.sfx.play('click'); };
+    card.append(tg, odds); cg.appendChild(card);
+  }
+  body.appendChild(cg);
 
   // ── стартовый набор: один раз ──
   if (!save.starterBought) {

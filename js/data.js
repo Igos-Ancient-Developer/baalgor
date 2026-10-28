@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261027154821';
+import { COLS, ROWS } from './layouts.js?v=20261028174922';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -16,24 +16,25 @@ export const START_GOLD = 175;
 export const BASE_INCOME = 0;    // золота «просто так» нет: только монеты зданий добычи и награды за убийства
 export const SELL_RATE = 0.7;
 // Сундук-сюрприз: может появиться на карте один раз за уровень; три касания — взрывается, высыпает монеты и даёт фиксированную сумму
-export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD = 80;
+export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD_MAX = 35;      // из сундука-сюрприза падает случайное число монет
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261027154821';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261028174922';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
 
 // ───────────────────────── Сложности ─────────────────────────
-// hp — множитель здоровья, spd — скорости, score — очки, gold — прибавка ко всему золоту, lives — жизней (null = обычно),
-// horde — множитель численности орд, elite — шанс «элитного» врага, souls — множитель душ.
+// Здоровье и скорость обычных врагов от сложности НЕ зависят (hp и spd всегда 1): они определяются видом врага и рубежом.
+// Сложность меняет только численность орд (horde), долю «элитных» врагов (elite) и их силу (eliteHp, eliteSpd), число жизней крепости,
+// а также награды: score — очки, gold — прибавка ко всему золоту, souls — множитель душ. lives: null = обычно.
 export const DIFFS = [
-  { id: 'squire', name: 'Страх', hp: 0.75, spd: 1, score: 0.8, gold: 0, lives: null, horde: 1, elite: 0, souls: 0.7, demon: 'imp', color: '#8fd86a' },
-  { id: 'warrior', name: 'Ужас', hp: 1, spd: 1, score: 1, gold: 0, lives: null, horde: 1, elite: 0, souls: 1, demon: 'brute', color: '#ffd24a' },
-  { id: 'nightmare', name: 'Пекло', hp: 1.3, spd: 1.05, score: 1.6, gold: 0, lives: null, horde: 1.15, elite: 0.06, souls: 1.5, demon: 'succubus', color: '#ff9a3a' },
-  { id: 'hell', name: 'Ад', hp: 1.6, spd: 1.1, score: 2.4, gold: 0, lives: null, horde: 1.3, elite: 0.12, souls: 2.2, demon: 'pitlord', color: '#ff4a3a' },
-  { id: 'hardcore', name: 'Ночной кошмар', hp: 1.8, spd: 1.12, score: 4, gold: 0.25, lives: 1, horde: 1.5, elite: 0.2, souls: 3.5, demon: 'archdemon', color: '#c01a2a' },
+  { id: 'squire', name: 'Страх', hp: 1, spd: 1, score: 0.8, gold: 0, lives: null, horde: 0.8, elite: 0, eliteHp: 1.6, eliteSpd: 1.15, souls: 0.7, demon: 'imp', color: '#8fd86a' },
+  { id: 'warrior', name: 'Ужас', hp: 1, spd: 1, score: 1, gold: 0, lives: null, horde: 1, elite: 0.05, eliteHp: 2, eliteSpd: 1.2, souls: 1, demon: 'brute', color: '#ffd24a' },
+  { id: 'nightmare', name: 'Пекло', hp: 1, spd: 1, score: 1.6, gold: 0, lives: null, horde: 1.2, elite: 0.1, eliteHp: 2.6, eliteSpd: 1.25, souls: 1.5, demon: 'succubus', color: '#ff9a3a' },
+  { id: 'hell', name: 'Ад', hp: 1, spd: 1, score: 2.4, gold: 0, lives: null, horde: 1.4, elite: 0.16, eliteHp: 3.4, eliteSpd: 1.3, souls: 2.2, demon: 'pitlord', color: '#ff4a3a' },
+  { id: 'hardcore', name: 'Ночной кошмар', hp: 1, spd: 1, score: 4, gold: 0.25, lives: 1, horde: 1.65, elite: 0.24, eliteHp: 4.4, eliteSpd: 1.35, souls: 3.5, demon: 'archdemon', color: '#c01a2a' },
 ];
 
 // ───────────────────────── Башни ─────────────────────────
@@ -265,7 +266,7 @@ TOWERS.giant = {
       { cost: 490, dmg: 460, rate: 0.45, range: 4.9, splash: 1.45, fire: 70, fireT: 5.5 } ] },
   },
 };
-export const TOWER_ORDER = ['bolt', 'frost', 'mortar', 'tesla', 'toxic', 'saw', 'banner', 'flame', 'voidwell', 'harpoon', 'magnet', 'grinder', 'giant'];
+export const TOWER_ORDER = ['bolt', 'frost', 'mortar', 'tesla', 'toxic', 'saw', 'banner', 'flame', 'voidwell', 'harpoon', 'magnet', 'grinder'];      // Гигант пока убран из игры (данные и картинки остались: вернуть — дописать 'giant' сюда и в UNLOCKS)
 
 // ───────────────────────── Премиум-башни ─────────────────────────
 // Продаются только за донат-кристаллы. Это усиленные версии обычных башен (та же механика и дерево улучшений, сильнее характеристики,
@@ -330,38 +331,40 @@ export const ENEMIES = {
   bat:      { name: 'Летучая мышь',   hp: 34,  spd: 80, gold: 0, lives: 1, size: 0.85, atk: 0,  air: true, blood: 'red' },
   slime:    { name: 'Слизень',        hp: 90,  spd: 34, gold: 0, lives: 1, size: 1.0,  atk: 5,  split: 'slimelet', immune: ['poison'], blood: 'ooze' },
   slimelet: { name: 'Слизнёныш',      hp: 28,  spd: 50, gold: 0, lives: 1, size: 0.6,  atk: 3,  immune: ['poison'], blood: 'ooze' },
-  reaper:   { name: 'Жнец',           hp: 220, spd: 60, gold: 0, lives: 1, size: 1.0,  atk: 10, ghost: true, blink: 7, blood: 'ichor', pts: 0.03 },
-  berserker: { name: 'Берсерк',       hp: 170, spd: 50, gold: 0, lives: 1, size: 1.05, atk: 14, enrage: true, blood: 'red', pts: 0.02 },
+  reaper:   { name: 'Жнец',           hp: 220, spd: 60, gold: 0, lives: 2, size: 1.0,  atk: 10, ghost: true, blink: 7, blood: 'ichor', pts: 0.03 },
+  berserker: { name: 'Берсерк',       hp: 170, spd: 50, gold: 0, lives: 2, size: 1.05, atk: 14, enrage: true, blood: 'red', pts: 0.02 },
   gargoyle: { name: 'Горгулья',       hp: 140, spd: 58, gold: 0, lives: 1, size: 1.0,  atk: 0,  air: true, armor: 0.2, blood: 'bone', pts: 0.015 },
   // тяжёлые и уникальные: очень медленные, много здоровья, выходят по одному-два и нечасто (как в Kingdom Rush)
-  knight:   { name: 'Чёрный рыцарь',  hp: 320, spd: 21, gold: 0, lives: 1, size: 1.05, atk: 12, armor: 0.2, heavy: true, blood: 'dark', pts: 0.03 },
-  butcher:  { name: 'Мясник',         hp: 560, spd: 17, gold: 0, lives: 2, size: 1.3,  atk: 16, armor: 0.1, heavy: true, blood: 'red', pts: 0.04 },
-  lich:     { name: 'Лич',            hp: 760, spd: 15, gold: 0, lives: 2, size: 1.4,  atk: 20, armor: 0.2, summon: 10, heavy: true, blood: 'bone', pts: 0.05 },
-  yeti:     { name: 'Ледяной йети',   hp: 480, spd: 19, gold: 0, lives: 2, size: 1.3,  atk: 18, armor: 0.15, heavy: true, blood: 'ice', pts: 0.04 },
-  ogre:     { name: 'Огр',            hp: 900, spd: 14, gold: 0, lives: 2, size: 1.45, atk: 22, armor: 0.2, stomp: 9, heavy: true, blood: 'red', pts: 0.06 },
+  knight:   { name: 'Чёрный рыцарь',  hp: 320, spd: 21, gold: 0, lives: 3, size: 1.05, atk: 12, armor: 0.2, heavy: true, blood: 'dark', pts: 0.03 },
+  butcher:  { name: 'Мясник',         hp: 560, spd: 17, gold: 0, lives: 3, size: 1.3,  atk: 16, armor: 0.1, heavy: true, blood: 'red', pts: 0.04 },
+  lich:     { name: 'Лич',            hp: 760, spd: 15, gold: 0, lives: 4, size: 1.4,  atk: 20, armor: 0.2, summon: 10, heavy: true, blood: 'bone', pts: 0.05 },
+  yeti:     { name: 'Ледяной йети',   hp: 480, spd: 19, gold: 0, lives: 3, size: 1.3,  atk: 18, armor: 0.15, heavy: true, blood: 'ice', pts: 0.04 },
+  ogre:     { name: 'Огр',            hp: 900, spd: 14, gold: 0, lives: 4, size: 1.45, atk: 22, armor: 0.2, stomp: 9, heavy: true, blood: 'red', pts: 0.06 },
   // ───── новые монстры по секторам (sector: появляются только на картах своего сектора) ─────
-  anubis:    { name: 'Анубис',           hp: 300,  spd: 34, gold: 0, lives: 1, size: 1.1,  atk: 12, armor: 0.15, blood: 'dark', pts: 0.03, sector: 'desert' },
+  anubis:    { name: 'Анубис',           hp: 300,  spd: 34, gold: 0, lives: 2, size: 1.1,  atk: 12, armor: 0.15, blood: 'dark', pts: 0.03, sector: 'desert' },
   djinn:     { name: 'Злой джинн',       hp: 240,  spd: 46, gold: 0, lives: 1, size: 1.05, atk: 10, ghost: true, blink: 7, blood: 'ichor', pts: 0.03, sector: 'desert' },
-  sandgolem: { name: 'Песчаный голем',   hp: 640,  spd: 16, gold: 0, lives: 2, size: 1.35, atk: 18, armor: 0.25, heavy: true, blood: 'sand', pts: 0.045, sector: 'desert' },
-  pharaoh:   { name: 'Мумия фараона',    hp: 1000, spd: 15, gold: 0, lives: 2, size: 1.5,  atk: 22, armor: 0.2, summon: 12, heavy: true, blood: 'sand', pts: 0.06, sector: 'desert' },
+  sandgolem: { name: 'Песчаный голем',   hp: 640,  spd: 16, gold: 0, lives: 3, size: 1.35, atk: 18, armor: 0.25, heavy: true, blood: 'sand', pts: 0.045, sector: 'desert' },
+  pharaoh:   { name: 'Мумия фараона',    hp: 1000, spd: 15, gold: 0, lives: 4, size: 1.5,  atk: 22, armor: 0.2, summon: 12, heavy: true, blood: 'sand', pts: 0.06, sector: 'desert' },
   wolf:      { name: 'Снежный волк',    hp: 85,   spd: 86, gold: 0, lives: 1, size: 0.95, atk: 7,  blood: 'red', sector: 'ice' },
   iceskel:   { name: 'Ледяной скелет',   hp: 120,  spd: 40, gold: 0, lives: 1, size: 1.0,  atk: 8,  immune: ['poison'], blood: 'ice', sector: 'ice' },
-  snowgolem: { name: 'Снежный голем',    hp: 600,  spd: 17, gold: 0, lives: 2, size: 1.3,  atk: 18, armor: 0.1, heavy: true, blood: 'ice', pts: 0.04, sector: 'ice' },
-  ultrayeti: { name: 'Ультра-йети',      hp: 1300, spd: 18, gold: 0, lives: 3, size: 1.55, atk: 26, armor: 0.25, heavy: true, blood: 'ice', pts: 0.07, sector: 'ice' },
+  snowgolem: { name: 'Снежный голем',    hp: 600,  spd: 17, gold: 0, lives: 3, size: 1.3,  atk: 18, armor: 0.1, heavy: true, blood: 'ice', pts: 0.04, sector: 'ice' },
+  ultrayeti: { name: 'Ультра-йети',      hp: 1300, spd: 18, gold: 0, lives: 4, size: 1.55, atk: 26, armor: 0.25, heavy: true, blood: 'ice', pts: 0.07, sector: 'ice' },
   imp:       { name: 'Бес',              hp: 60,   spd: 72, gold: 0, lives: 1, size: 0.85, atk: 6,  blood: 'red', sector: 'hell' },
-  pinky:     { name: 'Бычий демон',      hp: 230,  spd: 56, gold: 0, lives: 1, size: 1.15, atk: 14, armor: 0.1, enrage: true, blood: 'red', pts: 0.02, sector: 'hell' },
-  lavagolem: { name: 'Лавовый голем',    hp: 820,  spd: 15, gold: 0, lives: 2, size: 1.35, atk: 20, armor: 0.25, heavy: true, blood: 'dark', pts: 0.05, sector: 'hell' },
-  baron:     { name: 'Барон ада',        hp: 1500, spd: 14, gold: 0, lives: 3, size: 1.6,  atk: 28, armor: 0.2, stomp: 8, heavy: true, blood: 'red', pts: 0.08, sector: 'hell' },
+  pinky:     { name: 'Бычий демон',      hp: 230,  spd: 56, gold: 0, lives: 2, size: 1.15, atk: 14, armor: 0.1, enrage: true, blood: 'red', pts: 0.02, sector: 'hell' },
+  lavagolem: { name: 'Лавовый голем',    hp: 820,  spd: 15, gold: 0, lives: 3, size: 1.35, atk: 20, armor: 0.25, heavy: true, blood: 'dark', pts: 0.05, sector: 'hell' },
+  baron:     { name: 'Барон ада',        hp: 1500, spd: 14, gold: 0, lives: 5, size: 1.6,  atk: 28, armor: 0.2, stomp: 8, heavy: true, blood: 'red', pts: 0.08, sector: 'hell' },
 };
 export const HEAVY_CAP = { yeti: 2, knight: 3, butcher: 2, lich: 1, ogre: 2, sandgolem: 2, pharaoh: 1, snowgolem: 2, ultrayeti: 1, lavagolem: 2, baron: 1 };      // не больше стольких за волну
 
 // Масштаб здоровья/награды по номеру волны
-export const TUNE = { hp1: 0.10, hp2: 0.0075, gold1: 0.035 };
+export const TUNE = { hp1: 0.10, hp2: 0.0075, gold1: 0.035, bud1: 0.075, bud2: 0.25 };      // bud1/bud2 — рост «бюджета» волны (числа врагов) с номером рубежа
 export const hpScale = (n) => 1 + TUNE.hp1 * (n - 1) + TUNE.hp2 * (n - 1) * (n - 1);
 export const goldScale = (n) => 1 + TUNE.gold1 * (n - 1);
 
 // Волны: [тип, кол-во, интервал между юнитами сек]; группы идут последовательно.
 const G = (t, c, i = 1) => [t, c, i];
+// Бонус за ранний вызов волны платится только за вторую половину паузы: пока осталось больше половины времени, считается лишь превышение над половиной.
+export const EARLY_FROM = 0.5;
 export const waveGap = (n) => 26 + Math.min(8, n * 0.25);   // пауза после того, как волна целиком вышла на дорогу: время подумать или вызвать следующую волну раньше
 
 // ───── Волны кампании ─────
@@ -376,7 +379,7 @@ export const eqWave = (L, n, T) => { const s = 1 + (L - 1) * 0.25, e = 7 + (L - 
 export function genWave(L, n, T) {
   let a = (L * 1009 + n * 7919) | 0; const R = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const W0 = (LEVELS[L - 1] && LEVELS[L - 1].wavesFull) || T, nv = T > 1 ? 1 + ((n - 1) * (1 + 0.35 * (W0 - T) / (T - 1))) : n;      // при сжатии уровня до 15 волн каждая волна чуть сильнее (экономика копится по времени, поэтому сжимаем лишь на треть)
-  const budget = 3 + (nv - 1) * (1.0 + 0.075 * L) + 0.25 * L;
+  const budget = 3 + (nv - 1) * (1.0 + TUNE.bud1 * L) + TUNE.bud2 * L;
   const STRONG = ['knight', 'butcher', 'yeti', 'ogre', 'reaper', 'berserker', 'lich', 'sandgolem', 'pharaoh', 'snowgolem', 'ultrayeti', 'lavagolem', 'baron', 'anubis', 'pinky'], SIDE = ['bat', 'gargoyle'];     // сильные — не в первых волнах уровня; лекарь и летуны — не основа волны
   const sec = LEVELS[L - 1] && LEVELS[L - 1].sector;       // монстры сектора выходят только на его картах
   const avail = Object.keys(UNLOCK_LV).filter((t) => UNLOCK_LV[t] <= L && (!ENEMIES[t].sector || ENEMIES[t].sector === sec) && !(L === 2 && t === 'zombie' && n < 2) && !(n < Math.max(5, T * 0.45) && STRONG.includes(t)) && !(L === UNLOCK_LV[t] && L > 2 && n < T * 0.4));        // новый вид выходит в середине своего уровня, а сильные — не в первых волнах
@@ -543,7 +546,7 @@ export function econUpgradeCost(type, level) {
 
 // Закрытые вещи: открываются в Кузнице за души или за донат-кристаллы. Свободны с начала только арбалет и рудник.
 export const UNLOCKS = {
-  magnet: { souls: 280, gems: 47 }, grinder: { souls: 340, gems: 57 }, giant: { souls: 420, gems: 70 },
+  magnet: { souls: 280, gems: 47 }, grinder: { souls: 340, gems: 57 },
   frost: { souls: 30, gems: 5 }, toxic: { souls: 45, gems: 8 }, mortar: { souls: 60, gems: 10 },
   flame: { souls: 100, gems: 17 }, banner: { souls: 120, gems: 20 }, saw: { souls: 150, gems: 25 }, harpoon: { souls: 190, gems: 32 }, tesla: { souls: 230, gems: 38 },
   bank: { souls: 260, gems: 43 }, voidwell: { souls: 320, gems: 53 }, altar: { souls: 380, gems: 63 },

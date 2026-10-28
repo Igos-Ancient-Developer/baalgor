@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261027154821';
-import * as A from './art.js?v=20261027154821';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261027154821';
-import { tile } from './iconmap.js?v=20261027154821';
-import { img } from './sprites.js?v=20261027154821';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261027154821';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261028174922';
+import * as A from './art.js?v=20261028174922';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261028174922';
+import { tile } from './iconmap.js?v=20261028174922';
+import { img } from './sprites.js?v=20261028174922';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261028174922';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -519,11 +519,14 @@ export class Renderer {
         case 'shard': {                                   // ледяная стрела: гранёное остриё, древко и оперение, холодный свет за ней
           const e = p.target; const a = (mo && mo.dirx !== null && mo.dirx !== undefined) ? Math.atan2(mo.diry, mo.dirx) : e ? Math.atan2(e.y - p.y, e.x - p.x) : 0;
           ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(a); ctx.lineJoin = 'round';
-          ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#7fd8ff'), -30, -9, 34, 18); ctx.globalCompositeOperation = 'source-over';
-          ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(5, -3.6); ctx.lineTo(-11, -1.2); ctx.lineTo(-15, -4.2); ctx.lineTo(-13, 0); ctx.lineTo(-15, 4.2); ctx.lineTo(-11, 1.2); ctx.lineTo(5, 3.6); ctx.closePath();
-          ctx.lineWidth = 2.6; ctx.strokeStyle = '#170a0f'; ctx.stroke();
-          const gr = ctx.createLinearGradient(-15, 0, 14, 0); gr.addColorStop(0, '#5fc4f5'); gr.addColorStop(0.55, '#c8f1ff'); gr.addColorStop(1, '#ffffff'); ctx.fillStyle = gr; ctx.fill();
-          ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(12, 0); ctx.moveTo(5, -3.6); ctx.lineTo(5, 3.6); ctx.stroke();
+          ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#7fd8ff'), -34, -8, 40, 16); ctx.globalCompositeOperation = 'source-over';
+          // ледяная стрела: прямое тонкое ледяное древко, острый гранёный наконечник и два пера
+          ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(10, -3.2); ctx.lineTo(7, 0); ctx.lineTo(10, 3.2); ctx.closePath();                   // наконечник
+          ctx.moveTo(-14, -1); ctx.lineTo(7, -1); ctx.lineTo(7, 1); ctx.lineTo(-14, 1); ctx.closePath();                                  // древко
+          ctx.moveTo(-14, 0); ctx.lineTo(-19, -3.6); ctx.lineTo(-11, 0); ctx.lineTo(-19, 3.6); ctx.closePath();                            // оперение
+          ctx.lineWidth = 2.4; ctx.strokeStyle = '#170a0f'; ctx.stroke();
+          const gr = ctx.createLinearGradient(-19, 0, 18, 0); gr.addColorStop(0, '#6fc8f5'); gr.addColorStop(0.6, '#cdf2ff'); gr.addColorStop(1, '#ffffff'); ctx.fillStyle = gr; ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 0.7; ctx.beginPath(); ctx.moveTo(-13, 0); ctx.lineTo(16, 0); ctx.stroke();
           ctx.restore(); break;
         }
         case 'saw': {
