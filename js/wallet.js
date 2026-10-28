@@ -1,8 +1,8 @@
 // Кошелёк донат-кристаллов. В Telegram баланс, покупки и цены живут на сервере (supabase/schema.sql), клиент только показывает.
 // Вне Telegram (обычный браузер) работает локальный режим для разработки: траты считаются в сохранении, пополнение только с ?debug.
-import * as D from './data.js?v=20261028203705';
-import { Net } from './net.js?v=20261028203705';
-import { TG } from './tg.js?v=20261028203705';
+import * as D from './data.js?v=20261028203821';
+import { Net } from './net.js?v=20261028203821';
+import { TG } from './tg.js?v=20261028203821';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const debug = () => location.search.includes('debug');

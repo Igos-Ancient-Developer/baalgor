@@ -1,13 +1,13 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261028203705';
-import { Wallet } from './wallet.js?v=20261028203705';
-import { fillPlates, gemIc } from './res.js?v=20261028203705';
-import { towerIcon } from './ui.js?v=20261028203705';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261028203705';
-import { SHOP_IMG } from './iconmap.js?v=20261028203705';
-import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, playBatch, oddsOf, chestHtml } from './chests.js?v=20261028203705';
+import * as D from './data.js?v=20261028203821';
+import { Wallet } from './wallet.js?v=20261028203821';
+import { fillPlates, gemIc } from './res.js?v=20261028203821';
+import { towerIcon } from './ui.js?v=20261028203821';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261028203821';
+import { SHOP_IMG } from './iconmap.js?v=20261028203821';
+import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, playBatch, oddsOf, chestHtml } from './chests.js?v=20261028203821';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
 
 const $ = (s) => document.querySelector(s);
@@ -96,16 +96,6 @@ export function renderShop(save, ctrl, redraw) {
     card.appendChild(b); pg.appendChild(card);
   }
   body.appendChild(pg);
-
-  // ── ежедневный подарок ──
-  { const ready = Wallet.dailyReady(), streak = Wallet.online ? (save.streak || 0) : ((save.daily || {}).streak || 0), claimed = ready ? streak % 7 : streak;
-    const card = el('div', 'sh-card daily'); card.appendChild(el('div', 'sh-h', `<img class="sh-ic" src="${big(SHOP_IMG.daily, 64)}" alt="">Ежедневный подарок`));
-    const row = el('div', 'days');
-    D.DAILY.forEach((g, i) => row.appendChild(el('div', 'day' + (i < claimed ? ' got' : i === claimed && ready ? ' now' : ''), `<small>день ${i + 1}</small><img class="si" src="${bareGlyphUrl('soul', 22)}" alt=""><b>${g}</b>${i < claimed ? '<i class="ck"></i>' : ''}`)));
-    card.appendChild(row);
-    const b = el('button', 'btn big' + (ready ? '' : ' poor'), ready ? `Забрать +${D.DAILY[claimed]}` : 'Приходи завтра');
-    b.onclick = async () => { if (!ready) { fail(b); return; } const r = await Wallet.daily(); if (r && r.ok) { ctrl.sfx.play('upgrade'); ctrl.note(`+${r.reward} душ`); redraw(); } else { say(r); fail(b); } };
-    card.appendChild(b); body.appendChild(card); }
 
   $('#shop').scrollTop = keep;
 }

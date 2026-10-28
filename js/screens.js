@@ -1,13 +1,13 @@
 // Экраны меню: Кузница душ и Достижения (иконки в стиле WC3).
-import * as D from './data.js?v=20261028203705';
-import { uiIcon } from './env.js?v=20261028203705';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261028203705';
-import { towerIcon, econIcon } from './ui.js?v=20261028203705';
-import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261028203705';
-import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261028203705';
-import { ACH_IMG } from './iconmap.js?v=20261028203705';
-import { url as imgUrl } from './sprites.js?v=20261028203705';
-import { Wallet } from './wallet.js?v=20261028203705';
+import * as D from './data.js?v=20261028203821';
+import { uiIcon } from './env.js?v=20261028203821';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261028203821';
+import { towerIcon, econIcon } from './ui.js?v=20261028203821';
+import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261028203821';
+import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261028203821';
+import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261028203821';
+import { url as imgUrl } from './sprites.js?v=20261028203821';
+import { Wallet } from './wallet.js?v=20261028203821';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -18,6 +18,16 @@ const GEM = (n = 18) => gemIc(n);
 export function renderForge(save, sfx, onChange, openShop) {
   fillPlates($('#forge-souls'), save, openShop);
   const box = $('#perks'); box.innerHTML = '';
+  // ежедневный подарок: плашка в самом верху кузницы
+  { const db = $('#dailybox'); db.innerHTML = '';
+    const ready = Wallet.dailyReady(), streak = Wallet.online ? (save.streak || 0) : ((save.daily || {}).streak || 0), claimed = ready ? streak % 7 : streak;
+    const card = el('div', 'sh-card daily'); card.appendChild(el('div', 'sh-h', `<img class="sh-ic" src="${iconUrl(glyphIcon(SHOP_IMG.daily, { size: 64 }))}" alt="">Ежедневный подарок`));
+    const row = el('div', 'days');
+    D.DAILY.forEach((g, i) => row.appendChild(el('div', 'day' + (i < claimed ? ' got' : i === claimed && ready ? ' now' : ''), `<small>день ${i + 1}</small><img class="si" src="${bareGlyphUrl('soul', 22)}" alt=""><b>${g}</b>${i < claimed ? '<i class="ck"></i>' : ''}`)));
+    card.appendChild(row);
+    const b = el('button', 'btn big' + (ready ? '' : ' poor'), ready ? `Забрать +${D.DAILY[claimed]}` : 'Приходи завтра');
+    b.onclick = async () => { if (!ready) { sfx.play('error'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); return; } const r = await Wallet.daily(); if (r && r.ok) { sfx.play('upgrade'); onChange(); } else { sfx.play('error'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); } };
+    card.appendChild(b); db.appendChild(card); }
   for (const p of PERKS) {
     const lv = save.perks[p.id] || 0, max = lv >= p.max, cost = max ? 0 : perkCost(p, lv);
     const row = el('div', 'frow' + (max ? ' max' : ''));

@@ -1125,3 +1125,4 @@ body.hastabs #title .title-actions { margin-top: 34px; margin-bottom: auto; }
 #title .title-actions .stn.ranked .tk { width: 24px; height: 24px; margin: 0; flex: none; border-radius: 4px; }
 #title .title-actions .stn.ranked span { font-size: 13.5px; letter-spacing: 0; white-space: nowrap; }
 .chcard .chb .chstock.in { position: static; flex: none; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; font-size: 14px; line-height: 20px; color: #1a1005; background: linear-gradient(#ffe27a, #d89a22); border: 2px solid #1a1005; box-shadow: 0 2px 4px rgba(0,0,0,.6); text-shadow: none; display: grid; place-items: center; }
+#dailybox { margin-bottom: 6px; }
