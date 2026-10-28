@@ -1112,12 +1112,11 @@ body.hastabs .title-actions { margin-top: auto; margin-bottom: 14px; }
 .chstep .sa { width: 28px; height: 100%; background: none; color: #ffe08a; font-size: 24px; line-height: 1; padding: 0 0 3px; } .chstep .sa:disabled { color: #5a4c32; }
 .chstep .sn { min-width: 26px; text-align: center; font-size: 17px; color: #fff1c8; }
 
-/* главный экран: кнопки без значков, одного размера, меньше; логотип меньше, всё выше */
-#title { padding-top: calc(var(--sa-top) + 30px); }
+/* главный экран: кнопки без значков, одного размера, меньше; логотип меньше (рейтинговый забег оставлен прежним) */
+#title { padding-top: calc(var(--sa-top) + 44px); }
 .logo-img.big { width: min(60vw, 250px, 28vh); } #title .logo-img { margin: 0 0 calc(-0.05 * min(60vw, 250px, 28vh)); }
-#title .title-actions { width: min(100%, 236px); gap: 7px; }
-#title .title-actions .stn, #title .title-actions .stn.primary { width: 100%; min-height: 40px; padding: 4px 10px; font-size: 16px; border-width: 10px; border-image-width: 10px; margin: 0; }
-#title .title-actions .stn span, #title .title-actions .stn.primary span { font-size: 16px; letter-spacing: .04em; white-space: nowrap; }
-#title .title-actions .stn#b-ranked { color: #e8dcff; }
-body.hastabs #title .title-actions { margin-top: 18px; margin-bottom: auto; }
+#title .title-actions { width: min(100%, 250px); gap: 8px; }
+#title .title-actions .stn:not(.ranked) { width: 100%; min-height: 40px; padding: 4px 10px; font-size: 16px; border-width: 10px; border-image-width: 10px; margin: 0; }
+#title .title-actions .stn:not(.ranked) span { font-size: 16px; letter-spacing: .04em; white-space: nowrap; }
+body.hastabs #title .title-actions { margin-top: 34px; margin-bottom: auto; }
 .chcard .chb.go { white-space: nowrap; font-size: 14px; padding: 0 4px; }

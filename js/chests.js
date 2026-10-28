@@ -2,15 +2,15 @@
 // Деревянный: за души или за немного кристаллов, в основном души. Серебряный: только за кристаллы, в основном кристаллы.
 // Золотой: самый дорогой, лучшая добыча, редкие премиум-башни. Каждая башня — отдельная строка таблицы (js/chesttable.js).
 // Для кристаллов бросок делает сервер (supabase/chests.sql, функция chest_open) — по этой же таблице; здесь бросок нужен для оплаты душами (души хранятся в сохранении) и для локального режима вне Telegram.
-import * as D from './data.js?v=20261028203348';
-import * as M from './meta.js?v=20261028203348';
-import { Net } from './net.js?v=20261028203348';
-import { Wallet } from './wallet.js?v=20261028203348';
-import { towerIcon, econIcon } from './ui.js?v=20261028203348';
-import { iconUrl } from './icons.js?v=20261028203348';
-import { url as imgUrl } from './sprites.js?v=20261028203348';
-import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261028203348';
-import { createChest3D } from './chest3d.js?v=20261028203348';
+import * as D from './data.js?v=20261028203434';
+import * as M from './meta.js?v=20261028203434';
+import { Net } from './net.js?v=20261028203434';
+import { Wallet } from './wallet.js?v=20261028203434';
+import { towerIcon, econIcon } from './ui.js?v=20261028203434';
+import { iconUrl } from './icons.js?v=20261028203434';
+import { url as imgUrl } from './sprites.js?v=20261028203434';
+import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261028203434';
+import { createChest3D } from './chest3d.js?v=20261028203434';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
