@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261028201959';
-import * as A from './art.js?v=20261028201959';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261028201959';
-import { tile } from './iconmap.js?v=20261028201959';
-import { img } from './sprites.js?v=20261028201959';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261028201959';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261028203243';
+import * as A from './art.js?v=20261028203243';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261028203243';
+import { tile } from './iconmap.js?v=20261028203243';
+import { img } from './sprites.js?v=20261028203243';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261028203243';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -472,7 +472,8 @@ export class Renderer {
     if (u >= 1) return null;
     const hx = Math.cos(st.h), hy = Math.sin(st.h) * 0.5, hl = Math.hypot(hx, hy) || 1, lam = 0.42 * D;
     const cx = st.M.x + hx / hl * lam, cy = st.M.y + hy / hl * lam, mx = (st.sx + tx) / 2, my = (st.sy + ty) / 2;
-    const q = (1 - u) * (1 - u), w = 2 * u * (1 - u), dx = q * (st.M.x - st.sx) + w * (cx - mx), dy = q * (st.M.y - st.sy) + w * (cy - my);
+    const str = p.kind === 'bolt';                       // болты и гарпуны летят строго по прямой: смещение от дула гаснет линейно
+    const q = str ? 1 - u : (1 - u) * (1 - u), w = str ? 0 : 2 * u * (1 - u), dx = q * (st.M.x - st.sx) + w * (cx - mx), dy = q * (st.M.y - st.sy) + w * (cy - my);
     const vx = p.x + dx, vy = p.y + sy + dy;
     let dirx = null, diry = null;
     if (st.lx !== null) { const ddx = vx - st.lx, ddy = vy - st.ly, l = Math.hypot(ddx, ddy); if (l > 0.6) { dirx = ddx / l; diry = ddy / l; } }
@@ -486,11 +487,11 @@ export class Renderer {
         case 'bolt': {
           const l = Math.hypot(p.vx, p.vy); let ux = p.vx / l, uy = p.vy / l; if (mo && mo.dirx !== null && mo.dirx !== undefined) { ux = mo.dirx; uy = mo.diry; } const y = p.y - 14;
           ctx.save(); ctx.lineCap = 'round';
-          const LEN = p.harpoon ? 30 : 12, W1 = p.harpoon ? 7 : 4, W2 = p.harpoon ? 3.4 : 2;
-          ctx.strokeStyle = '#170a0f'; ctx.lineWidth = W1; ctx.beginPath(); ctx.moveTo(p.x - ux * LEN, y - uy * LEN); ctx.lineTo(p.x + ux * 4, y + uy * 4); ctx.stroke();
-          ctx.strokeStyle = p.harpoon ? '#e8dcb8' : p.big ? '#ffe27a' : '#f4e4b8'; ctx.lineWidth = W2; ctx.beginPath(); ctx.moveTo(p.x - ux * LEN, y - uy * LEN); ctx.lineTo(p.x + ux * 4, y + uy * 4); ctx.stroke();
-          ctx.fillStyle = '#d4dae4'; ctx.beginPath(); ctx.moveTo(p.x + ux * 8, y + uy * 8); ctx.lineTo(p.x + ux * 2 - uy * 2.6, y + uy * 2 + ux * 2.6); ctx.lineTo(p.x + ux * 2 + uy * 2.6, y + uy * 2 - ux * 2.6); ctx.fill();
-          if (p.big) { ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#ffd35a'), p.x - 9, y - 9, 18, 18); }
+          const hp = !!p.harpoon, LEN = hp ? 38 : 9, W1 = hp ? 4.6 : 2.4, W2 = hp ? 2 : 1.1, HL = hp ? 9 : 5.5, HW = hp ? 3 : 1.7;
+          ctx.strokeStyle = '#170a0f'; ctx.lineWidth = W1; ctx.beginPath(); ctx.moveTo(p.x - ux * LEN, y - uy * LEN); ctx.lineTo(p.x + ux * 3, y + uy * 3); ctx.stroke();
+          ctx.strokeStyle = hp ? '#e8dcb8' : p.big ? '#ffe27a' : '#f4e4b8'; ctx.lineWidth = W2; ctx.beginPath(); ctx.moveTo(p.x - ux * LEN, y - uy * LEN); ctx.lineTo(p.x + ux * 3, y + uy * 3); ctx.stroke();
+          ctx.fillStyle = '#d4dae4'; ctx.beginPath(); ctx.moveTo(p.x + ux * HL, y + uy * HL); ctx.lineTo(p.x + ux * 1.5 - uy * HW, y + uy * 1.5 + ux * HW); ctx.lineTo(p.x + ux * 1.5 + uy * HW, y + uy * 1.5 - ux * HW); ctx.fill();
+          if (p.big) { ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#ffd35a'), p.x - 6, y - 6, 12, 12); }
           ctx.restore(); break;
         }
         case 'shell': case 'vial': {

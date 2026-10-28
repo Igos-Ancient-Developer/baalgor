@@ -1,13 +1,13 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261028201959';
-import { Wallet } from './wallet.js?v=20261028201959';
-import { fillPlates, gemIc } from './res.js?v=20261028201959';
-import { towerIcon } from './ui.js?v=20261028201959';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261028201959';
-import { SHOP_IMG } from './iconmap.js?v=20261028201959';
-import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, playBatch, oddsOf, chestHtml } from './chests.js?v=20261028201959';
+import * as D from './data.js?v=20261028203243';
+import { Wallet } from './wallet.js?v=20261028203243';
+import { fillPlates, gemIc } from './res.js?v=20261028203243';
+import { towerIcon } from './ui.js?v=20261028203243';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261028203243';
+import { SHOP_IMG } from './iconmap.js?v=20261028203243';
+import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, playBatch, oddsOf, chestHtml } from './chests.js?v=20261028203243';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
 
 const $ = (s) => document.querySelector(s);
@@ -43,11 +43,14 @@ export function renderShop(save, ctrl, redraw) {
   for (const kind of CHEST_ORDER) {
     const c = CHESTS[kind], card = el('div', 'chcard ' + c.theme), have = stockOf(save, kind), qty = ctrl._chestQty[kind] || 1;
     card.innerHTML = `<div class="chart">${chestHtml(c.theme)}<b class="chstock${have ? '' : ' zero'}">${have}</b></div><div class="chn">${c.name}</div><div class="chd">В наличии: <b>${have}</b> · ${MAIN[kind]}</div>`;
-    const qs = el('div', 'chqty'); for (const q of [1, 5, 10]) { const b = el('button', 'cq' + (q === qty ? ' on' : ''), '×' + q); b.onclick = () => { ctrl.sfx.play('click'); ctrl._chestQty[kind] = q; redraw(); }; qs.appendChild(b); }
     const buy = el('div', 'chbtns');
     const afterBuy = (r, b) => { if (r && r.ok) { ctrl.sfx.play('upgrade'); ctrl.persist(); redraw(); } else { const e = r && r.error; ctrl.sfx.play('error'); ctrl.note(e === 'gems' ? 'Не хватает кристаллов' : e === 'souls' ? 'Не хватает душ' : 'Не получилось, попробуй ещё раз'); if (e === 'gems') $('#shop-packs').scrollIntoView({ behavior: 'smooth' }); fail(b); } };
-    if (c.souls) { const b = el('button', 'btn chb', `<img src="${bareGlyphUrl('soul', 22)}" alt="">${fmt(c.souls * qty)}`); b.onclick = async () => { b.disabled = true; afterBuy(await buyChests(save, kind, 'souls', qty), b); b.disabled = false; }; buy.appendChild(b); }
-    { const b = el('button', 'btn chb gem', `${gemIc(22)}${fmt(c.gems * qty)}`); b.onclick = async () => { b.disabled = true; afterBuy(await buyChests(save, kind, 'gems', qty), b); b.disabled = false; }; buy.appendChild(b); }
+    const stp = el('div', 'chstep'), dec = el('button', 'sa', '‹'), num = el('b', 'sn', String(qty)), inc = el('button', 'sa', '›'); stp.append(dec, num, inc); buy.appendChild(stp);
+    const prices = [];
+    const setQ = (q) => { q = Math.max(1, Math.min(50, q)); ctrl._chestQty[kind] = q; num.textContent = q; dec.disabled = q <= 1; inc.disabled = q >= 50; prices.forEach(([b, v, ic]) => { b.innerHTML = `${ic}${fmt(v * q)}`; }); };
+    if (c.souls) { const b = el('button', 'btn chb'); b.onclick = async () => { b.disabled = true; afterBuy(await buyChests(save, kind, 'souls', ctrl._chestQty[kind]), b); b.disabled = false; }; prices.push([b, c.souls, `<img src="${bareGlyphUrl('soul', 22)}" alt="">`]); buy.appendChild(b); }
+    { const b = el('button', 'btn chb gem'); b.onclick = async () => { b.disabled = true; afterBuy(await buyChests(save, kind, 'gems', ctrl._chestQty[kind]), b); b.disabled = false; }; prices.push([b, c.gems, gemIc(22)]); buy.appendChild(b); }
+    dec.onclick = () => { ctrl.sfx.play('click'); setQ((ctrl._chestQty[kind] || 1) - 1); }; inc.onclick = () => { ctrl.sfx.play('click'); setQ((ctrl._chestQty[kind] || 1) + 1); }; setQ(qty);
     const op = el('div', 'chbtns open');
     const o1 = el('button', 'btn chb go' + (have ? '' : ' poor'), 'Открыть');
     o1.onclick = async () => {
@@ -62,10 +65,10 @@ export function renderShop(save, ctrl, redraw) {
     };
     op.appendChild(o1);
     if (have > 1) { const oa = el('button', 'btn chb go all', `Открыть все (${Math.min(have, 50)})`); oa.onclick = async () => { const r = await openChests(save, kind, Math.min(have, 50)); if (!r || !r.ok) { ctrl.sfx.play('error'); ctrl.note('Не получилось, попробуй ещё раз'); redraw(); return; } ctrl.persist(); await playBatch(kind, r.loots, ctrl); redraw(); }; op.appendChild(oa); }
-    card.append(qs, buy, op);
+    card.append(buy, op);
     const odds = el('div', 'chodds hidden'); odds.innerHTML = oddsOf(kind).map(([t, p, r, pic]) => `<div class="od r-${r}"><img src="${pic}" alt=""><span>${t}</span><b>${p}%</b></div>`).join('');
-    const tg = el('button', 'chinfo', 'Шансы'); tg.onclick = () => { odds.classList.toggle('hidden'); ctrl.sfx.play('click'); };
-    card.append(tg, odds); cg.appendChild(card);
+    card.querySelector('.chart').onclick = () => { odds.classList.toggle('hidden'); ctrl.sfx.play('click'); };       // шансы: по нажатию на сам сундук
+    card.append(odds); cg.appendChild(card);
   }
   body.appendChild(cg);
   if (!ctrl._stockT || Date.now() - ctrl._stockT > 20000) { ctrl._stockT = Date.now(); refreshStock(save).then(() => { if (!$('#shop').classList.contains('hidden')) redraw(); }); }

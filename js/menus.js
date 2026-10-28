@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028201959';
-import * as D from './data.js?v=20261028201959';
-import * as M from './meta.js?v=20261028201959';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028201959';
-import { url as imgUrl } from './sprites.js?v=20261028201959';
-import { Net } from './net.js?v=20261028201959';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261028201959';
-import { fillPlates, gemIc } from './res.js?v=20261028201959';
-import { gemHtml } from './gem3d.js?v=20261028201959';
-import { Wallet } from './wallet.js?v=20261028201959';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028203243';
+import * as D from './data.js?v=20261028203243';
+import * as M from './meta.js?v=20261028203243';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028203243';
+import { url as imgUrl } from './sprites.js?v=20261028203243';
+import { Net } from './net.js?v=20261028203243';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261028203243';
+import { fillPlates, gemIc } from './res.js?v=20261028203243';
+import { gemHtml } from './gem3d.js?v=20261028203243';
+import { Wallet } from './wallet.js?v=20261028203243';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -102,7 +102,6 @@ export class Menus {
   buildTitle() {
     const s = this.save, c = this.c;
     $('#title-logo').src = imgUrl('ui/logo.webp');
-    $('#b-ranked .tk').src = imgUrl('ui/icon_skull.webp');
     const me = Net.me() || c.TG.user(), pf = $('#pf'); pf.innerHTML = '';
     pf.appendChild(avatar(me && (me.photo || me.photo_url), me ? (me.name || me.first_name || me.username) : 'Игрок', me ? me.id : 0));
     $('#gem-ic').innerHTML = gemHtml(30, 0, true); $('#gem-n').textContent = (s.gems || 0).toLocaleString('ru-RU');

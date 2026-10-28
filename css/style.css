@@ -1105,3 +1105,18 @@ body.hastabs .title-actions { margin-top: auto; margin-bottom: 14px; }
 .chb.go { font-size: 15px; } .chb.go.poor { opacity: .5; }
 .chodds .od { align-items: center; gap: 8px; } .chodds .od img { width: 24px; height: 24px; object-fit: contain; border-radius: 16%; flex: none; } .chodds .od span { flex: 1; } .chodds { max-height: 300px; overflow-y: auto; }
 .r-c { --rc: #aab0b8; } .r-u { --rc: #5ab0ff; } .r-r { --rc: #8a6aff; } .r-e { --rc: #ff5ad0; } .r-l { --rc: #ffcf3a; }
+
+/* покупка сундуков: стрелками меняется количество, шансы открываются по нажатию на сундук */
+.chcard { grid-template-areas: "art name" "art desc" "buy buy" "open open" "odds odds"; } .chcard .chart { cursor: pointer; }
+.chstep { display: flex; align-items: center; flex: none; height: 38px; border-radius: 10px; background: #1c1612; border: 2px solid #4a3a22; }
+.chstep .sa { width: 28px; height: 100%; background: none; color: #ffe08a; font-size: 24px; line-height: 1; padding: 0 0 3px; } .chstep .sa:disabled { color: #5a4c32; }
+.chstep .sn { min-width: 26px; text-align: center; font-size: 17px; color: #fff1c8; }
+
+/* главный экран: кнопки без значков, одного размера, меньше; логотип меньше, всё выше */
+#title { padding-top: calc(var(--sa-top) + 30px); }
+.logo-img.big { width: min(60vw, 250px, 28vh); } #title .logo-img { margin: 0 0 calc(-0.05 * min(60vw, 250px, 28vh)); }
+#title .title-actions { width: min(100%, 236px); gap: 7px; }
+#title .title-actions .stn, #title .title-actions .stn.primary { width: 100%; min-height: 40px; padding: 4px 10px; font-size: 16px; border-width: 10px; border-image-width: 10px; margin: 0; }
+#title .title-actions .stn span, #title .title-actions .stn.primary span { font-size: 16px; letter-spacing: .04em; white-space: nowrap; }
+#title .title-actions .stn#b-ranked { color: #e8dcff; }
+body.hastabs #title .title-actions { margin-top: 18px; margin-bottom: auto; }

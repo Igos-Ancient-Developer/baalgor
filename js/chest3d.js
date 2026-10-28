@@ -1,33 +1,45 @@
 // Настоящий 3D-сундук на three.js (js/vendor/three.module.min.js): корпус с досками или обивкой, окантовка, замок с камнем, откидывающаяся крышка на петле,
 // внутри золото и самоцветы, свет из сундука, искры, магический круг на полу. Рисуется в прозрачный canvas поверх затемнённого экрана.
 // Состояния: drop → idle → charge → burst → got. Если WebGL недоступен, createChest3D вернёт null и окно откроется на запасной (плоской) сцене.
-import * as THREE from './vendor/three.module.min.js?v=20261028201959';
+import * as THREE from './vendor/three.module.min.js?v=20261028203243';
 
 const PAL = {
-  wood: { body: 0x8a5428, trim: 0x353841, trimMet: 0.85, trimRough: 0.5, gem: 0x2f2a28, lock: 0x2a2c33, glow: 0xffb35a, roughness: 0.82, metal: 0.0 },
-  silver: { body: 0x5f7f9f, trim: 0xdde4ec, trimMet: 0.92, trimRough: 0.26, gem: 0x2ae6ff, lock: 0xb8c2ce, glow: 0xa9dcff, roughness: 0.34, metal: 0.78 },
-  gold: { body: 0x86122a, trim: 0xffd04a, trimMet: 1.0, trimRough: 0.2, gem: 0xff3252, lock: 0xe9b32e, glow: 0xffd24a, roughness: 0.78, metal: 0.05 },
+  wood: { body: 0xffffff, trim: 0x474b55, trimMet: 0.5, trimRough: 0.62, gem: 0x2f2a28, lock: 0x575c68, glow: 0xffb35a, roughness: 0.85, metal: 0.0, cross: 3 },
+  silver: { body: 0xb8c4d2, trim: 0x8d9aaa, trimMet: 0.85, trimRough: 0.4, gem: 0x14c8d8, lock: 0x9aa7b6, glow: 0xa9dcff, roughness: 0.4, metal: 0.55, cross: 1 },
+  gold: { body: 0xc9a2a8, trim: 0xe0a826, trimMet: 1.0, trimRough: 0.26, gem: 0xff3252, lock: 0xf0c040, glow: 0xffd24a, roughness: 0.7, metal: 0.08, cross: 1 },
 };
 const ease = { out: (u) => 1 - Math.pow(1 - u, 3), inn: (u) => u * u * u };
 const canvasTex = (w, h, draw, rep) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep[0], rep[1]); } return t; };
 
-// текстуры корпуса: доски / вытравленная сталь / стёганая обивка
+// текстуры: корпус (вертикальные доски / стальные филёнки / бархатные филёнки), крышка, тиснение на окантовке
+const WOODS = ['#6d4627', '#5f3c20', '#74502c', '#5a381d', '#69431f'];
+function scroll(g, x, y, sx, sy, col, lw) { g.strokeStyle = col; g.lineWidth = lw; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, y); g.bezierCurveTo(x + sx * 26, y, x + sx * 34, y + sy * 18, x + sx * 20, y + sy * 26); g.bezierCurveTo(x + sx * 8, y + sy * 32, x + sx * 6, y + sy * 14, x + sx * 16, y + sy * 14); g.stroke(); }
 function bodyTexture(theme) {
   if (theme === 'wood') return canvasTex(256, 256, (g, w, h) => {
-    const rows = 5; for (let i = 0; i < rows; i++) { const y = (i * h) / rows, bh = h / rows; g.fillStyle = ['#8d5a2c', '#7e4e24', '#94612f', '#80522a', '#8a5629'][i]; g.fillRect(0, y, w, bh);
-      for (let k = 0; k < 26; k++) { g.strokeStyle = `rgba(40,20,8,${0.08 + Math.random() * 0.12})`; g.lineWidth = 1; g.beginPath(); const yy = y + Math.random() * bh; g.moveTo(0, yy); g.bezierCurveTo(w * 0.3, yy + (Math.random() - 0.5) * 6, w * 0.7, yy + (Math.random() - 0.5) * 6, w, yy); g.stroke(); }
-      g.fillStyle = 'rgba(20,10,4,.85)'; g.fillRect(0, y + bh - 3, w, 3); g.fillStyle = 'rgba(255,200,140,.18)'; g.fillRect(0, y, w, 2); }
+    const n = 4; for (let i = 0; i < n; i++) { const x = (i * w) / n, bw = w / n; g.fillStyle = WOODS[i]; g.fillRect(x, 0, bw, h);
+      for (let k = 0; k < 22; k++) { g.strokeStyle = `rgba(30,14,5,${0.1 + Math.random() * 0.16})`; g.lineWidth = 1 + Math.random(); const xx = x + 4 + Math.random() * (bw - 8); g.beginPath(); g.moveTo(xx, 0); g.bezierCurveTo(xx + (Math.random() - 0.5) * 8, h * 0.3, xx + (Math.random() - 0.5) * 8, h * 0.7, xx, h); g.stroke(); }
+      g.fillStyle = 'rgba(12,6,2,.9)'; g.fillRect(x + bw - 3, 0, 3, h); g.fillStyle = 'rgba(255,200,140,.16)'; g.fillRect(x, 0, 3, h); }
   });
-  if (theme === 'silver') return canvasTex(256, 256, (g, w, h) => {
-    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#7a98b4'); gr.addColorStop(1, '#4a647e'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
-    g.strokeStyle = 'rgba(220,235,250,.5)'; g.lineWidth = 3; g.strokeRect(14, 14, w - 28, h - 28); g.strokeStyle = 'rgba(20,35,55,.6)'; g.lineWidth = 2; g.strokeRect(22, 22, w - 44, h - 44);
-    g.strokeStyle = 'rgba(210,230,255,.35)'; g.lineWidth = 2; for (const sx of [1, -1]) { g.beginPath(); g.moveTo(w / 2, h / 2); g.bezierCurveTo(w / 2 + sx * 40, h / 2 - 50, w / 2 + sx * 80, h / 2 + 10, w / 2 + sx * 100, h / 2 - 20); g.stroke(); }
-  });
+  const silver = theme === 'silver', base = silver ? ['#6d86a0', '#4a617b'] : ['#9a1832', '#6a0e22'], lo = silver ? 'rgba(14,26,42,.75)' : 'rgba(40,0,10,.75)', hi = silver ? 'rgba(225,238,252,.7)' : 'rgba(255,205,90,.85)';
   return canvasTex(256, 256, (g, w, h) => {
-    g.fillStyle = '#7b1126'; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) { const x = (i + 0.5) * (w / 6), y = (j + 0.5) * (h / 6), rg = g.createRadialGradient(x, y, 2, x, y, 26); rg.addColorStop(0, 'rgba(255,90,110,.45)'); rg.addColorStop(1, 'rgba(60,0,12,.5)'); g.fillStyle = rg; g.beginPath(); g.arc(x, y, 26, 0, 7); g.fill(); }
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, base[0]); gr.addColorStop(1, base[1]); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    if (!silver) for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) { const x = (i + 0.5) * (w / 5), y = (j + 0.5) * (h / 5), rg = g.createRadialGradient(x, y, 1, x, y, 24); rg.addColorStop(0, 'rgba(255,100,120,.3)'); rg.addColorStop(1, 'rgba(60,0,12,.28)'); g.fillStyle = rg; g.beginPath(); g.arc(x, y, 24, 0, 7); g.fill(); }
+    g.strokeStyle = lo; g.lineWidth = 4; g.strokeRect(20, 20, w - 40, h - 40); g.strokeStyle = hi; g.lineWidth = 2.4; g.strokeRect(14, 14, w - 28, h - 28); g.strokeRect(28, 28, w - 56, h - 56);
+    for (const [x, y, sx, sy] of [[34, 34, 1, 1], [w - 34, 34, -1, 1], [34, h - 34, 1, -1], [w - 34, h - 34, -1, -1]]) { scroll(g, x, y, sx, sy, hi, 3); }
+    g.fillStyle = hi; g.beginPath(); g.moveTo(w / 2, 96); g.lineTo(w / 2 + 16, 128); g.lineTo(w / 2, 160); g.lineTo(w / 2 - 16, 128); g.closePath(); g.globalAlpha = 0.5; g.fill();
   });
 }
+function lidTexture(theme) {
+  if (theme === 'wood') return canvasTex(256, 256, (g, w, h) => {
+    const n = 5; for (let i = 0; i < n; i++) { const y = (i * h) / n, bh = h / n; g.fillStyle = WOODS[i]; g.fillRect(0, y, w, bh);
+      for (let k = 0; k < 22; k++) { g.strokeStyle = `rgba(30,14,5,${0.1 + Math.random() * 0.16})`; g.lineWidth = 1 + Math.random(); const yy = y + 3 + Math.random() * (bh - 6); g.beginPath(); g.moveTo(0, yy); g.bezierCurveTo(w * 0.3, yy + (Math.random() - 0.5) * 6, w * 0.7, yy + (Math.random() - 0.5) * 6, w, yy); g.stroke(); }
+      g.fillStyle = 'rgba(12,6,2,.9)'; g.fillRect(0, y + bh - 3, w, 3); g.fillStyle = 'rgba(255,200,140,.16)'; g.fillRect(0, y, w, 3); }
+  });
+  const silver = theme === 'silver', c0 = silver ? '#6a849f' : '#961830', c1 = silver ? '#4c647e' : '#68102a';
+  return canvasTex(256, 256, (g, w, h) => { const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, c1); gr.addColorStop(0.5, c0); gr.addColorStop(1, c1); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    g.strokeStyle = silver ? 'rgba(225,238,252,.45)' : 'rgba(255,205,90,.55)'; g.lineWidth = 2; for (const y of [26, h - 26]) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); } });
+}
+const trimTexture = (theme) => theme === 'wood' ? null : canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(70,40,0,.35)'; g.lineWidth = 3; for (let i = 0; i < 4; i++) scroll(g, 14 + i * 28, 40 + (i % 2) * 26, 0.7, i % 2 ? -1 : 1, 'rgba(70,40,0,.4)', 2.4); g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 2; g.strokeRect(3, 3, w - 6, h - 6); });
 const glowTex = () => canvasTex(64, 64, (g) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.35, 'rgba(255,255,255,.55)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); });
 const runeTex = (col) => canvasTex(512, 512, (g, w, h) => {
   g.translate(w / 2, h / 2); g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 5; g.shadowColor = col; g.shadowBlur = 14;
@@ -55,17 +67,20 @@ export function createChest3D(host, theme, glowHex) {
   const inner = new THREE.PointLight(glow, 0, 6, 1.6); inner.position.set(0, 1.25, 0); scene.add(inner);
 
   const root = new THREE.Group(), tiltG = new THREE.Group(), chest = new THREE.Group(); scene.add(root); root.add(tiltG); tiltG.add(chest);
-  const bodyMat = new THREE.MeshStandardMaterial({ map: bodyTexture(theme), roughness: P.roughness, metalness: P.metal, envMapIntensity: 1.5 });
-  const trimMat = new THREE.MeshStandardMaterial({ color: P.trim, metalness: P.trimMet, roughness: P.trimRough, envMapIntensity: 2.6 });
-  const lockMat = new THREE.MeshStandardMaterial({ color: P.lock, metalness: 0.9, roughness: 0.3, envMapIntensity: 2.4 });
-  const gemMat = new THREE.MeshStandardMaterial({ color: P.gem, emissive: P.gem, emissiveIntensity: theme === 'wood' ? 0 : 1.1, roughness: 0.15, metalness: 0.1 });
+  const wood = theme === 'wood', bodyMat = new THREE.MeshStandardMaterial({ color: P.body, map: bodyTexture(theme), roughness: P.roughness, metalness: P.metal, envMapIntensity: 1.4 });
+  const tmap = trimTexture(theme), trimMat = new THREE.MeshStandardMaterial({ color: P.trim, map: tmap, metalness: P.trimMet, roughness: P.trimRough, envMapIntensity: wood ? 1.1 : theme === 'silver' ? 1.5 : 2.2 });
+  const lockMat = new THREE.MeshStandardMaterial({ color: P.lock, metalness: wood ? 0.55 : 0.9, roughness: wood ? 0.5 : 0.3, envMapIntensity: wood ? 1.2 : 2.4 });
+  const gemMat = new THREE.MeshStandardMaterial({ color: P.gem, emissive: P.gem, emissiveIntensity: wood ? 0 : 1.1, roughness: 0.15, metalness: 0.1 });
   const box = (w, h, d, mat, x, y, z, par = chest) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); par.add(m); return m; };
-  // корпус, нижний и верхний пояс, вертикальные полосы, угловые стойки
-  box(2.2, 1.0, 1.4, bodyMat, 0, 0.5, 0); box(2.34, 0.14, 1.54, trimMat, 0, 0.07, 0); box(2.3, 0.12, 1.5, trimMat, 0, 1.0, 0);
-  for (const x of [-0.72, 0.72]) box(0.17, 1.02, 1.46, trimMat, x, 0.5, 0);
-  for (const x of [-1.12, 1.12]) for (const z of [-0.72, 0.72]) box(0.2, 1.1, 0.2, trimMat, x, 0.52, z);
-  for (const x of [-0.72, 0.72]) for (const y of [0.3, 0.75]) { const r = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), lockMat); r.position.set(x, y, 0.74); chest.add(r); }
-  box(0.4, 0.46, 0.12, lockMat, 0, 0.82, 0.76); { const kh = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.14, 12), new THREE.MeshStandardMaterial({ color: 0x111111 })); kh.rotation.x = Math.PI / 2; kh.position.set(0, 0.8, 0.83); chest.add(kh); }
+  // корпус, нижний и верхний пояс, угловые стойки, ушки-кольца на торцах
+  box(2.2, 1.0, 1.4, bodyMat, 0, 0.5, 0); box(2.34, wood ? 0.14 : 0.2, 1.54, trimMat, 0, wood ? 0.07 : 0.1, 0); box(2.3, wood ? 0.12 : 0.18, 1.5, trimMat, 0, 1.0, 0);
+  if (wood) for (const x of [-0.74, 0.74]) box(0.2, 1.02, 1.46, trimMat, x, 0.5, 0);
+  const cw = wood ? 0.3 : 0.24; for (const x of [-1.12, 1.12]) for (const z of [-0.72, 0.72]) box(cw, 1.12, cw, trimMat, x, 0.54, z);
+  if (wood) for (const x of [-0.74, 0.74]) for (const y of [0.25, 0.78]) { const r = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), lockMat); r.position.set(x, y, 0.75); chest.add(r); }
+  for (const sd of [-1, 1]) { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.035, 8, 22), lockMat); ring.rotation.y = Math.PI / 2; ring.position.set(sd * 1.22, 0.58, 0); chest.add(ring); box(0.06, 0.2, 0.2, lockMat, sd * 1.15, 0.7, 0); }
+  // замочная накладка на корпусе: сталь с замочной скважиной (дерево), ромб с камнем (сталь, золото)
+  if (wood) { box(0.42, 0.5, 0.1, lockMat, 0, 0.78, 0.76); box(0.12, 0.2, 0.05, new THREE.MeshStandardMaterial({ color: 0x0e0e10 }), 0, 0.78, 0.83); }
+  else { const pl = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.46, 0.1), lockMat); pl.rotation.z = Math.PI / 4; pl.position.set(0, 0.62, 0.76); chest.add(pl); const kh = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.06, 12), new THREE.MeshStandardMaterial({ color: 0x111111 })); kh.rotation.x = Math.PI / 2; kh.position.set(0, 0.62, 0.82); chest.add(kh); }
   // содержимое: монеты и самоцветы (видны, когда крышка откинута)
   const treasure = new THREE.Group(); chest.add(treasure);
   { const coinMat = new THREE.MeshStandardMaterial({ color: 0xffc83a, metalness: 0.95, roughness: 0.25, emissive: 0xaa6a00, emissiveIntensity: 0.55 }), cg = new THREE.CylinderGeometry(0.13, 0.13, 0.035, 18), im = new THREE.InstancedMesh(cg, coinMat, 110), d = new THREE.Object3D();
@@ -75,11 +90,13 @@ export function createChest3D(host, theme, glowHex) {
   const holeGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.1), new THREE.MeshBasicMaterial({ color: glow, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); holeGlow.rotation.x = -Math.PI / 2; holeGlow.position.y = 1.22; chest.add(holeGlow);
   // крышка на петле у задней кромки
   const lid = new THREE.Group(); lid.position.set(0, 1.05, -0.72); chest.add(lid);
-  { const geo = new THREE.CylinderGeometry(0.74, 0.74, 2.2, 36, 1, false, 0, Math.PI); geo.rotateZ(Math.PI / 2); const lidMat = bodyMat.clone(); lidMat.side = THREE.DoubleSide; const m = new THREE.Mesh(geo, lidMat); m.position.z = 0.74; lid.add(m);
-    for (const x of [-0.72, 0.72]) { const bg = new THREE.CylinderGeometry(0.765, 0.765, 0.17, 36, 1, true, 0, Math.PI); bg.rotateZ(Math.PI / 2); const b = new THREE.Mesh(bg, new THREE.MeshStandardMaterial({ color: P.trim, metalness: P.trimMet, roughness: P.trimRough, side: THREE.DoubleSide })); b.position.set(x, 0, 0.74); lid.add(b); }
-    for (const x of [-1.12, 1.12]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.76, 0.76, 0.14, 36, 1, true, 0, Math.PI), trimMat.clone()); c.material.side = THREE.DoubleSide; c.geometry.rotateZ(Math.PI / 2); c.position.set(x, 0, 0.74); lid.add(c); }
-    const edge = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.1, 0.1), trimMat); edge.position.set(0, 0.02, 1.48); lid.add(edge);
-    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.17, 0), gemMat); gem.scale.y = 1.5; gem.position.set(0, 0.44, 1.37); gem.rotation.x = 0.5; lid.add(gem);
+  { const geo = new THREE.CylinderGeometry(0.74, 0.74, 2.2, 36, 1, false, 0, Math.PI); geo.rotateZ(Math.PI / 2); const lidMat = new THREE.MeshStandardMaterial({ color: P.body, map: lidTexture(theme), roughness: P.roughness, metalness: P.metal, envMapIntensity: 1.4, side: THREE.DoubleSide }); const m = new THREE.Mesh(geo, lidMat); m.position.z = 0.74; lid.add(m);
+    const arch = (x, w, rad = 0.77) => { const g2 = new THREE.CylinderGeometry(rad, rad, w, 36, 1, true, 0, Math.PI); g2.rotateZ(Math.PI / 2); const mt = trimMat.clone(); mt.side = THREE.DoubleSide; const b = new THREE.Mesh(g2, mt); b.position.set(x, 0, 0.74); lid.add(b); };
+    if (wood) { arch(-0.74, 0.2); arch(0.74, 0.2); arch(-1.12, 0.26, 0.78); arch(1.12, 0.26, 0.78); } else { arch(0, 0.46); arch(-0.78, 0.12); arch(0.78, 0.12); arch(-1.12, 0.2, 0.78); arch(1.12, 0.2, 0.78); }
+    for (const sd of [-1, 1]) { const cap = new THREE.Mesh(new THREE.CircleGeometry(0.74, 36, 0, Math.PI), new THREE.MeshStandardMaterial({ map: bodyMat.map, roughness: P.roughness, metalness: P.metal, side: THREE.DoubleSide })); cap.rotation.y = sd * Math.PI / 2; cap.position.set(sd * 1.095, 0, 0.74); lid.add(cap); }
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(2.3, wood ? 0.1 : 0.14, 0.1), trimMat); edge.position.set(0, 0.03, 1.48); lid.add(edge);
+    if (wood) { const tab = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.34, 0.1), lockMat); tab.position.set(0, 0.2, 1.5); lid.add(tab); }
+    else { const dp = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.44, 0.1), lockMat); dp.rotation.z = Math.PI / 4; dp.position.set(0, 0.3, 1.5); dp.rotation.x = 0.4; lid.add(dp); const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.17, 0), gemMat); gem.scale.y = 1.5; gem.position.set(0, 0.32, 1.57); gem.rotation.x = 0.5; lid.add(gem); }
     const hinge = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.3, 12), lockMat); hinge.rotation.z = Math.PI / 2; hinge.position.set(0, 0, 0); lid.add(hinge); }
   chest.position.set(0, 0, 0); chest.rotation.y = 0;
   // пол: магический круг и тень
