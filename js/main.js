@@ -1,28 +1,28 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261028205923';
-import * as A from './art.js?v=20261028205923';
-import { Sim } from './sim.js?v=20261028205923';
-import { Gore } from './gore.js?v=20261028205923';
-import { Renderer } from './render.js?v=20261028205923';
-import { GameUI } from './ui.js?v=20261028205923';
-import { Tutorial } from './tutorial.js?v=20261028205923';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261028205923';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261028205923';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261028205923';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261028205923';
-import { mapBG, releaseBG } from './env.js?v=20261028205923';
-import { MENU_SPEC } from './music.js?v=20261028205923';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261028205923';
-import { renderForge, renderAchs } from './screens.js?v=20261028205923';
-import { renderShop } from './shop.js?v=20261028205923';
-import { freeChestReady } from './chests.js?v=20261028205923';
-import { WEEKLY, weeklyState } from './weekly.js?v=20261028205923';
-import { Wallet } from './wallet.js?v=20261028205923';
-import { initLang, pickLang } from './i18n.js?v=20261028205923';
-import { Menus, RUN, clock } from './menus.js?v=20261028205923';
-import { Net } from './net.js?v=20261028205923';
-import { gemIc } from './res.js?v=20261028205923';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261028205923';
+import * as D from './data.js?v=20261028210620';
+import * as A from './art.js?v=20261028210620';
+import { Sim } from './sim.js?v=20261028210620';
+import { Gore } from './gore.js?v=20261028210620';
+import { Renderer } from './render.js?v=20261028210620';
+import { GameUI } from './ui.js?v=20261028210620';
+import { Tutorial } from './tutorial.js?v=20261028210620';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261028210620';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261028210620';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261028210620';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261028210620';
+import { mapBG, releaseBG } from './env.js?v=20261028210620';
+import { MENU_SPEC } from './music.js?v=20261028210620';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261028210620';
+import { renderForge, renderAchs } from './screens.js?v=20261028210620';
+import { renderShop } from './shop.js?v=20261028210620';
+import { freeChestReady } from './chests.js?v=20261028210620';
+import { WEEKLY, weeklyState } from './weekly.js?v=20261028210620';
+import { Wallet } from './wallet.js?v=20261028210620';
+import { initLang, pickLang } from './i18n.js?v=20261028210620';
+import { Menus, RUN, clock } from './menus.js?v=20261028210620';
+import { Net } from './net.js?v=20261028210620';
+import { gemIc } from './res.js?v=20261028210620';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261028210620';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -51,8 +51,8 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261028205923').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261028205923').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261028210620').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261028210620').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев

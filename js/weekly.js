@@ -1,7 +1,7 @@
 // Кровавый уровень недели: раз в неделю один открытый уровень подсвечен на карте красным. Проходится только на «Ночном кошмаре» (одна жизнь),
 // враги крепче обычного; награда один раз за неделю: души и кристаллы. Выбор стабилен всю неделю (хранится в save.weekly).
-import * as D from './data.js?v=20261028205923';
-import * as M from './meta.js?v=20261028205923';
+import * as D from './data.js?v=20261028210620';
+import * as M from './meta.js?v=20261028210620';
 export const WEEKLY = { souls: 500, gems: 5, hp: 1.35, diff: 4 };
 export function isoWeek(d = new Date()) {                         // та же неделя, что и на сервере: to_char(now() at time zone 'utc', 'IYYY-"W"IW')
   const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())), day = t.getUTCDay() || 7;

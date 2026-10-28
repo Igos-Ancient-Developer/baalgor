@@ -1,5 +1,5 @@
 // Уровни кампании: секторы, раскладки, связи (after = открывается после прохождения ЛЮБОГО из перечисленных).
-import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261028205923';
+import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261028210620';
 
 export const SECTORS = [
   { id: 'grave', name: 'Проклятый погост', theme: 'grave', color: '#7fa86a' },
@@ -85,15 +85,15 @@ const SPEC = [
   ['d1', 'Караванный путь', 'desert', 'zigzag', 'desert', 14, 0.64, ['f3'], [663, 423]],
   ['d2a', 'Дюны костей', 'desert', 'stairs', 'desert', 15, 0.57, ['d1'], [843, 489]],
   ['d2b', 'Пересохшее русло', 'desert', 'saw', 'desert', 15, 0.59, ['d2a'], [990, 395]],
-  ['d3', 'Храм песков', 'desert', 'twin', 'desert', 16, 0.53, ['d2b'], [895, 340]],
+  ['d3', 'Храм песков', 'desert', 'twin', 'desert', 16, 0.45, ['d2b'], [895, 340]],
   ['i1', 'Замёрзший перевал', 'ice', 'organ', 'ice', 17, 0.57, ['d3'], [729, 227]],
   ['i2a', 'Ледяной перекрёсток', 'ice', 'cross', 'ice', 18, 0.39, ['i1'], [545, 129]],
-  ['i2b', 'Метель', 'ice', 'bridge', 'ice', 18, 0.39, ['i2a'], [373, 104]],
-  ['i3', 'Ледяной трон', 'ice', 'pincer', 'ice', 19, 0.39, ['i2b'], [444, 217]],
-  ['h1', 'Врата Ада', 'hell', 'triad', 'lava', 20, 0.33, ['i1'], [850, 162]],
-  ['h1b', 'Лавовый мост', 'hell', 'lattice', 'lava', 21, 0.31, ['h1'], [968, 133]],
+  ['i2b', 'Метель', 'ice', 'bridge', 'ice', 18, 0.30, ['i2a'], [373, 104]],
+  ['i3', 'Ледяной трон', 'ice', 'pincer', 'ice', 19, 0.33, ['i2b'], [444, 217]],
+  ['h1', 'Врата Ада', 'hell', 'triad', 'lava', 20, 0.28, ['i1'], [850, 162]],
+  ['h1b', 'Лавовый мост', 'hell', 'lattice', 'lava', 21, 0.25, ['h1'], [968, 133]],
   ['h2', 'Река огня', 'hell', 'lanes', 'lava', 21, 0.30, ['h1b'], [1060, 113]],
-  ['h3', 'Скотобойня', 'hell', 'abattoir', 'slaughter', 22, 0.21, ['h2'], [1148, 74]],
+  ['h3', 'Скотобойня', 'hell', 'abattoir', 'slaughter', 22, 0.17, ['h2'], [1148, 74]],
 ];
 
 export const LEVELS = SPEC.map(([id, name, sector, layout, theme, waves, hp, after, pos], i) => {
