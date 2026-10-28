@@ -2,15 +2,16 @@
 // Деревянный: за души или за немного кристаллов, в основном души. Серебряный: только за кристаллы, в основном кристаллы.
 // Золотой: самый дорогой, лучшая добыча, редкие премиум-башни. Каждая башня — отдельная строка таблицы (js/chesttable.js).
 // Для кристаллов бросок делает сервер (supabase/chests.sql, функция chest_open) — по этой же таблице; здесь бросок нужен для оплаты душами (души хранятся в сохранении) и для локального режима вне Telegram.
-import * as D from './data.js?v=20261028203821';
-import * as M from './meta.js?v=20261028203821';
-import { Net } from './net.js?v=20261028203821';
-import { Wallet } from './wallet.js?v=20261028203821';
-import { towerIcon, econIcon } from './ui.js?v=20261028203821';
-import { iconUrl } from './icons.js?v=20261028203821';
-import { url as imgUrl } from './sprites.js?v=20261028203821';
-import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261028203821';
-import { createChest3D } from './chest3d.js?v=20261028203821';
+import { gemUrl } from './gem3d.js?v=20261028204133';
+import * as D from './data.js?v=20261028204133';
+import * as M from './meta.js?v=20261028204133';
+import { Net } from './net.js?v=20261028204133';
+import { Wallet } from './wallet.js?v=20261028204133';
+import { towerIcon, econIcon } from './ui.js?v=20261028204133';
+import { iconUrl } from './icons.js?v=20261028204133';
+import { url as imgUrl } from './sprites.js?v=20261028204133';
+import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261028204133';
+import { createChest3D } from './chest3d.js?v=20261028204133';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -50,7 +51,7 @@ const RARCOL = { c: '#aab0b8', u: '#5ab0ff', r: '#8a6aff', e: '#ff5ad0', l: '#ff
 const IC = (n) => imgUrl('ui/ic/' + n + '.webp');
 export const chestImg = (theme, st = 'closed') => IC(`chest_${theme}_${st}`);
 export const chestHtml = (theme) => `<img src="${chestImg(theme)}" alt="">`;
-const gemPic = (n) => IC(n >= 250 ? 'loot_gem3' : n >= 90 ? 'loot_gem2' : 'loot_gem1');
+const gemPic = () => gemUrl(8);                                    // тот же кристалл, что и в самой игре (js/gem3d.js)
 const unlockIcon = (id) => iconUrl(D.ECON[id] ? econIcon(id, 1, { size: 128, k: 'chest' }) : towerIcon(id, 1, null, null, { size: 128, k: 'chest' }));
 const starPic = () => IC('cont_cup');
 const lootIcon = (l) => (l.t === 'souls' ? `<img src="${IC('loot_souls')}" alt="">` : l.t === 'gems' ? `<img src="${gemPic(l.n)}" alt="">` : l.t === 'stars' ? `<img src="${starPic()}" alt="">` : `<img src="${unlockIcon(l.id)}" alt="" ${D.isPremium(l.id) ? 'class="prem"' : ''}>`);
@@ -64,6 +65,16 @@ const rarOf = (kind, loot) => { const i = winRow(kind, loot); return i >= 0 ? ro
 export function oddsOf(kind) {
   return CHESTS[kind].table.map((r) => [r.t === 'souls' ? `${fmt(r.min)}–${fmt(r.max)} душ` : r.t === 'gems' ? `${fmt(r.min)}–${fmt(r.max)} кристаллов` : r.t === 'stars' ? `${r.min} Telegram Stars` : nameOf(r.id), pctText(chanceOf(kind, r)), rowRar(kind, r), rowPic(r)]);
 }
+
+// три самых редких приза сундука (кроме главного приза Stars): значки для карточки в магазине
+export function topPrizes(kind, n = 3) {
+  const c = CHESTS[kind];
+  return c.table.filter((r) => r.t !== 'stars').map((r) => ({ r, p: chanceOf(kind, r) })).sort((x, y) => x.p - y.p).map(({ r }) => ({ pic: rowPic(r), col: RARCOL[rowRar(kind, r)] })).filter((x, i, a) => a.findIndex((y) => y.pic === x.pic) === i).slice(0, n);
+}
+// бесплатный деревянный сундук раз в сутки: падает на склад
+const dayKey = () => new Date().toISOString().slice(0, 10);
+export const freeChestReady = (save) => (save || {}).freeChest !== dayKey();
+export function claimFreeChest(save) { if (!freeChestReady(save)) return false; save.freeChest = dayKey(); save.stock = save.stock || {}; save.stock.wood = (save.stock.wood || 0) + 1; return true; }
 
 // ───── применить добычу к сохранению (души — всегда на клиенте; кристаллы и здания уже записал сервер, если платили кристаллами онлайн) ─────
 export function applyLoot(save, loot, { server = false } = {}) {

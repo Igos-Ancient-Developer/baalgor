@@ -1,7 +1,7 @@
 // Настоящий 3D-сундук на three.js (js/vendor/three.module.min.js): корпус с досками или обивкой, окантовка, замок с камнем, откидывающаяся крышка на петле,
 // внутри золото и самоцветы, свет из сундука, искры, магический круг на полу. Рисуется в прозрачный canvas поверх затемнённого экрана.
 // Состояния: drop → idle → charge → burst → got. Если WebGL недоступен, createChest3D вернёт null и окно откроется на запасной (плоской) сцене.
-import * as THREE from './vendor/three.module.min.js?v=20261028203821';
+import * as THREE from './vendor/three.module.min.js?v=20261028204133';
 
 const PAL = {
   wood: { body: 0xffffff, trim: 0x474b55, trimMet: 0.5, trimRough: 0.62, gem: 0x2f2a28, lock: 0x575c68, glow: 0xffb35a, roughness: 0.85, metal: 0.0, cross: 3 },
@@ -86,7 +86,9 @@ export function createChest3D(host, theme, glowHex) {
   { const coinMat = new THREE.MeshStandardMaterial({ color: 0xffc83a, metalness: 0.95, roughness: 0.25, emissive: 0xaa6a00, emissiveIntensity: 0.55 }), cg = new THREE.CylinderGeometry(0.13, 0.13, 0.035, 18), im = new THREE.InstancedMesh(cg, coinMat, 110), d = new THREE.Object3D();
     for (let i = 0; i < 110; i++) { const a = Math.random() * 6.28, r = Math.pow(Math.random(), 0.6); d.position.set(Math.cos(a) * r * 0.9, 1.0 + 0.06 + Math.random() * 0.2 * (1 - r * 0.7), Math.sin(a) * r * 0.5); d.rotation.set((Math.random() - 0.5) * 1.1, Math.random() * 6, (Math.random() - 0.5) * 1.1); d.updateMatrix(); im.setMatrixAt(i, d.matrix); }
     treasure.add(im);
-    for (const [c, x, z] of [[0x33e0ff, -0.5, 0.1], [0xff4a8a, 0.3, -0.1], [0x7aff6a, 0.7, 0.2], [0xffffff, -0.1, 0.25], [0xb06aff, 0.0, -0.2]]) { const g = new THREE.Mesh(new THREE.OctahedronGeometry(0.13, 0), new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.9, roughness: 0.1, metalness: 0.2 })); g.position.set(x, 1.2, z); g.rotation.set(Math.random(), Math.random(), 0); g.scale.y = 1.4; treasure.add(g); } }
+    // кристаллы внутри: та же огранка, что и у игрового кристалла (8 граней, корона и острый павильон), голубой цвет
+    const gp = [new THREE.Vector2(0.001, -0.98), new THREE.Vector2(1, 0), new THREE.Vector2(0.52, 0.46), new THREE.Vector2(0.001, 0.46)], ggeo = new THREE.LatheGeometry(gp, 8), gmat = new THREE.MeshStandardMaterial({ color: 0x4fc3ff, emissive: 0x1a7fd0, emissiveIntensity: 0.8, roughness: 0.12, metalness: 0.25, flatShading: true });
+    for (const [x, z, sc] of [[-0.55, 0.1, 0.17], [0.3, -0.1, 0.2], [0.72, 0.2, 0.15], [-0.1, 0.25, 0.16], [0.05, -0.2, 0.14]]) { const g = new THREE.Mesh(ggeo, gmat); g.position.set(x, 1.2, z); g.scale.setScalar(sc); g.rotation.set(Math.random() * 0.6, Math.random() * 6, Math.random() * 0.6); treasure.add(g); } }
   const holeGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.1), new THREE.MeshBasicMaterial({ color: glow, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); holeGlow.rotation.x = -Math.PI / 2; holeGlow.position.y = 1.22; chest.add(holeGlow);
   // крышка на петле у задней кромки
   const lid = new THREE.Group(); lid.position.set(0, 1.05, -0.72); chest.add(lid);
