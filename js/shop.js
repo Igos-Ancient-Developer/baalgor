@@ -1,13 +1,13 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261028203642';
-import { Wallet } from './wallet.js?v=20261028203642';
-import { fillPlates, gemIc } from './res.js?v=20261028203642';
-import { towerIcon } from './ui.js?v=20261028203642';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261028203642';
-import { SHOP_IMG } from './iconmap.js?v=20261028203642';
-import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, playBatch, oddsOf, chestHtml } from './chests.js?v=20261028203642';
+import * as D from './data.js?v=20261028203705';
+import { Wallet } from './wallet.js?v=20261028203705';
+import { fillPlates, gemIc } from './res.js?v=20261028203705';
+import { towerIcon } from './ui.js?v=20261028203705';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261028203705';
+import { SHOP_IMG } from './iconmap.js?v=20261028203705';
+import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, playBatch, oddsOf, chestHtml } from './chests.js?v=20261028203705';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
 
 const $ = (s) => document.querySelector(s);
@@ -51,7 +51,7 @@ export function renderShop(save, ctrl, redraw) {
     { const b = el('button', 'btn chb gem'); b.onclick = async () => { b.disabled = true; afterBuy(await buyChests(save, kind, 'gems', ctrl._chestQty[kind]), b); b.disabled = false; }; prices.push([b, c.gems, gemIc(22)]); buy.appendChild(b); }
     dec.onclick = () => { ctrl.sfx.play('click'); setQ((ctrl._chestQty[kind] || 1) - 1); }; inc.onclick = () => { ctrl.sfx.play('click'); setQ((ctrl._chestQty[kind] || 1) + 1); }; setQ(qty);
     const op = el('div', 'chbtns open');
-    const o1 = el('button', 'btn chb go', `Открыть (${have})`);
+    const o1 = el('button', 'btn chb go', `Открыть <b class="chstock in">${have}</b>`);
     o1.onclick = async () => {
       if (!have) { fail(o1); return; }
       for (;;) {
