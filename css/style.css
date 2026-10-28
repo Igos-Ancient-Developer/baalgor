@@ -1120,3 +1120,4 @@ body.hastabs .title-actions { margin-top: auto; margin-bottom: 14px; }
 #title .title-actions .stn span, #title .title-actions .stn.primary span { font-size: 16px; letter-spacing: .04em; white-space: nowrap; }
 #title .title-actions .stn#b-ranked { color: #e8dcff; }
 body.hastabs #title .title-actions { margin-top: 18px; margin-bottom: auto; }
+.chcard .chb.go { white-space: nowrap; font-size: 14px; padding: 0 4px; }
