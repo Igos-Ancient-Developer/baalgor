@@ -1,8 +1,8 @@
 // Кошелёк донат-кристаллов. В Telegram баланс, покупки и цены живут на сервере (supabase/schema.sql), клиент только показывает.
 // Вне Telegram (обычный браузер) работает локальный режим для разработки: траты считаются в сохранении, пополнение только с ?debug.
-import * as D from './data.js?v=20261028205221';
-import { Net } from './net.js?v=20261028205221';
-import { TG } from './tg.js?v=20261028205221';
+import * as D from './data.js?v=20261028205923';
+import { Net } from './net.js?v=20261028205923';
+import { TG } from './tg.js?v=20261028205923';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const debug = () => location.search.includes('debug');
@@ -54,6 +54,18 @@ export const Wallet = {
     const yest = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
     d.streak = d.last === yest ? (d.streak % 7) + 1 : 1; d.last = today();
     const reward = D.DAILY[d.streak - 1]; s.souls = (s.souls || 0) + reward; this.onChange(); return { ok: true, reward };
+  },
+  // награда кровавого уровня недели: 500 душ (в сохранении) и 5 кристаллов (на сервере: один раз за неделю на игрока)
+  async weekly(week) {
+    const s = this.save, W = { souls: 500, gems: 5 };
+    if (this.online) {
+      try {
+        const r = await Net.call('wallet_weekly', { init_data: Net.initData(), week });
+        if (r && r.ok) { this.apply(r); s.souls = (s.souls || 0) + W.souls; this.onChange(); return { ok: true, ...W }; }
+        return r || { error: 'net' };
+      } catch (e) { return { error: 'net' }; }
+    }
+    s.souls = (s.souls || 0) + W.souls; s.gems = (s.gems || 0) + W.gems; this.onChange(); return { ok: true, ...W };
   },
   // пакет за Stars: открывает счёт Telegram, после оплаты ждёт начисления от вебхука
   async buy(pack) {

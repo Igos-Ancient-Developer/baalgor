@@ -1,14 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028205221';
-import * as D from './data.js?v=20261028205221';
-import * as M from './meta.js?v=20261028205221';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028205221';
-import { url as imgUrl } from './sprites.js?v=20261028205221';
-import { Net } from './net.js?v=20261028205221';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261028205221';
-import { fillPlates, gemIc } from './res.js?v=20261028205221';
-import { gemHtml } from './gem3d.js?v=20261028205221';
-import { Wallet } from './wallet.js?v=20261028205221';
+import { WEEKLY, weeklyActive } from './weekly.js?v=20261028205923';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028205923';
+import * as D from './data.js?v=20261028205923';
+import * as M from './meta.js?v=20261028205923';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028205923';
+import { url as imgUrl } from './sprites.js?v=20261028205923';
+import { Net } from './net.js?v=20261028205923';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261028205923';
+import { fillPlates, gemIc } from './res.js?v=20261028205923';
+import { gemHtml } from './gem3d.js?v=20261028205923';
+import { Wallet } from './wallet.js?v=20261028205923';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -165,7 +166,7 @@ export class Menus {
       const bg = state === 'locked' ? PALETTE.lock : state === 'cleared' ? PALETTE.special : PALETTE.danger;
       const frame = state === 'locked' ? 'dark' : state === 'cleared' ? 'nature' : 'blood';
       const nsrc = l.tutorial ? iconUrl(glyphIcon('book', { bg, frame })) : imgUrl(`ui/ic/sec_${l.sector}_${state}.webp`);          // у каждого сектора своя эмблема: закрыт / открыт / пройден
-      const n = el('button', `node ${state}${l.tutorial ? ' tutnode' : ''}`, `<img class="ni" src="${nsrc}" alt="">${state === 'locked' ? '' : `<div class="nl">${l.name}</div>`}`);
+      const n = el('button', `node ${state}${l.tutorial ? ' tutnode' : ''}${state !== 'locked' && weeklyActive(s, l.id) ? ' weekly' : ''}`, `<img class="ni" src="${nsrc}" alt="">${state === 'locked' ? '' : `<div class="nl">${l.name}</div>`}`);
       n.dataset.id = l.id;
       const lp = P(l.pos); n.style.left = (lp[0] / MAP_W) * 100 + '%'; n.style.top = (lp[1] / MAP_H) * 100 + '%';
       n.onclick = (e) => { e.stopPropagation(); if (state === 'locked') { c.sfx.play('error'); n.classList.remove('shake'); void n.offsetWidth; n.classList.add('shake'); return; } c.sfx.play('select'); if (l.tutorial) { c.startLevel(l.id, 1); return; } if (this.lpId === l.id) this.closeLevel(); else this.openLevel(l.id); };
@@ -192,12 +193,13 @@ export class Menus {
     this.lpId = levelId; if (c.warm) c.warm(levelId);              // пока игрок смотрит плашку, готовим листы врагов и фон карты
     const map = $('#worldmap'), sc = $('#worldscroll'), f = this.f || 1;
     document.querySelectorAll('#nodes .node').forEach((n) => n.classList.toggle('sel', n.dataset.id === levelId));
+    const wk = weeklyActive(s, l.id);       // кровавый уровень недели: своя плашка, сразу «Ночной кошмар»
     const diff = this.startDiff(l.id);      // результаты на плашке — по сложности, с которой обычно открывается уровень
     const wrap = el('div', 'lvp'); wrap.id = 'lvp'; this.lpEl = wrap;
     const card = el('div', 'lvp-card'), go = el('button', 'btn big lvp-go', 'Начать');
     wrap.append(card, go); map.appendChild(wrap);
     wrap.onclick = (e) => { e.stopPropagation(); if (e.target.closest('.rarr')) setTimeout(() => place(false), 0); };      // раскрыли строку — плашка могла вырасти, подвинем, чтобы не вылезала за экран
-    go.onclick = () => { c.sfx.play('click'); this.closeLevel(); this.openDiff(l.id); };      // дальше — экран выбора сложности
+    go.onclick = () => { c.sfx.play('click'); this.closeLevel(); if (wk) c.startLevel(l.id, WEEKLY.diff, true); else this.openDiff(l.id); };      // дальше — экран выбора сложности
     const SECT = { grave: 'Погост', forest: 'Лес', desert: 'Пустыня', ice: 'Лёд', hell: 'Ад' };
     const nameEsc = (t) => String(t).replace(/</g, '&lt;');
     const lp = P(l.pos), nx = lp[0] * f, ny = lp[1] * f;
@@ -218,6 +220,13 @@ export class Menus {
     };
     let data = { top: null, me: null, friends: null, loaded: false };
     const render = () => {
+      if (wk) {
+        card.innerHTML = `<div class="lvp-h"><div class="lvp-t"><b>${l.name}</b><small>${SECT[l.sector] || ''} · рубеж ${l.lvl}</small></div></div>
+          <div class="wk"><div class="wk-t">Кровавый уровень недели</div>
+          <div class="wk-r"><span><img src="${bareGlyphUrl('soul', 26)}" alt="" style="width:26px;height:26px"><b>${WEEKLY.souls}</b></span><span>${gemHtml(26)}<b>${WEEKLY.gems}</b></span></div>
+          <div class="wk-c">Только «${D.DIFFS[WEEKLY.diff].name}»: одна жизнь, враги крепче</div></div>`;
+        place(false); return;
+      }
       const d = D.DIFFS[diff], best = M.bestScore(s, l.id, diff), my = data.me, meU = Net.me(), ctx = { total: l.waves };
       const wv = (n) => `<span class="${n >= l.waves ? 'wfull' : ''}">волна ${n}/${l.waves}</span>`;
       const items = my && my.loadout ? String(my.loadout).split(',').filter((t) => D.TOWERS[t] || D.ECON[t]) : [];
@@ -254,7 +263,7 @@ export class Menus {
       (Net.me() ? Net.levelRank(l.id, diff) : Promise.resolve(null)).then((r) => { if (ok() && r) data.me = r; }).catch(() => {}).then(fin);
       Net.levelFriends(l.id, diff).then((r) => { if (ok()) data.friends = r; }).catch(() => {}).then(fin);
     };
-    render(); place(true); load();
+    render(); place(true); if (!wk) load();
   }
 
   // ───── выбор сложности: карусель ─────

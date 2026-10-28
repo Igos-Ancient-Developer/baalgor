@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261028205221';
+import * as D from './data.js?v=20261028205923';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -47,7 +47,7 @@ const TARGET_MODES = ['Первый', 'Последний', 'Сильный', '�
 export { TARGET_MODES };
 
 export class Sim {
-  constructor({ mapId = 0, diffIdx = 1, seed = 1, perks = null, locked = [], allowed = null, limits = null, gold = null, hold = false, autoCollect = false } = {}) {
+  constructor({ mapId = 0, diffIdx = 1, seed = 1, perks = null, locked = [], allowed = null, limits = null, gold = null, hold = false, autoCollect = false, weeklyHp = 1 } = {}) {
     this.autoCollect = autoCollect;      // боты: монеты собираются сами; у игрока — только тапом
     this.mods = Object.assign({ startGold: 0, lives: 0, baseIncome: 0, mine: 0, crit: 0, dmg: 0, gold: 0, bag: 0, sell: 0, spellCd: 0 }, perks || {});
     this.locked = new Set(locked);
@@ -57,6 +57,7 @@ export class Sim {
     this.xrng = mulberry32((seed ^ 0x5bd1e995) | 0);       // отдельный генератор для сундука-сюрприза: не сдвигает остальные случайности
     this.orng = mulberry32((seed ^ 0x9e3779b9) | 0);       // отдельный генератор: какие 2 из 3 улучшений предложить
     this.map = D.MAPS[mapId];
+    this.weeklyHp = weeklyHp;                              // кровавый уровень недели: враги крепче
     this.mapId = mapId;
     this.diffIdx = diffIdx; this.D = D.DIFFS[diffIdx]; this.total = this.map.waves; this.score = 0; this.buildIdxMap();
     this.lf = D.levelMult(this.map.lvl);                   // множитель глубины уровня
@@ -336,7 +337,7 @@ export class Sim {
     const path = def.air ? this.flyPaths[pathIdx % this.flyPaths.length] : this.paths[pathIdx];
     const n = this.idx(Math.max(1, o.w || this.wave));       // сила врага — по номеру его волны (волны могут стоять в очереди)
     const elite = !o.sent && !def.heavy && !o.noBounty && this.D.elite > 0 && this.rng() < this.D.elite;
-    const hs = D.hpScale(n) * this.map.hp * (this.map.lvl && !this.map.waveList ? 1 + (this.map.lvl - 1) * 0.12 * Math.max(0, ((o.w || this.wave) - 1) / Math.max(1, this.total - 1)) : 1) * (o.sent ? 0.85 : 1) * (o.hpMult || 1) * (elite ? this.D.eliteHp : 1);
+    const hs = D.hpScale(n) * this.map.hp * (this.map.lvl && !this.map.waveList ? 1 + (this.map.lvl - 1) * 0.12 * Math.max(0, ((o.w || this.wave) - 1) / Math.max(1, this.total - 1)) : 1) * (o.sent ? 0.85 : 1) * (o.hpMult || 1) * (elite ? this.D.eliteHp : 1) * this.weeklyHp;
     const e = {
       id: ++this.eid, type, def, path, pathIdx, d: o.d || 0, x: 0, y: 0, dx: 0, dy: 1,
       hp: def.hp * hs, maxHp: def.hp * hs, size: def.size,

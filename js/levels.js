@@ -1,5 +1,5 @@
 // Уровни кампании: секторы, раскладки, связи (after = открывается после прохождения ЛЮБОГО из перечисленных).
-import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261028205221';
+import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261028205923';
 
 export const SECTORS = [
   { id: 'grave', name: 'Проклятый погост', theme: 'grave', color: '#7fa86a' },
@@ -93,7 +93,7 @@ const SPEC = [
   ['h1', 'Врата Ада', 'hell', 'triad', 'lava', 20, 0.33, ['i1'], [850, 162]],
   ['h1b', 'Лавовый мост', 'hell', 'lattice', 'lava', 21, 0.31, ['h1'], [968, 133]],
   ['h2', 'Река огня', 'hell', 'lanes', 'lava', 21, 0.30, ['h1b'], [1060, 113]],
-  ['h3', 'Скотобойня', 'hell', 'spiral', 'slaughter', 22, 0.22, ['h2'], [1148, 74]],
+  ['h3', 'Скотобойня', 'hell', 'abattoir', 'slaughter', 22, 0.21, ['h2'], [1148, 74]],
 ];
 
 export const LEVELS = SPEC.map(([id, name, sector, layout, theme, waves, hp, after, pos], i) => {

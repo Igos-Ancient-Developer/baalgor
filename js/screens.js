@@ -1,13 +1,13 @@
 // Экраны меню: Кузница душ и Достижения (иконки в стиле WC3).
-import * as D from './data.js?v=20261028205221';
-import { uiIcon } from './env.js?v=20261028205221';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261028205221';
-import { towerIcon, econIcon } from './ui.js?v=20261028205221';
-import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261028205221';
-import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261028205221';
-import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261028205221';
-import { url as imgUrl } from './sprites.js?v=20261028205221';
-import { Wallet } from './wallet.js?v=20261028205221';
+import * as D from './data.js?v=20261028205923';
+import { uiIcon } from './env.js?v=20261028205923';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261028205923';
+import { towerIcon, econIcon } from './ui.js?v=20261028205923';
+import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261028205923';
+import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261028205923';
+import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261028205923';
+import { url as imgUrl } from './sprites.js?v=20261028205923';
+import { Wallet } from './wallet.js?v=20261028205923';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
