@@ -1,26 +1,26 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261028174922';
-import * as A from './art.js?v=20261028174922';
-import { Sim } from './sim.js?v=20261028174922';
-import { Gore } from './gore.js?v=20261028174922';
-import { Renderer } from './render.js?v=20261028174922';
-import { GameUI } from './ui.js?v=20261028174922';
-import { Tutorial } from './tutorial.js?v=20261028174922';
-import { Sfx, attachSfx } from './audio.js?v=20261028174922';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261028174922';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261028174922';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand } from './sprites.js?v=20261028174922';
-import { mapBG, releaseBG } from './env.js?v=20261028174922';
-import { MENU_SPEC } from './music.js?v=20261028174922';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261028174922';
-import { renderForge, renderAchs } from './screens.js?v=20261028174922';
-import { renderShop } from './shop.js?v=20261028174922';
-import { Wallet } from './wallet.js?v=20261028174922';
-import { initLang, pickLang } from './i18n.js?v=20261028174922';
-import { Menus, RUN, clock } from './menus.js?v=20261028174922';
-import { Net } from './net.js?v=20261028174922';
-import { gemIc } from './res.js?v=20261028174922';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261028174922';
+import * as D from './data.js?v=20261028185043';
+import * as A from './art.js?v=20261028185043';
+import { Sim } from './sim.js?v=20261028185043';
+import { Gore } from './gore.js?v=20261028185043';
+import { Renderer } from './render.js?v=20261028185043';
+import { GameUI } from './ui.js?v=20261028185043';
+import { Tutorial } from './tutorial.js?v=20261028185043';
+import { Sfx, attachSfx } from './audio.js?v=20261028185043';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261028185043';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261028185043';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261028185043';
+import { mapBG, releaseBG } from './env.js?v=20261028185043';
+import { MENU_SPEC } from './music.js?v=20261028185043';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261028185043';
+import { renderForge, renderAchs } from './screens.js?v=20261028185043';
+import { renderShop } from './shop.js?v=20261028185043';
+import { Wallet } from './wallet.js?v=20261028185043';
+import { initLang, pickLang } from './i18n.js?v=20261028185043';
+import { Menus, RUN, clock } from './menus.js?v=20261028185043';
+import { Net } from './net.js?v=20261028185043';
+import { gemIc } from './res.js?v=20261028185043';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261028185043';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -49,8 +49,8 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261028174922').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261028174922').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261028185043').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261028185043').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
@@ -59,7 +59,7 @@ async function boot() {
   menus = new Menus(ctrl); ctrl.menus = menus;
   Net.claimInvite().then((r) => { if (r) ctrl.note(r.name ? `Теперь вы друзья: ${r.name}` : 'Друг добавлен'); });      // зашёл по ссылке-приглашению
   $('#loadfill').style.width = '100%';
-  setupGameUi(); setupInput(); setupOverlays(); setupRevive(); setupNav();
+  setupGameUi(); setupInput(); setupOverlays(); setupRevive(); setupNav(); setupTabs();
   Wallet.init(save, () => { persist(); }); Wallet.sync().then(() => { if (!$('#title').classList.contains('hidden')) menus.buildTitle(); });
   hide('#loading'); goTitle();
   last = performance.now();
@@ -107,7 +107,34 @@ function back() {
   if (running && !paused) setPause(true);
 }
 // кнопка «Назад» Telegram нужна везде, кроме главного меню (поверх него открываются Кузница, Награды и т.д., поэтому смотрим на открытые окна, а не на видимость заставки)
-function updateBack() { const home = !top() && $('#world').classList.contains('hidden') && !running; TG.backButton(home ? null : back); document.body.classList.toggle('menuopen', !home); }
+function updateBack() { const home = !top() && $('#world').classList.contains('hidden') && !running; TG.backButton(home ? null : back); document.body.classList.toggle('menuopen', !home); updateTabbar(); }
+// нижняя панель вкладок: видна на главном экране и в Кузнице, Магазине, Рейтинге, Наградах и Настройках; в карте, подготовке, выборе сложности и бою её нет
+const TAB_OF = { '#forge': 'forge', '#shop': 'shop', '#board': 'rating', '#achs': 'more', '#settings': 'more' };
+function updateTabbar() {
+  const vis = (id) => !$(id).classList.contains('hidden'), t = top();
+  const on = !running && vis('#title') && vis('#world') === false && (!t || TAB_OF[t]) && !['#loadout', '#diffsheet', '#rankedsheet'].some(vis) && !['#pausemenu', '#endmenu'].some(vis);
+  $('#tabbar').classList.toggle('hidden', !on); document.body.classList.toggle('hastabs', on);
+  if (!on) { $('#moremenu').classList.add('hidden'); return; }
+  const cur = (t && TAB_OF[t]) || 'play';
+  document.querySelectorAll('#tabbar .tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === cur));
+}
+function setupTabs() {
+  const IMG = { play: 'tab_play', forge: 'tab_forge', shop: 'tab_shop', rating: 'tab_rating', more: 'tab_more' };
+  document.querySelectorAll('#tabbar .tab').forEach((b) => { b.querySelector('img').src = imgUrl('ui/ic/' + IMG[b.dataset.tab] + '.webp'); });
+  const closeMain = () => { for (const id of ['#shop', '#forge', '#board', '#achs', '#settings']) hide(id); $('#moremenu').classList.add('hidden'); };
+  const go = (tab) => {
+    sfx.unlock();
+    if (tab === 'more') { sfx.play('click'); $('#moremenu').classList.toggle('hidden'); return; }
+    $('#moremenu').classList.add('hidden');
+    const cur = (top() && TAB_OF[top()]) || 'play'; if (cur === tab) return;
+    closeMain();
+    if (tab === 'forge') ctrl.openForge(); else if (tab === 'shop') ctrl.openShop(); else if (tab === 'rating') $('#b-board').click(); else { sfx.play('click'); }
+    if (tab === 'play') { menus.buildTitle(); updateBack(); }
+  };
+  document.querySelectorAll('#tabbar .tab').forEach((b) => { b.onclick = () => go(b.dataset.tab); });
+  document.querySelectorAll('#moremenu [data-more]').forEach((b) => { b.onclick = () => { $('#moremenu').classList.add('hidden'); closeMain(); $(b.dataset.more === 'achs' ? '#b-achs' : '#b-settings').click(); }; });
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('#moremenu') && !e.target.closest('[data-tab="more"]')) $('#moremenu').classList.add('hidden'); });
+}
 function setupNav() {
   let ubT = 0; new MutationObserver((recs) => { if (ubT || !recs.some((r) => r.target.classList && r.target.classList.contains('screen'))) return; ubT = setTimeout(() => { ubT = 0; updateBack(); }, 0); }).observe($('#app'), { subtree: true, attributes: true, attributeFilter: ['class'] });      // любое окно открылось или закрылось
   for (const [id, fn] of [['#st-back', back], ['#rk-back', back], ['#world-back', back], ['#ds-back', back], ['#bd-back', back], ['#forge-back', back], ['#achs-back', back], ['#lo-back', back], ['#shop-back', back]]) $(id).onclick = fn;

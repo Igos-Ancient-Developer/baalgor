@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028174922';
-import * as D from './data.js?v=20261028174922';
-import * as M from './meta.js?v=20261028174922';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028174922';
-import { url as imgUrl } from './sprites.js?v=20261028174922';
-import { Net } from './net.js?v=20261028174922';
-import { towerIcon, econIcon, itemChips } from './ui.js?v=20261028174922';
-import { fillPlates, gemIc } from './res.js?v=20261028174922';
-import { gemHtml } from './gem3d.js?v=20261028174922';
-import { Wallet } from './wallet.js?v=20261028174922';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028185043';
+import * as D from './data.js?v=20261028185043';
+import * as M from './meta.js?v=20261028185043';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028185043';
+import { url as imgUrl } from './sprites.js?v=20261028185043';
+import { Net } from './net.js?v=20261028185043';
+import { towerIcon, econIcon, itemChips } from './ui.js?v=20261028185043';
+import { fillPlates, gemIc } from './res.js?v=20261028185043';
+import { gemHtml } from './gem3d.js?v=20261028185043';
+import { Wallet } from './wallet.js?v=20261028185043';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -124,8 +124,9 @@ export class Menus {
     row('Числа над врагами', 'Урон и золото при убийстве', toggle(() => st.dmg, (v) => { st.dmg = v; }));
     row('Подтверждать выход из боя', 'Telegram спросит перед закрытием', toggle(() => st.confirm, (v) => { st.confirm = v; }));
     body.appendChild(el('div', 'sect-title', 'Друзья'));
-    const inv = el('button', 'stn', 'Пригласить'); inv.onclick = () => { c.sfx.play('click'); if (!Net.invite()) c.note('Ссылка на игру ещё не задана'); };
-    row('Пригласить друга', 'Друг откроет игру по твоей ссылке, и вы появитесь в списках друг у друга', inv);
+    { const r = el('div', 'srow inv'); r.innerHTML = `<img class="sr-ic" src="${imgUrl('ui/ic/friend.webp')}" alt=""><div class="lb">Пригласить друга<small>Друг откроет игру по твоей ссылке, и вы появитесь в списках друг у друга</small></div>`;
+      const inv = el('button', 'btn', 'Позвать'); inv.onclick = () => { c.sfx.play('click'); if (!Net.invite()) c.note('Ссылка на игру ещё не задана'); };
+      r.appendChild(inv); body.appendChild(r); }
     body.appendChild(el('div', 'sect-title', 'Язык'));
     const grid = el('div', 'langgrid');
     for (const [id, name] of LANGS) { const b = el('button', 'stn' + (id === curLang ? ' on' : ''), `<span>${name}</span>`); b.onclick = () => { if (id === curLang) return; c.sfx.play('click'); setLang(id); }; grid.appendChild(b); }
@@ -162,7 +163,8 @@ export class Menus {
       const glyph = state === 'locked' ? 'skulllock' : state === 'cleared' ? 'flag' : 'dmg';
       const bg = state === 'locked' ? PALETTE.lock : state === 'cleared' ? PALETTE.special : PALETTE.danger;
       const frame = state === 'locked' ? 'dark' : state === 'cleared' ? 'nature' : 'blood';
-      const n = el('button', `node ${state}${l.tutorial ? ' tutnode' : ''}`, `<img class="ni" src="${iconUrl(glyphIcon(l.tutorial ? 'book' : glyph, { bg, frame }))}" alt="">${state === 'locked' ? '' : `<div class="nl">${l.name}</div>`}`);
+      const nsrc = l.tutorial ? iconUrl(glyphIcon('book', { bg, frame })) : imgUrl(`ui/ic/sec_${l.sector}_${state}.webp`);          // у каждого сектора своя эмблема: закрыт / открыт / пройден
+      const n = el('button', `node ${state}${l.tutorial ? ' tutnode' : ''}`, `<img class="ni" src="${nsrc}" alt="">${state === 'locked' ? '' : `<div class="nl">${l.name}</div>`}`);
       n.dataset.id = l.id;
       const lp = P(l.pos); n.style.left = (lp[0] / MAP_W) * 100 + '%'; n.style.top = (lp[1] / MAP_H) * 100 + '%';
       n.onclick = (e) => { e.stopPropagation(); if (state === 'locked') { c.sfx.play('error'); n.classList.remove('shake'); void n.offsetWidth; n.classList.add('shake'); return; } c.sfx.play('select'); if (l.tutorial) { c.startLevel(l.id, 1); return; } if (this.lpId === l.id) this.closeLevel(); else this.openLevel(l.id); };
@@ -266,7 +268,7 @@ export class Menus {
       const card = el('div', `dcard${unlocked ? '' : ' locked'}${i === 4 ? ' hc' : ''}`);
       card.style.setProperty('--c', d.color);
       card.innerHTML = `<div class="dport"><div class="arch"><img src="${imgUrl('ui/portrait_' + d.demon + '.webp')}" alt=""></div>
-          <div class="dname">${d.name}</div>
+          <div class="dnrow"><img class="dico" src="${imgUrl('ui/ic/diff_' + i + '.webp')}" alt=""><div class="dname">${d.name}</div></div>
           ${best ? `<div class="dbest"><img src="${SC()}" alt="">${fmt(best)}</div>` : ''}
         </div>
         ${unlocked ? '' : `<div class="dlock"><img src="${iconUrl(glyphIcon('skulllock', { size: 96, bg: PALETTE.lock, frame: 'dark' }))}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}

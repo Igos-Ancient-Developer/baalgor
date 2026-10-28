@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261028174922';
-import { TOWERS } from './data.js?v=20261028174922';
+import { SPR, img } from './sprites.js?v=20261028185043';
+import { TOWERS } from './data.js?v=20261028185043';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -655,7 +655,7 @@ export function rotHead(type, lvl, br) {
   const im = img(`towers/${type}_head.webp`); if (!im) return null;
   const i = towerIdx(type, lvl, br), k = spriteK(type, lvl, br), [hx, hy] = m.holes[i], w = 192 * k, h = 240 * k;
   const hk = k * ((m.head.hr && m.head.hr[i]) || 1);      // голова масштабируется под ширину площадки именно этого уровня башни (у разных уровней верх разной ширины)
-  return { im, cw: m.head.cw, ch: m.head.ch, ax: m.head.ax, ay: m.head.ay, mx: m.head.mx || 0, my: m.head.my || 0, k: hk, dx: 40 - w / 2 + hx * k - TW_AX, dy: TW_BASE_Y - h + hy * k - TW_AY };
+  return { im, cw: m.head.cw, ch: m.head.ch, ax: m.head.ax, ay: m.head.ay, mx: m.head.mx || 0, my: m.head.my || 0, k: hk, plate: m.head.plate ? m.head.plate[i] * k / 2 : 0, dx: 40 - w / 2 + hx * k - TW_AX, dy: TW_BASE_Y - h + hy * k - TW_AY };
 }
 // Дуло повёрнутой головы в тех же координатах, где рисуются снаряды и эффекты: ось плиты + вынос ствола вдоль одного из 8 направлений картинки (эллипс: вдоль экрана 1, вглубь 0.5) и высота дула над плитой.
 export function muzzle(b) {
@@ -669,7 +669,22 @@ export function muzzle(b) {
 }
 // угол, куда на самом деле смотрит голова (одно из 8 направлений картинки)
 export const headAngle = (b) => Math.round((b.angle || 0) / (Math.PI / 4)) * (Math.PI / 4);
+// у арбалета нет своей плиты, и вокруг гнезда оставался голый пол: под ним рисуется стальной диск на всю площадку до зубцов (ширина по уровням — head.plate)
+function drawPlate(g, hi, x, y) {
+  const rx = hi.plate, ry = rx * 0.5, cx = x + hi.dx, cy = y + hi.dy, th = rx * 0.1, lw = Math.max(0.8, rx * 0.035);
+  const ell = (yy, r) => { g.beginPath(); g.ellipse(cx, yy, r, r * 0.5, 0, 0, Math.PI * 2); };
+  g.save(); g.lineJoin = 'round';
+  g.fillStyle = '#2a2e37'; g.strokeStyle = '#14161b'; g.lineWidth = lw;
+  ell(cy + th, rx); g.fill(); g.fillRect(cx - rx, cy, rx * 2, th); g.beginPath(); g.moveTo(cx - rx, cy); g.lineTo(cx - rx, cy + th); g.moveTo(cx + rx, cy); g.lineTo(cx + rx, cy + th); g.stroke(); ell(cy + th, rx); g.stroke();
+  const gr = g.createRadialGradient(cx - rx * 0.25, cy - ry * 0.3, rx * 0.1, cx, cy, rx); gr.addColorStop(0, '#8b92a1'); gr.addColorStop(0.7, '#626978'); gr.addColorStop(1, '#4a505d');
+  g.fillStyle = gr; ell(cy, rx); g.fill(); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,.22)'; g.lineWidth = lw * 0.9; ell(cy, rx * 0.86); g.stroke();
+  g.strokeStyle = 'rgba(0,0,0,.3)'; ell(cy, rx * 0.8); g.stroke();
+  g.fillStyle = '#c9ced8'; for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; g.beginPath(); g.arc(cx + Math.cos(a) * rx * 0.93, cy + Math.sin(a) * ry * 0.93, Math.max(0.7, rx * 0.028), 0, Math.PI * 2); g.fill(); }
+  g.restore();
+}
 export function drawRotHead(g, hi, angle, x, y, rec = 0) {
+  if (hi.plate) drawPlate(g, hi, x, y);
   const dir = ((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8;
   g.drawImage(hi.im, dir * hi.cw, 0, hi.cw, hi.ch, x + hi.dx - hi.ax * hi.k - Math.cos(angle) * rec, y + hi.dy - hi.ay * hi.k - Math.sin(angle) * rec * 0.5, hi.cw * hi.k, hi.ch * hi.k);
 }
