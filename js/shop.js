@@ -1,13 +1,13 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261028185043';
-import { Wallet } from './wallet.js?v=20261028185043';
-import { fillPlates, gemIc } from './res.js?v=20261028185043';
-import { towerIcon } from './ui.js?v=20261028185043';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261028185043';
-import { SHOP_IMG } from './iconmap.js?v=20261028185043';
-import { CHESTS, CHEST_ORDER, buyChest, playOpening, oddsOf, chestHtml } from './chests.js?v=20261028185043';
+import * as D from './data.js?v=20261028194558';
+import { Wallet } from './wallet.js?v=20261028194558';
+import { fillPlates, gemIc } from './res.js?v=20261028194558';
+import { towerIcon } from './ui.js?v=20261028194558';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261028194558';
+import { SHOP_IMG } from './iconmap.js?v=20261028194558';
+import { CHESTS, CHEST_ORDER, buyChest, playOpening, oddsOf, chestHtml } from './chests.js?v=20261028194558';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
 
 const $ = (s) => document.querySelector(s);
@@ -24,7 +24,6 @@ export function renderShop(save, ctrl, redraw) {
 
   // ── кристаллы за Telegram Stars: главное в магазине ──
   const t = el('div', 'sect-title', 'Кристаллы'); t.id = 'shop-packs'; body.appendChild(t);
-  body.appendChild(el('p', 'sh-note top', 'Кристаллы покупаются только за Telegram Stars. На них открываются здания, слоты, премиум-башни и усилители уровня.'));
   const grid = el('div', 'sh-packs list');
   D.PACKS.forEach((p) => {
     const first = !(save.packs || []).includes(p.id), got = p.gems * (first ? D.FIRST_BONUS : 1);
@@ -38,7 +37,6 @@ export function renderShop(save, ctrl, redraw) {
 
   // ── сундуки: лутбокс с анимацией; шансы показываются по кнопке ──
   body.appendChild(el('div', 'sect-title', 'Сундуки'));
-  body.appendChild(el('p', 'sh-note top', 'В сундуках души, кристаллы, здания и редкие премиум-башни. Что падает чаще всего — написано на карточке, полные шансы — по кнопке «Шансы».'));
   const MAIN = { wood: 'Чаще всего: 90–175 душ. Иногда здания', silver: 'Чаще всего: 23–57 кристаллов. Здания средней редкости', gold: 'Лучшая добыча: до 400 кристаллов, редкие башни' };
   const cg = el('div', 'sh-chests');
   for (const kind of CHEST_ORDER) {
@@ -58,7 +56,7 @@ export function renderShop(save, ctrl, redraw) {
     if (c.souls) { const b = el('button', 'btn chb', `<img src="${bareGlyphUrl('soul', 22)}" alt="">${fmt(c.souls)}`); b.onclick = () => { ctrl.sfx.play('click'); open('souls'); }; btns.appendChild(b); }
     const bg = el('button', 'btn chb gem', `${gemIc(22)}${c.gems}`); bg.onclick = () => { ctrl.sfx.play('click'); open('gems'); }; btns.appendChild(bg);
     card.appendChild(btns);
-    const odds = el('div', 'chodds hidden'); odds.innerHTML = oddsOf(kind).map(([t, p, r]) => `<div class="od r-${r}"><span>${t}</span><b>${p}%</b></div>`).join('') + '<small>Если выпавшее здание у тебя уже есть, оно заменяется на компенсацию.</small>';
+    const odds = el('div', 'chodds hidden'); odds.innerHTML = oddsOf(kind).map(([t, p, r]) => `<div class="od r-${r}"><span>${t}</span><b>${p}%</b></div>`).join('') ;
     const tg = el('button', 'chinfo', 'Шансы'); tg.onclick = () => { odds.classList.toggle('hidden'); ctrl.sfx.play('click'); };
     card.append(tg, odds); cg.appendChild(card);
   }
@@ -92,7 +90,7 @@ export function renderShop(save, ctrl, redraw) {
 
   // ── ежедневный подарок ──
   { const ready = Wallet.dailyReady(), streak = Wallet.online ? (save.streak || 0) : ((save.daily || {}).streak || 0), claimed = ready ? streak % 7 : streak;
-    const card = el('div', 'sh-card daily'); card.appendChild(el('div', 'sh-h', `<img class="sh-ic" src="${big(SHOP_IMG.daily, 64)}" alt="">Ежедневный подарок<small>заходи каждый день: серия 7 дней, последний день — главный приз</small>`));
+    const card = el('div', 'sh-card daily'); card.appendChild(el('div', 'sh-h', `<img class="sh-ic" src="${big(SHOP_IMG.daily, 64)}" alt="">Ежедневный подарок`));
     const row = el('div', 'days');
     D.DAILY.forEach((g, i) => row.appendChild(el('div', 'day' + (i < claimed ? ' got' : i === claimed && ready ? ' now' : ''), `<small>день ${i + 1}</small><img class="si" src="${bareGlyphUrl('soul', 22)}" alt=""><b>${g}</b>${i < claimed ? '<i class="ck"></i>' : ''}`)));
     card.appendChild(row);
@@ -100,7 +98,5 @@ export function renderShop(save, ctrl, redraw) {
     b.onclick = async () => { if (!ready) { fail(b); return; } const r = await Wallet.daily(); if (r && r.ok) { ctrl.sfx.play('upgrade'); ctrl.note(`+${r.reward} душ`); redraw(); } else { say(r); fail(b); } };
     card.appendChild(b); body.appendChild(card); }
 
-
-  body.appendChild(el('p', 'sh-note', 'Платежи проходят через Telegram Stars. Кристаллы привязаны к твоему аккаунту. Вопросы по покупкам: команда /paysupport у бота, условия: /terms.'));
   $('#shop').scrollTop = keep;
 }

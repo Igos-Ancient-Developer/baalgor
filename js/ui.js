@@ -1,10 +1,11 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261028185043';
-import * as A from './art.js?v=20261028185043';
-import { uiIcon } from './env.js?v=20261028185043';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261028185043';
-import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261028185043';
-import { TARGET_MODES } from './sim.js?v=20261028185043';
+import * as D from './data.js?v=20261028194558';
+import * as A from './art.js?v=20261028194558';
+import { uiIcon } from './env.js?v=20261028194558';
+import { SPR } from './sprites.js?v=20261028194558';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261028194558';
+import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261028194558';
+import { TARGET_MODES } from './sim.js?v=20261028194558';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -19,7 +20,7 @@ const FMT = {
   collapseMult: (v) => '×' + v, anchor: (v) => f1(v) + 'с', heavyMult: (v) => '×' + f1(v), armorPierce: pct,
   income: (v) => '+' + v, cap: (v) => v, bonus: (v) => '+' + v,
 };
-const ECON_FMT = { income: (v) => '+' + v, rate: pct, cap: (v) => v, bonus: (v) => '+' + v, range: f1 };
+const ECON_FMT = { income: (v) => '+' + v, coin: (v) => '+' + v, buff: (v) => '+' + Math.round(v * 100) + '%', rate: pct, cap: (v) => v, bonus: (v) => '+' + v, range: f1 };
 const SHOW_ORDER = ['dmg', 'rate', 'range', 'splash', 'burn', 'poison', 'chains', 'pierce', 'critMult', 'execute', 'slow', 'freeze', 'brittle', 'shatter', 'stacks', 'plague', 'shred', 'orbit', 'bounce', 'stun', 'cluster', 'fire', 'spread', 'trail', 'pull', 'collapseMult', 'anchor', 'heavyMult', 'armorPierce', 'rateBuff', 'dmgBuff', 'mark'];
 const BRANCH_COL = { A: '#6fd0ff', B: '#ff5a6a' };
 
@@ -37,13 +38,25 @@ function composite(type, lvl, br, picks) {
     c.lw = body.lw; c.lh = body.lh; return c;
   });
 }
+// цвет подложки значка у каждого здания: узнаётся с первого взгляда
+const ICON_TINT = { bolt: '#c9a068', frost: '#6fd0ff', mortar: '#e0903a', tesla: '#7ad0ff', toxic: '#9bd64a', saw: '#b8c0cc', banner: '#e0584a', flame: '#ff7a2a', voidwell: '#a878ff', harpoon: '#4ab8d8', magnet: '#e8584a', grinder: '#d0a060', giant: '#b08a5a', mine: '#e8c060', bank: '#6ad8a0', altar: '#e03a4a', gold_bolt: '#ffd24a', storm_tesla: '#7ad0ff', hell_flame: '#ff5a2a' };
+const hexMix = (a, b, t) => { const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)), x = p(a), y = p(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+const tintBg = (id) => { const t = ICON_TINT[id] || '#7aa0d0'; return [hexMix(t, '#ffffff', 0.12), hexMix(t, '#0a0608', 0.82)]; };
+// значок башни: акцент на голове (вращающаяся часть крупным планом на подложке цвета башни); у зданий без головы — верхушка корпуса
+function headCrop(type, lvl, br) {
+  const m = SPR.towers[type]; if (!m) return null;
+  const rh = A.rotHead(type, lvl, br), bx = A.towerBox(type, lvl, br);          // bx: [l, t, r, b] корпуса в координатах спрайта
+  if (rh) { const w = Math.max(44, (bx[2] - bx[0]) * 1.1), cx = A.TW_AX + rh.dx, cy = A.TW_AY + rh.dy - w * 0.3; return { x: cx - w / 2, y: cy - w / 2, w, h: w }; }
+  const w = Math.max(40, (bx[2] - bx[0]) * 1.04); return { x: (bx[0] + bx[2]) / 2 - w / 2, y: bx[1] - 3, w, h: w };
+}
 export const towerIcon = (type, lvl = 1, br = null, picks = null, o = {}) => {
   const prem = D.isPremium(type), bt = A.artType(type);          // премиум: своя картинка, а если её нет — базовая башня; рамка золотая с короной
-  return spriteIcon(`t:${type}:${lvl}:${br || ''}:${picks ? picks.join('') : ''}:${o.k || ''}`, composite(bt, lvl, br, picks), { bg: prem ? ['#f6dc7a', '#5a3a10'] : PALETTE.tower, frame: prem ? 'arcane' : 'gold', badge: prem ? 'crown' : null, badgeCol: '#ffd24a', spriteScale: 1.4, ...o });
+  const raster = SPR.ok && SPR.towers[bt], crop = raster && !o.noCrop ? headCrop(bt, lvl, br) : null;
+  return spriteIcon(`t:${type}:${lvl}:${br || ''}:${picks ? picks.join('') : ''}:${o.k || ''}`, composite(bt, lvl, br, picks), { bg: tintBg(type), frame: prem ? 'arcane' : 'gold', badge: prem ? 'crown' : null, badgeCol: '#ffd24a', spriteScale: 1.4, crop, ...o });
 };
-export const econIcon = (type, lvl = 3, o = {}) => spriteIcon(`e:${type}:${lvl}:${o.k || ''}`, A.econBody(type, lvl), { bg: PALETTE.econ, spriteScale: 1.4, ...o });
+export const econIcon = (type, lvl = 3, o = {}) => spriteIcon(`e:${type}:${lvl}:${o.k || ''}`, A.econBody(type, lvl), { bg: tintBg(type), spriteScale: 1.5, ...o });
 
-const STAT_LABEL = { dmg: 'Урон', rate: 'Скорострельность', range: 'Дальность', splash: 'Радиус взрыва', burn: 'Горение', poison: 'Яд', chains: 'Прыжков молнии', pierce: 'Пробивает целей', critMult: 'Сила крита', execute: 'Казнь раненых', slow: 'Замедление', freeze: 'Шанс заморозки', brittle: 'Уязвимость ко льду', shatter: 'Осколки льда', stacks: 'Слоёв яда', plague: 'Радиус чумы', shred: 'Снятие брони', orbit: 'Лезвий вокруг', bounce: 'Рикошетов', stun: 'Шанс оглушения', cluster: 'Бомб в кассете', fire: 'Огонь', spread: 'Заражение огнём', trail: 'Огонь за целью', pull: 'Отбрасывание', collapseMult: 'Мощь схлопывания', anchor: 'Пригвождение', heavyMult: 'Урон по тяжёлым', armorPierce: 'Пробитие брони', rateBuff: 'Скорость союзников', dmgBuff: 'Урон союзников', mark: 'Метка на врагах', income: 'Золото с монеты', cap: 'Потолок монеты', bonus: 'Золото за убийство' };
+const STAT_LABEL = { coin: 'Монета банка', buff: 'Прибавка соседям', dmg: 'Урон', rate: 'Скорострельность', range: 'Дальность', splash: 'Радиус взрыва', burn: 'Горение', poison: 'Яд', chains: 'Прыжков молнии', pierce: 'Пробивает целей', critMult: 'Сила крита', execute: 'Казнь раненых', slow: 'Замедление', freeze: 'Шанс заморозки', brittle: 'Уязвимость ко льду', shatter: 'Осколки льда', stacks: 'Слоёв яда', plague: 'Радиус чумы', shred: 'Снятие брони', orbit: 'Лезвий вокруг', bounce: 'Рикошетов', stun: 'Шанс оглушения', cluster: 'Бомб в кассете', fire: 'Огонь', spread: 'Заражение огнём', trail: 'Огонь за целью', pull: 'Отбрасывание', collapseMult: 'Мощь схлопывания', anchor: 'Пригвождение', heavyMult: 'Урон по тяжёлым', armorPierce: 'Пробитие брони', rateBuff: 'Скорость союзников', dmgBuff: 'Урон союзников', mark: 'Метка на врагах', income: 'Золото с монеты', cap: 'Потолок монеты', bonus: 'Золото за убийство' };
 const UNIT = { rate: ' /с', range: ' кл.', splash: ' кл.', plague: ' кл.' };
 const NO_PCT = ['critMult', 'execute', 'slow', 'freeze', 'brittle', 'shatter', 'armorPierce', 'stun', 'garmor', 'rateBuff', 'dmgBuff', 'mark'];
 const PICK_NAME = { power: 'Мощь', speed: 'Скорость', special: 'Особое' };
@@ -57,8 +70,26 @@ export function itemChips(type) {
   }
   const l1 = D.ECON[type].lv[0];
   if (type === 'mine') return chip('coins', '+' + l1.income) + chip('hourglass', D.COIN_PERIOD + 'с', 'dim');
-  if (type === 'bank') return chip('coins', pct(l1.rate)) + chip('chart', l1.cap);
+  if (type === 'bank') return chip('coins', '+' + l1.coin) + chip('arrowup', '+' + Math.round(l1.buff * 100) + '%') + chip('range', f1(l1.range));
   return chip('coins', '+' + l1.bonus) + chip('range', l1.range);
+}
+
+// ───── карточка здания в стиле коллекционных карт: лента с названием, описание, медальоны характеристик с подписями ─────
+const SHORT = { dmg: 'Урон', rate: 'Темп', range: 'Дальн.', splash: 'Взрыв', burn: 'Ожог', poison: 'Яд', chains: 'Цепь', pierce: 'Пробой', critMult: 'Крит', execute: 'Казнь', slow: 'Замедл.', freeze: 'Заморозка', brittle: 'Хрупкость', shatter: 'Осколки', stacks: 'Слои', plague: 'Чума', shred: 'Броня', orbit: 'Лезвия', bounce: 'Рикошет', stun: 'Оглуш.', cluster: 'Кассета', fire: 'Огонь', spread: 'Зараза', trail: 'След', pull: 'Притяж.', collapseMult: 'Схлоп.', anchor: 'Пригв.', heavyMult: 'Тяжёлые', armorPierce: 'Пробитие', rateBuff: 'Темп друзей', dmgBuff: 'Урон друзей', mark: 'Метка', income: 'Монета', coin: 'Монета', buff: 'Соседям', bonus: 'Награда' };
+const medal = (glyph, val, label) => `<div class="md"><i class="mi"><img src="${bareGlyphUrl(glyph, 30)}" alt=""></i><b>${val}</b><small>${label}</small></div>`;
+export function itemCard(type) {
+  const t = D.TOWERS[type], e = D.ECON[type], d = t || e, tint = (t && t.tint) || '#d8b25a';
+  let meds = '';
+  if (t) {
+    const st = D.towerStats(type, 1, null, [0, 0]);
+    meds = SHOW_ORDER.filter((k) => st[k] !== undefined).slice(0, 5).map((k) => medal(STAT_GLYPH[k] || 'dmg', fmtStat(k, st[k]), SHORT[k] || '')).join('') + (t.air ? medal('wing', '✓', 'Воздух') : '');
+  } else {
+    const l1 = e.lv[0];
+    if (type === 'mine') meds = medal('coins', '+' + l1.income, 'Монета') + medal('hourglass', D.COIN_PERIOD + 'с', 'Период');
+    else if (type === 'bank') meds = medal('coins', '+' + l1.coin, 'Монета') + medal('arrowup', '+' + Math.round(l1.buff * 100) + '%', 'Соседям') + medal('range', f1(l1.range), 'Радиус');
+    else meds = medal('coins', '+' + l1.bonus, 'Награда') + medal('range', f1(l1.range), 'Радиус');
+  }
+  return `<div class="tcard${t && t.premium ? ' prem' : ''}" style="--tc:${tint}"><div class="tc-t"><span>${d.name}</span></div><div class="tc-d">${d.short}</div><div class="tc-s">${meds}</div></div>`;
 }
 
 export class GameUI {
@@ -129,7 +160,7 @@ export class GameUI {
       const n = s.countOf('econ', d.type), max = D.ECON[d.type].max, lim = s.limits && s.limits[d.type] != null ? s.limits[d.type] : max; cost = s.buildCost('econ', d.type); locked = n >= Math.min(max, lim); cs = `${n}/${Math.min(max, lim)}`;
       const l1 = D.ECON[d.type].lv[0];
       if (d.type === 'mine') chips = chip('coins', '+' + l1.income) + chip('hourglass', D.COIN_PERIOD + 'с', 'dim');
-      else if (d.type === 'bank') chips = chip('coins', pct(l1.rate)) + chip('chart', l1.cap) + chip('coins', '+' + Math.min(l1.cap, Math.floor(s.gold * l1.rate)), 'pos');
+      else if (d.type === 'bank') chips = chip('coins', '+' + l1.coin) + chip('arrowup', '+' + Math.round(l1.buff * 100) + '%') + chip('range', f1(l1.range));
       else chips = chip('coins', '+' + l1.bonus) + chip('range', l1.range);
     }
     if (d.build === 'tower' && s.limits && s.limits[d.type] != null) { const n = s.countOf('tower', d.type); cs = `${n}/${s.limits[d.type]}`; locked = n >= s.limits[d.type]; }
@@ -170,7 +201,7 @@ export class GameUI {
   deselect() { this.selB = null; this.view.selected = null; $('#sel').classList.add('hidden'); $('#dock').classList.remove('hide'); }
   statChips(b, max = 6) {
     const st = b.st;
-    if (b.kind === 'econ') { const out = []; for (const k of ['income', 'rate', 'cap', 'bonus', 'range']) if (st[k] !== undefined) out.push(chip(STAT_GLYPH[k] || 'coins', ECON_FMT[k](st[k]))); if (b.type === 'bank') out.push(chip('coins', '+' + Math.min(st.cap, Math.floor(this.sim.gold * st.rate)), 'pos')); return out.join(''); }
+    if (b.kind === 'econ') { const out = []; for (const k of ['income', 'coin', 'buff', 'bonus', 'range']) if (st[k] !== undefined) out.push(chip(k === 'buff' ? 'arrowup' : (STAT_GLYPH[k] || 'coins'), ECON_FMT[k](st[k]))); return out.join(''); }
     const out = [];
     for (const k of SHOW_ORDER) {
       if (st[k] === undefined || out.length >= max) continue;
@@ -183,9 +214,9 @@ export class GameUI {
     return out.join('');
   }
   pipColors(b) {
-    if (b.kind === 'econ') return [1, 2, 3, 4, 5].map(() => '#8fe36a');
+    if (b.kind === 'econ') return D.ECON[b.type].lv.map(() => '#8fe36a');
     const pk = A.PICK_COLORS;
-    return ['#ffd24a', pk[b.picks[0]] || '#ffd24a', pk[b.picks[1]] || '#ffd24a', BRANCH_COL[b.branch] || '#ffd24a', BRANCH_COL[b.branch] || '#ffd24a'];
+    return ['#ffd24a', pk[b.picks[0]] || '#ffd24a', pk[b.picks[1]] || '#ffd24a', BRANCH_COL[b.branch] || '#ffd24a', BRANCH_COL[b.branch] || '#ffd24a'].slice(0, b.prem ? 3 : 5);
   }
   upIconFor(b, o) {
     if (b.kind === 'econ') return iconUrl(econIcon(b.type, o.level, { k: 'up', badge: 'arrowup', badgeCol: '#4ad63a' }));
@@ -234,7 +265,7 @@ export class GameUI {
     if (this.upBtn && this.upCost != null) this.upBtn.classList.toggle('poor', g < this.upCost);
   }
   tickSel() {
-    const b = this.selB; const key = `${b.level}|${b.rateMult.toFixed(2)}|${b.dmgMult.toFixed(2)}|${b.kills}|${b.type === 'bank' ? Math.min(b.st.cap, Math.floor(this.sim.gold * b.st.rate)) : 0}`;
+    const b = this.selB; const key = `${b.level}|${b.rateMult.toFixed(2)}|${b.dmgMult.toFixed(2)}|${b.kills}|${b.type === 'bank' ? 0 : 0}`;
     if (this._sk !== key) { this._sk = key; return true; }
     return false;
   }

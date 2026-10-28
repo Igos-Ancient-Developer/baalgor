@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261028185043';
-import * as A from './art.js?v=20261028185043';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261028185043';
-import { tile } from './iconmap.js?v=20261028185043';
-import { img } from './sprites.js?v=20261028185043';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261028185043';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261028194558';
+import * as A from './art.js?v=20261028194558';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261028194558';
+import { tile } from './iconmap.js?v=20261028194558';
+import { img } from './sprites.js?v=20261028194558';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261028194558';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -419,7 +419,7 @@ export class Renderer {
       const s = glowSprite('#ffe27a'); add(s, x, base + 70, 34, 0.25 + 0.12 * Math.sin(t * 3 + b.id));
       const ph = (t * 1.1 + b.id * 0.37) % 1; if (ph < 0.5) { const tw = Math.sin((ph / 0.5) * Math.PI); ctx.save(); ctx.fillStyle = `rgba(255,250,210,${tw})`; const sx = x - 8 + ((b.id * 7) % 16), sy = base + 66; ctx.beginPath(); ctx.moveTo(sx, sy - 4 * tw); ctx.lineTo(sx + 1, sy); ctx.lineTo(sx, sy + 4 * tw); ctx.lineTo(sx - 1, sy); ctx.fill(); ctx.beginPath(); ctx.moveTo(sx - 4 * tw, sy); ctx.lineTo(sx, sy + 1); ctx.lineTo(sx + 4 * tw, sy); ctx.lineTo(sx, sy - 1); ctx.fill(); ctx.restore(); }
     } else if (b.type === 'bank') {
-      if (b.level >= 5) add(glowSprite('#ffd35a'), x, base + 56, 50, 0.25 + 0.1 * Math.sin(t * 2));
+      if (b.level >= 3) add(glowSprite('#ffd35a'), x, base + 56, 50, 0.25 + 0.1 * Math.sin(t * 2));
       const ph = (t * 0.6 + b.id * 0.3) % 1; const gx = x - 14 + ph * 28; ctx.save(); ctx.globalAlpha = 0.6 * Math.sin(ph * Math.PI); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(gx, base + 52); ctx.lineTo(gx + 1, base + 56); ctx.lineTo(gx, base + 60); ctx.lineTo(gx - 1, base + 56); ctx.fill(); ctx.restore();
     } else if (b.type === 'altar') {
       const fl = b.altarFlash > 0 ? b.altarFlash / 0.4 : 0;
@@ -565,19 +565,29 @@ export class Renderer {
       }
     }
   }
+  // монета рудника и банка вращается вокруг вертикальной оси, как в Марио: анфас золотой диск с чеканкой, ребром — тонкая полоска. Банк крупнее и ярче.
   drawBags(ctx, t) {
-    const bag = bagSprite(), coin = coinSprite(30);
     this.sim.bags.forEach((bg, i) => {
-      const sky = bg.kind === 'sky', fall = sky ? Math.max(0, 1 - bg.t / 0.7) : 0, rise = !sky ? Math.min(12, bg.t * 50) : 0;
-      const by = bg.y - 16 - rise - fall * fall * 90 + Math.sin(t * 4 + i) * 2.2, left = 1 - bg.t / bg.life, hurry = bg.life - bg.t < 3;
+      const sky = bg.kind === 'sky', bank = bg.kind === 'bank', fall = sky ? Math.max(0, 1 - bg.t / 0.7) : 0, rise = !sky ? Math.min(12, bg.t * 50) : 0;
+      const by = bg.y - 16 - rise - fall * fall * 90 + Math.sin(t * 4 + i) * 2.2 - Math.abs(Math.sin(t * 2.4 + i)) * 3, left = 1 - bg.t / bg.life, hurry = bg.life - bg.t < 3;
+      const R = bank ? 15 : 11.5, ph = t * 3.4 + i * 1.7, cs = Math.cos(ph), w = Math.max(0.09, Math.abs(cs));
       ctx.save(); ctx.translate(bg.x, by);
-      // свечение: монету должно быть видно на любой карте
-      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.2 * Math.sin(t * 6 + i); const gs = glowSprite('#ffd24a'); ctx.drawImage(gs, -24, -24, 48, 48); ctx.globalCompositeOperation = 'source-over';
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (bank ? 0.75 : 0.55) + 0.2 * Math.sin(t * 6 + i); ctx.drawImage(glowSprite(bank ? '#ffe9a0' : '#ffd24a'), -R * 2.3, -R * 2.3, R * 4.6, R * 4.6); ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = hurry ? 0.45 + 0.55 * Math.abs(Math.sin(t * 14)) : 1;
-      const sc = (sky ? 1 : 1.15) * (1 + 0.07 * Math.sin(t * 6 + i)); ctx.scale(sc * (sky ? Math.abs(Math.cos(t * 3 + i)) * 0.55 + 0.45 : 1), sc);   // монета вращается
-      const ic = tile('bag_gold'); if (ic) { ctx.imageSmoothingQuality = 'high'; ctx.drawImage(ic, -13, -14, 26, 26); } else { const sp = sky ? coin : bag; ctx.drawImage(sp, -sp.lw / 2, -sp.lh / 2, sp.lw, sp.lh); }      // монета рудника — иконка мешка с листа
+      // ребро монеты (толщина) и лицевая сторона
+      const th = R * 0.34 * (1 - w) + 1;
+      ctx.fillStyle = '#9a6a10'; ctx.strokeStyle = '#2a1804'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.ellipse(th * Math.sign(cs || 1) * -0.5, 0, R * w, R, 0, 0, T2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(th * Math.sign(cs || 1) * 0.5, 0, R * w, R, 0, 0, T2);
+      const gr = ctx.createLinearGradient(-R * w, -R, R * w, R); gr.addColorStop(0, bank ? '#fff3b0' : '#ffe888'); gr.addColorStop(0.5, '#f2b81e'); gr.addColorStop(1, '#b8780c');
+      ctx.fillStyle = gr; ctx.fill(); ctx.stroke();
+      if (w > 0.35) {                                                              // чеканка видна, пока монета повёрнута лицом
+        ctx.save(); ctx.translate(th * Math.sign(cs || 1) * 0.5, 0); ctx.scale(w, 1); ctx.strokeStyle = 'rgba(120,70,0,.85)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(0, 0, R * 0.7, 0, T2); ctx.stroke();
+        ctx.fillStyle = 'rgba(120,70,0,.9)'; ctx.font = `bold ${Math.round(R * 1.1)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(bank ? '$' : '●', 0, 1);
+        ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.ellipse(-R * 0.35, -R * 0.45, R * 0.22, R * 0.12, -0.6, 0, T2); ctx.fill(); ctx.restore();
+      }
       ctx.restore();
-      ctx.save(); ctx.strokeStyle = hurry ? 'rgba(255,120,90,.95)' : 'rgba(255,236,150,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(bg.x, by, 17, -Math.PI / 2, -Math.PI / 2 + T2 * left); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.strokeStyle = hurry ? 'rgba(255,120,90,.95)' : 'rgba(255,236,150,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(bg.x, by, R + 5, -Math.PI / 2, -Math.PI / 2 + T2 * left); ctx.stroke(); ctx.restore();
     });
   }
 

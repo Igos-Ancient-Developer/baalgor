@@ -1,26 +1,26 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261028185043';
-import * as A from './art.js?v=20261028185043';
-import { Sim } from './sim.js?v=20261028185043';
-import { Gore } from './gore.js?v=20261028185043';
-import { Renderer } from './render.js?v=20261028185043';
-import { GameUI } from './ui.js?v=20261028185043';
-import { Tutorial } from './tutorial.js?v=20261028185043';
-import { Sfx, attachSfx } from './audio.js?v=20261028185043';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261028185043';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261028185043';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261028185043';
-import { mapBG, releaseBG } from './env.js?v=20261028185043';
-import { MENU_SPEC } from './music.js?v=20261028185043';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261028185043';
-import { renderForge, renderAchs } from './screens.js?v=20261028185043';
-import { renderShop } from './shop.js?v=20261028185043';
-import { Wallet } from './wallet.js?v=20261028185043';
-import { initLang, pickLang } from './i18n.js?v=20261028185043';
-import { Menus, RUN, clock } from './menus.js?v=20261028185043';
-import { Net } from './net.js?v=20261028185043';
-import { gemIc } from './res.js?v=20261028185043';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261028185043';
+import * as D from './data.js?v=20261028194558';
+import * as A from './art.js?v=20261028194558';
+import { Sim } from './sim.js?v=20261028194558';
+import { Gore } from './gore.js?v=20261028194558';
+import { Renderer } from './render.js?v=20261028194558';
+import { GameUI } from './ui.js?v=20261028194558';
+import { Tutorial } from './tutorial.js?v=20261028194558';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261028194558';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261028194558';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261028194558';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261028194558';
+import { mapBG, releaseBG } from './env.js?v=20261028194558';
+import { MENU_SPEC } from './music.js?v=20261028194558';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261028194558';
+import { renderForge, renderAchs } from './screens.js?v=20261028194558';
+import { renderShop } from './shop.js?v=20261028194558';
+import { Wallet } from './wallet.js?v=20261028194558';
+import { initLang, pickLang } from './i18n.js?v=20261028194558';
+import { Menus, RUN, clock } from './menus.js?v=20261028194558';
+import { Net } from './net.js?v=20261028194558';
+import { gemIc } from './res.js?v=20261028194558';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261028194558';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -49,8 +49,8 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261028185043').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261028185043').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261028194558').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261028194558').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
@@ -109,31 +109,27 @@ function back() {
 // кнопка «Назад» Telegram нужна везде, кроме главного меню (поверх него открываются Кузница, Награды и т.д., поэтому смотрим на открытые окна, а не на видимость заставки)
 function updateBack() { const home = !top() && $('#world').classList.contains('hidden') && !running; TG.backButton(home ? null : back); document.body.classList.toggle('menuopen', !home); updateTabbar(); }
 // нижняя панель вкладок: видна на главном экране и в Кузнице, Магазине, Рейтинге, Наградах и Настройках; в карте, подготовке, выборе сложности и бою её нет
-const TAB_OF = { '#forge': 'forge', '#shop': 'shop', '#board': 'rating', '#achs': 'more', '#settings': 'more' };
+const TAB_OF = { '#forge': 'forge', '#shop': 'shop', '#board': 'rating', '#achs': 'play', '#settings': 'play' };
 function updateTabbar() {
   const vis = (id) => !$(id).classList.contains('hidden'), t = top();
   const on = !running && vis('#title') && vis('#world') === false && (!t || TAB_OF[t]) && !['#loadout', '#diffsheet', '#rankedsheet'].some(vis) && !['#pausemenu', '#endmenu'].some(vis);
   $('#tabbar').classList.toggle('hidden', !on); document.body.classList.toggle('hastabs', on);
-  if (!on) { $('#moremenu').classList.add('hidden'); return; }
+  if (!on) return;
   const cur = (t && TAB_OF[t]) || 'play';
   document.querySelectorAll('#tabbar .tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === cur));
 }
 function setupTabs() {
-  const IMG = { play: 'tab_play', forge: 'tab_forge', shop: 'tab_shop', rating: 'tab_rating', more: 'tab_more' };
+  const IMG = { play: 'tab_play', forge: 'tab_forge', shop: 'tab_shop', rating: 'tab_rating' };
   document.querySelectorAll('#tabbar .tab').forEach((b) => { b.querySelector('img').src = imgUrl('ui/ic/' + IMG[b.dataset.tab] + '.webp'); });
-  const closeMain = () => { for (const id of ['#shop', '#forge', '#board', '#achs', '#settings']) hide(id); $('#moremenu').classList.add('hidden'); };
+  $('#b-achs .tk').src = imgUrl('ui/ic/cont_cup.webp'); $('#b-settings .tk').src = imgUrl('ui/ic/tab_more.webp');          // награды и настройки теперь на главном экране
+  const closeMain = () => { for (const id of ['#shop', '#forge', '#board', '#achs', '#settings']) hide(id); };
   const go = (tab) => {
     sfx.unlock();
-    if (tab === 'more') { sfx.play('click'); $('#moremenu').classList.toggle('hidden'); return; }
-    $('#moremenu').classList.add('hidden');
-    const cur = (top() && TAB_OF[top()]) || 'play'; if (cur === tab) return;
+    const cur = (top() && TAB_OF[top()]) || 'play'; if (cur === tab && !(tab === 'play' && top())) return;
     closeMain();
-    if (tab === 'forge') ctrl.openForge(); else if (tab === 'shop') ctrl.openShop(); else if (tab === 'rating') $('#b-board').click(); else { sfx.play('click'); }
-    if (tab === 'play') { menus.buildTitle(); updateBack(); }
+    if (tab === 'forge') ctrl.openForge(); else if (tab === 'shop') ctrl.openShop(); else if (tab === 'rating') $('#b-board').click(); else { sfx.play('click'); menus.buildTitle(); updateBack(); }
   };
   document.querySelectorAll('#tabbar .tab').forEach((b) => { b.onclick = () => go(b.dataset.tab); });
-  document.querySelectorAll('#moremenu [data-more]').forEach((b) => { b.onclick = () => { $('#moremenu').classList.add('hidden'); closeMain(); $(b.dataset.more === 'achs' ? '#b-achs' : '#b-settings').click(); }; });
-  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('#moremenu') && !e.target.closest('[data-tab="more"]')) $('#moremenu').classList.add('hidden'); });
 }
 function setupNav() {
   let ubT = 0; new MutationObserver((recs) => { if (ubT || !recs.some((r) => r.target.classList && r.target.classList.contains('screen'))) return; ubT = setTimeout(() => { ubT = 0; updateBack(); }, 0); }).observe($('#app'), { subtree: true, attributes: true, attributeFilter: ['class'] });      // любое окно открылось или закрылось
@@ -159,6 +155,7 @@ function setupNav() {
   ctrl.startLevel = (id, d) => prepareLevel(id, d); ctrl.startRun = startRunFlow; ctrl.ensureTypes = async (types) => { const all = [...new Set([...types, ...types.map((t) => D.ENEMIES[t] && D.ENEMIES[t].split).filter(Boolean)])]; await loadEnemyImgs(enemyFiles(all)); applyEnemySprites(all); }; ctrl.warm = (id) => { const L = D.MAPS.find((l) => l.id === id); if (L) ensureLevel(L); };
   ctrl.note = (text) => { const n = $('#note'); n.textContent = text; n.classList.add('show'); clearTimeout(ctrl._nt); ctrl._nt = setTimeout(() => n.classList.remove('show'), 2200); };
 }
+
 function persist() { TG.save(save); }
 function applySettings() {
   const st = save.set = { ...defaultSettings(), ...(save.set || {}) };
@@ -287,7 +284,7 @@ async function startLevel(levelId, diffIdx, ranked, loadout, boosts = []) {
     allowed: loadout, limits: tut ? { bolt: 1, mine: 1 } : null, gold: tut ? 110 : null, hold: tut });
   ctrl.sim = sim; if (location.search.includes('debug')) window.__bk = ctrl;
   if (gore) gore.dispose();
-  gore = new Gore(); gore.muzzle = A.muzzle; gore.headAngle = A.headAngle; ctrl.gore = gore; gore.level = 1; gore.attach(sim); gore.onSound = (n, v) => sfx.play(n, v);
+  gore = new Gore(); gore.muzzle = A.muzzle; gore.headAngle = A.headAngle; ctrl.gore = gore; gore.level = 1; gore.attach(sim); gore.onSound = (n, v) => { if (GORE_SOUNDS.has(n)) sfx.play(n, v); };
   attachSfx(sim, sfx);
   for (const t of loadout || []) {                          // спрайты взятых зданий готовим заранее, чтобы в бою не было задержек
     const lvs = [[1, null], [2, null], [3, null], [4, 'A'], [5, 'A'], [4, 'B'], [5, 'B']];
@@ -305,7 +302,7 @@ async function startLevel(levelId, diffIdx, ranked, loadout, boosts = []) {
   reviveOpen = false; hide('#revive'); running = true; paused = false; held = false; acc = 0; ending = null; lastHud = ''; kick();
   save.plays++; save.last = { level: levelId, diff: diffIdx }; if (!ranked && !tut) (save.lastDiff ||= {})[levelId] = diffIdx; persist();
   TG.closingConfirm(true); updateBack();
-  sfx.unlock(); sfx.stopMusic(); sfx.play('start');                       // на уровнях музыки нет — только звуки боя; меню снова включит свою тему
+  sfx.unlock(); sfx.stopMusic();                       // на уровнях музыки нет — только звуки боя; меню снова включит свою тему
   if (tut) tutorial.attach(sim, ui); else tutorial.detach();
 }
 // усилители за кристаллы: золото на старте и жизни (на Хардкоре жизнь одна, усилитель жизней там не действует)
@@ -359,7 +356,6 @@ async function playVerdict(v, token) {
   const mul = L('mul'); mul.classList.add('in'); if (!cancelled()) { sfx.play('upgrade'); }
   if (!cancelled()) await sleep(520);
   const tot = L('tot'); tot.classList.add('in');
-  if (!cancelled()) sfx.play('horn');
   await count(tot.querySelector('b'), v.sub, v.total, 800);
   tot.classList.add('done'); modal.classList.remove('tally');
 }

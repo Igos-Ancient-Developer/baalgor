@@ -1,14 +1,14 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028185043';
-import * as D from './data.js?v=20261028185043';
-import * as M from './meta.js?v=20261028185043';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028185043';
-import { url as imgUrl } from './sprites.js?v=20261028185043';
-import { Net } from './net.js?v=20261028185043';
-import { towerIcon, econIcon, itemChips } from './ui.js?v=20261028185043';
-import { fillPlates, gemIc } from './res.js?v=20261028185043';
-import { gemHtml } from './gem3d.js?v=20261028185043';
-import { Wallet } from './wallet.js?v=20261028185043';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028194558';
+import * as D from './data.js?v=20261028194558';
+import * as M from './meta.js?v=20261028194558';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028194558';
+import { url as imgUrl } from './sprites.js?v=20261028194558';
+import { Net } from './net.js?v=20261028194558';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261028194558';
+import { fillPlates, gemIc } from './res.js?v=20261028194558';
+import { gemHtml } from './gem3d.js?v=20261028194558';
+import { Wallet } from './wallet.js?v=20261028194558';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -36,7 +36,8 @@ const ROADS = {
   'i2a>i2b': [[545, 129], [520, 138], [470, 150], [420, 146], [385, 125], [373, 104]],
   'i2b>i3': [[373, 104], [345, 108], [335, 125], [350, 167], [397, 197], [444, 217]],
   'i1>h1': [[729, 227], [763, 230], [800, 218], [830, 190], [850, 162]],
-  'h1>h2': [[850, 162], [905, 150], [965, 135], [1000, 125], [1030, 118], [1060, 113]],
+  'h1>h1b': [[850, 162], [905, 150], [940, 141], [968, 133]],
+  'h1b>h2': [[968, 133], [1000, 125], [1030, 118], [1060, 113]],
   'h2>h3': [[1060, 113], [1105, 100], [1135, 85], [1148, 74]],
 };
 const SC = () => imgUrl('ui/score.webp');
@@ -267,8 +268,8 @@ export class Menus {
       const rows = diffLines(d, i).map((r) => r.k === 'sep' ? `<div class="dsub">${r.t}</div>` : `<div class="mrow ${r.cls}"><img src="${bareGlyphUrl(r.icon, 24)}" alt=""><div class="mt">${r.t}<small>${r.s}</small></div><b>${r.v}</b></div>`).join('');
       const card = el('div', `dcard${unlocked ? '' : ' locked'}${i === 4 ? ' hc' : ''}`);
       card.style.setProperty('--c', d.color);
-      card.innerHTML = `<div class="dport"><div class="arch"><img src="${imgUrl('ui/portrait_' + d.demon + '.webp')}" alt=""></div>
-          <div class="dnrow"><img class="dico" src="${imgUrl('ui/ic/diff_' + i + '.webp')}" alt=""><div class="dname">${d.name}</div></div>
+      card.innerHTML = `<div class="dport"><div class="arch dic"><img src="${imgUrl('ui/ic/diff_' + i + '.webp')}" alt=""></div>
+          <div class="dname">${d.name}</div>
           ${best ? `<div class="dbest"><img src="${SC()}" alt="">${fmt(best)}</div>` : ''}
         </div>
         ${unlocked ? '' : `<div class="dlock"><img src="${iconUrl(glyphIcon('skulllock', { size: 96, bg: PALETTE.lock, frame: 'dark' }))}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}
@@ -415,7 +416,7 @@ export class Menus {
     if (!t) inf.innerHTML = `<span class="lo-hint">Слоты: ${lo.sel.length}/${lo.slots}. ${lo.sel.some((q) => D.ECON[q]) ? 'Выбери здания для уровня' : 'Нужно хотя бы одно здание добычи'}</span>`;
     else {
       const d = D.TOWERS[t] || D.ECON[t], u = D.unlockOf(t), isOpen = open(t);
-      inf.innerHTML = `<div class="lo-i"><b>${d.name}</b><span>${d.short}</span><div class="dch">${itemChips(t)}</div></div>`;
+      inf.innerHTML = itemCard(t);
       if (!isOpen && u && u.premium) { const bt = el('button', 'btn gold', `Купить · ${gemIc(18)} ${u.gems}`); bt.onclick = async () => { const r = await Wallet.spend('unlock', t, u.gems); if (r && r.ok) { c.sfx.play('win'); this.refreshLoadout(); } else { shake(bt); c.note(r && r.error === 'gems' ? 'Не хватает кристаллов' : 'Не получилось'); if (r && r.error === 'gems') setTimeout(() => c.openShop(), 500); } }; inf.appendChild(bt); }
       else if (!isOpen && u) { const bt = el('button', 'btn gold', `Открыть в Кузнице · <img src="${bareGlyphUrl('soul', 18)}" alt="" style="width:18px;height:18px">${u.souls}`); bt.onclick = () => c.openForge(); inf.appendChild(bt); }
     }

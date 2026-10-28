@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261028185043';
-import { TOWERS } from './data.js?v=20261028185043';
+import { SPR, img } from './sprites.js?v=20261028194558';
+import { TOWERS } from './data.js?v=20261028194558';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -574,7 +574,7 @@ function towerIdx(type, lvl, br) {
   if (type === 'mine') return Math.min(lvl, k) - 1;
   if (m.bylevel) return Math.min(lvl, k) - 1;                               // 5 картинок = 5 уровней (мортира, огнемёт, гарпун)
   if (k === 5) return lvl <= 3 ? lvl - 1 : (br === 'A' ? 4 : 3);
-  const tab = k >= 4 ? [0, 1, 2, 3, 3] : k === 3 ? (TOWERS[type] && (TOWERS[type].premium || TOWERS[type].stages3) ? [0, 1, 1, 2, 2] : [0, 1, 2, 2, 2]) : [0, 0, 1, 1, 1];      // у премиума три внешних вида: 1 ур., 2–3 ур., 4–5 ур.
+  const tab = k >= 4 ? [0, 1, 2, 3, 3] : k === 3 ? (TOWERS[type] && (TOWERS[type].premium) ? [0, 1, 2, 2, 2] : (TOWERS[type].stages3) ? [0, 1, 1, 2, 2] : [0, 1, 2, 2, 2]) : [0, 0, 1, 1, 1];      // у премиума три внешних вида: 1 ур., 2–3 ур., 4–5 ур.
   return tab[Math.min(lvl, 5) - 1];
 }
 // Здание не больше клетки по ширине и клетки с небольшим запасом по высоте: соседние здания не закрывают друг друга.
@@ -592,6 +592,8 @@ function spriteK(type, lvl, br) {
   return (SK[key] = Math.min(TS_MAX, cw / ((r - l) * xsOf(type)), (ch * hf) / (b - t)));
 }
 // точка картинки башни (пикселы ячейки 192×240) в координатах карты относительно якоря здания (x - TW_AX, y - TW_AY добавляет вызывающий)
+// рамка корпуса башни в координатах спрайта 80×100 (для вырезки значков)
+export function towerBox(type, lvl, br) { const i = towerIdx(type, lvl, br), [l, t, r, b] = SPR.towers[type].boxes[i], k = spriteK(type, lvl, br), xs = xsOf(type), x0 = 40 - 96 * k * xs, y0 = TW_BASE_Y - 240 * k; return [x0 + l * k * xs, y0 + t * k, x0 + r * k * xs, y0 + b * k]; }
 export function towerPt(type, lvl, br, px, py) { const k = spriteK(type, lvl, br), xs = xsOf(type); return { x: 40 - 96 * k * xs + px * k * xs - TW_AX, y: TW_BASE_Y - 240 * k + py * k - TW_AY }; }
 export function towerDoors(type, lvl, br) { const m = SPR.ok && SPR.towers[type]; return (m && m.doors && m.doors[towerIdx(type, lvl, br)]) || []; }
 export function towerGeo(type, lvl, br) {

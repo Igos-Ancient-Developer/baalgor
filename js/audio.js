@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261028185043';
+import { createTrack, MENU_SPEC } from './music.js?v=20261028194558';
 export class Sfx {
   constructor() {
     this.ctx = null; this.sfxOn = true; this.musOn = true;
@@ -81,6 +81,29 @@ export class Sfx {
     s.connect(f); f.connect(g); g.connect(this.sfxBus); s.start(t, Math.random()); s.stop(t + dur + 0.03); lfo.start(t); lfo.stop(t + dur + 0.03);
   }
 
+  // сочный всплеск: низкий удар, «хлюп» (резонансный шум с проваливающейся частотой и пузырями), брызги капель; r — высота, v — громкость
+  slop(v = 1, t0 = 0, r = 1) {
+    const c = this.ctx, t = c.currentTime + t0, dur = 0.34 + Math.random() * 0.12;
+    this.tone('sine', 150 * r, 38, 0.2, 0.7 * v, t0);
+    const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), f2 = c.createBiquadFilter();
+    s.buffer = this.noiseBuf; s.loop = true; f.type = 'bandpass'; f.Q.value = 9; f.frequency.setValueAtTime(1100 * r, t); f.frequency.exponentialRampToValueAtTime(190 * r, t + dur * 0.8);
+    f2.type = 'lowpass'; f2.frequency.value = 2600;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.75 * v, t + 0.012); g.gain.exponentialRampToValueAtTime(0.18 * v, t + dur * 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(f2); f2.connect(g); g.connect(this.sfxBus); s.start(t, Math.random()); s.stop(t + dur + 0.03);
+    for (let i = 0; i < 4; i++) { const ff = (380 + Math.random() * 520) * r, dl = 0.05 + i * 0.065 + Math.random() * 0.04; this.tone('sine', ff, ff * 2.1, 0.05, 0.1 * v, t0 + dl); }          // пузыри
+    for (let i = 0; i < 5; i++) this.noise('highpass', 3800 + Math.random() * 2500, 2500, 0.018, 0.12 * v, t0 + 0.04 + Math.random() * 0.22, 2);               // капли
+  }
+  // предсмертный вскрик: гортанный хрип с формантой, высота зависит от размера
+  groan(v = 1, r = 1) {
+    const c = this.ctx, t = c.currentTime, d = 0.28 + Math.random() * 0.12, o = c.createOscillator(), o2 = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain();
+    o.type = 'sawtooth'; o2.type = 'square'; const f0 = (150 + Math.random() * 60) * r;
+    o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * 0.45, t + d); o2.frequency.setValueAtTime(f0 * 1.5, t); o2.frequency.exponentialRampToValueAtTime(f0 * 0.6, t + d);
+    f.type = 'bandpass'; f.Q.value = 3.5; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(380, t + d);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16 * v, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(f); o2.connect(f); f.connect(g); g.connect(this.sfxBus); o.start(t); o2.start(t); o.stop(t + d + 0.03); o2.stop(t + d + 0.03);
+    this.noise('bandpass', 1500, 500, d * 0.8, 0.07 * v, 0, 1.2);
+  }
+
   play(name, vol = 1) {
     if (!this.ctx || !this.sfxOn) return;
     const v = vol;
@@ -96,9 +119,9 @@ export class Sfx {
       case 'void': if (!this.gate('void', 0.2)) return; this.tone('sine', 420, 55, 0.45, 0.3 * v); this.noise('bandpass', 1800, 150, 0.4, 0.16 * v, 0, 1.4); this.tone('triangle', 90, 40, 0.5, 0.25 * v, 0.1); break;
       case 'harpoon': if (!this.gate('harpoon', 0.2)) return; this.tone('triangle', 260, 50, 0.22, 0.4 * v); this.noise('highpass', 2000, 800, 0.1, 0.3 * v); this.noise('lowpass', 800, 100, 0.25, 0.4 * v, 0.05); break;
       case 'flesh': { if (!this.gate('flesh', 0.05)) return; const r = 0.85 + Math.random() * 0.3; this.punch(0.45 * v, r); this.wet(0.4 * v, 0.01, 0.12, r); break; }
-      case 'slap': { if (!this.gate('slap', 0.045)) return; const r = 0.85 + Math.random() * 0.3; this.tone('sine', 120 * r, 45, 0.1, 0.4 * v); this.noise('lowpass', 900 * r, 150, 0.07, 0.34 * v); this.wet(0.35 * v, 0.01, 0.1, r); break; }
-      case 'thudwet': { const r = 0.85 + Math.random() * 0.3; this.punch(0.8 * v, r * 0.8); this.wet(0.6 * v, 0.03, 0.22, r); break; }
-      case 'squelch': { if (!this.gate('squelch', 0.07)) return; const r = 0.85 + Math.random() * 0.3; this.wet(0.9 * v, 0, 0.3, r); this.wet(0.6 * v, 0.1, 0.22, r * 1.3); this.punch(0.5 * v, r); break; }
+      case 'slap': { if (!this.gate('slap', 0.06)) return; const r = 0.85 + Math.random() * 0.3; this.tone('sine', 110 * r, 42, 0.1, 0.35 * v); this.slop(0.4 * v, 0.005, r * 1.2); break; }
+      case 'thudwet': { const r = 0.85 + Math.random() * 0.3; this.punch(0.8 * v, r * 0.8); this.slop(0.9 * v, 0.03, r); break; }
+      case 'squelch': { if (!this.gate('squelch', 0.07)) return; const r = 0.85 + Math.random() * 0.3; this.slop(1 * v, 0, r); this.slop(0.6 * v, 0.1, r * 1.25); this.punch(0.4 * v, r); break; }
       case 'rip': { const r = 0.9 + Math.random() * 0.25; this.noise('bandpass', 500 * r, 3200 * r, 0.32, 0.4 * v, 0, 1.2); this.crunch(7, 0.9 * v, 0.02, 1200, 3800); this.wet(0.8 * v, 0.12, 0.3, r); this.tone('sawtooth', 180, 60, 0.3, 0.1 * v); break; }
       case 'chop': { if (!this.gate('chop', 0.06)) return; const r = 0.9 + Math.random() * 0.2; this.noise('highpass', 6500, 3500, 0.07, 0.35 * v); this.tone('triangle', 2600 * r, 1200, 0.1, 0.12 * v); this.punch(0.9 * v, r); this.crunch(3, 0.7 * v, 0.02); this.wet(0.7 * v, 0.05, 0.2, r); break; }
       case 'bone': { if (!this.gate('bone', 0.06)) return; const r = 0.85 + Math.random() * 0.3; this.crunch(5, 1 * v, 0, 1800, 5200); this.tone('triangle', 2400 * r, 520, 0.03, 0.2 * v); this.tone('sine', 150 * r, 55, 0.12, 0.35 * v, 0.03); break; }
@@ -113,9 +136,9 @@ export class Sfx {
       case 'boomsmall': if (!this.gate('boomsmall', 0.05)) return; this.noise('lowpass', 1200, 150, 0.2, 0.3 * v); this.tone('sine', 150, 60, 0.15, 0.3 * v); break;
       case 'meteor': this.noise('lowpass', 500, 40, 1.0, 0.9 * v); this.tone('sine', 90, 25, 0.9, 0.9 * v); this.noise('bandpass', 1500, 300, 0.6, 0.4 * v, 0, 1); break;
       case 'whoosh': this.noise('bandpass', 300, 2400, 0.8, 0.3 * v, 0, 1.2); break;
-      case 'splat': if (!this.gate('splat', 0.035)) return; this.wet(0.5 * v, 0, 0.14); this.tone('sine', 180, 60, 0.08, 0.3 * v); break;
-      case 'gib': if (!this.gate('gib', 0.07)) return; this.punch(0.5 * v, 1.1); this.wet(0.6 * v, 0.02, 0.2, 1.1); break;
-      case 'gibbig': if (!this.gate('gibbig', 0.1)) return; this.punch(0.9 * v, 0.8); this.crunch(4, 0.8 * v, 0.03); this.wet(0.9 * v, 0.04, 0.35, 0.9); break;
+      case 'splat': if (!this.gate('splat', 0.035)) return; this.slop(0.55 * v, 0, 1 + Math.random() * 0.3); break;
+      case 'gib': if (!this.gate('gib', 0.07)) return; this.punch(0.45 * v, 1.1); this.slop(0.7 * v, 0.02, 1.1); break;
+      case 'gibbig': if (!this.gate('gibbig', 0.1)) return; this.punch(0.9 * v, 0.8); this.crunch(4, 0.8 * v, 0.03); this.slop(1 * v, 0.04, 0.8); this.slop(0.6 * v, 0.16, 1.1); break;
       case 'crack': if (!this.gate('crack', 0.06)) return; this.noise('highpass', 2500, 1500, 0.07, 0.35 * v); this.tone('triangle', 1500, 400, 0.06, 0.2 * v); break;
       case 'coin': if (!this.gate('coin', 0.045)) return; this.tone('square', 988, 988, 0.06, 0.09 * v); this.tone('square', 1319, 1319, 0.34, 0.09 * v, 0.06); this.tone('sine', 2637, 2637, 0.25, 0.04 * v, 0.06); break;
       case 'bag': this.chip([1319, 1568, 1976, 2637], 0.05, 'square', 0.09 * v, 1.4); this.tone('sine', 3951, 3951, 0.3, 0.05 * v, 0.2); break;
@@ -145,6 +168,7 @@ export class Sfx {
       case 'error': this.tone('square', 233, 110, 0.16, 0.11); this.tone('square', 175, 90, 0.14, 0.09, 0.08); break;
       case 'back': this.chip([1175, 784], 0.05, 'square', 0.08); break;
       case 'start': this.chip([523, 659, 784, 1046, 1318, 1568], 0.06, 'square', 0.09, 1.3); this.tone('triangle', 130, 130, 0.5, 0.12); break;
+      case 'death': { if (!this.gate('death', 0.07)) return; const r = 0.85 + Math.random() * 0.4; this.groan(0.8 * v, r); this.slop(0.55 * v, 0.03, r); break; }
       case 'pop': if (!this.gate('pop', 0.05)) return; this.tone('square', 480, 1100, 0.05, 0.07 * v); this.tone('square', 1100, 700, 0.06, 0.06 * v, 0.045); break;
       case 'click': this.chip([1568, 2093], 0.04, 'square', 0.07); break;
       case 'select': this.chip([784, 1175, 1568], 0.045, 'square', 0.08); break;
@@ -179,27 +203,13 @@ export class Sfx {
   setTension(v) { this.tension = Math.max(0, Math.min(1, v)); if (this.track) this.track.setTension(this.tension); }
 }
 
-// Привязка звуков к событиям симуляции
+// Привязка звуков к событиям симуляции. Звуков в бою нарочно мало: выстрелы, взрывы снарядов, смерть монстров (и кишки), сбор золота, улучшение.
 export function attachSfx(sim, sfx) {
   sim.on('shot', (d) => sfx.play({ bolt: 'bolt', mortar: 'mortar', tesla: 'tesla', frost: 'frost', toxic: 'toxic', saw: 'saw', flame: 'flame', void: 'void', harpoon: 'harpoon', magnet: 'void', grinder: 'crack', giant: 'mortar' }[d.kind]));
-  sim.on('explosion', (d) => { if (d.kind === 'meteor') sfx.play('meteor'); else if (d.kind === 'pop') sfx.play('crack', 0.6); else if (d.kind === 'shatter') sfx.play('crack'); else if (d.kind === 'vial') sfx.play('splat', 0.8); else sfx.play(d.kind === 'bomblet' ? 'boomsmall' : 'boom', d.big ? 1.2 : 1); });
-  sim.on('hit', (d) => { if (d.how === 'saw' || d.how === 'chop' || d.how === 'slash') sfx.play('sawhit', 0.7); });
-  sim.on('kill', (d) => {
-    sfx.play('pop');                                              // короткий «нинтендовский» чпок на каждое убийство, под кровавые звуки
-    if (d.gold > 0) sfx.play('coin', 0.7);
-  });
-  sim.on('waveclear', () => sfx.play('waveclear'));
-  sim.on('build', () => sfx.play('build')); sim.on('upgrade', () => sfx.play('upgrade')); sim.on('sell', () => sfx.play('sell'));
-  sim.on('chest', (d) => { if (d.kind === 'hit') sfx.play('select', 0.9); else { sfx.play('win', 0.6); sfx.play('bag'); setTimeout(() => sfx.play('sparkle'), 150); setTimeout(() => sfx.play('coin'), 120); } });
+  sim.on('explosion', (d) => { if (d.kind === 'meteor') sfx.play('meteor'); else if (d.kind === 'pop' || d.kind === 'shatter') sfx.play('crack', 0.6); else if (d.kind === 'vial') sfx.play('splat', 0.8); else sfx.play(d.kind === 'bomblet' ? 'boomsmall' : 'boom', d.big ? 1.2 : 1); });
+  sim.on('kill', (d) => { sfx.play('death', d.big ? 1 : 0.7); });
+  sim.on('upgrade', () => sfx.play('upgrade'));
   sim.on('bag', (d) => sfx.play(d.tapped ? 'bag' : 'coin', 0.8));
-  sim.on('wave', () => sfx.play('horn'));
-  sim.on('leak', () => sfx.play('leak'));
-  sim.on('freeze', () => sfx.play('freeze', 0.5));
-  sim.on('stomp', () => sfx.play('stomp'));
-  sim.on('summon', () => sfx.play('summon'));
-  sim.on('heal', () => sfx.play('heal'));
-  sim.on('frenzy', () => sfx.play('frenzy'));
-  sim.on('econ', () => sfx.play('coin'));
-  sim.on('spell', (d) => { if (d.id === 'stasis') sfx.play('stasis'); else if (d.id === 'rush') sfx.play('rush'); else sfx.play('whoosh'); });
-  sim.on('over', (d) => sfx.play(d.won ? 'win' : 'lose'));
 }
+// из звуков, которые шлёт «мясо» (gore.js), оставляем только сопровождающие гибель: удары и всплески при ударах по живым и стук кусков не нужны
+export const GORE_SOUNDS = new Set(['burst', 'squelch', 'chop', 'rip', 'spray', 'bone', 'thudwet', 'gib', 'gibbig', 'splat', 'voidpop', 'sizzle', 'glass', 'bubble', 'crackle', 'slap']);

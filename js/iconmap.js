@@ -1,6 +1,6 @@
 // Растровые иконки из листа (img/icons/*.webp, нарезка — tools/build_icons.py) вместо нарисованных кодом.
 // Имя глифа игры → файл иконки. Если файла нет, остаётся запасной рисунок из icons.js / env.js.
-import { img } from './sprites.js?v=20261028185043';
+import { img } from './sprites.js?v=20261028194558';
 
 // имя глифа в игре → имя иконки на листе
 export const GLYPH_IMG = {
@@ -24,5 +24,5 @@ export const SHOP_IMG = { daily: 'gift', starter: 'premium_chest', premium: 'pre
 export const iconFile = (name) => `icons/${name}.webp`;
 export const tile = (name) => img(iconFile(name));
 // «внутренность» плитки без рамки (для мелких значков рядом с цифрами): рамка занимает ~8% по краям
-export const CUT = new Set(['bag_gold']);          // иконки без плитки и рамки (вырезаны по контуру): берутся целиком
+export const CUT = new Set(['bag_gold', 'soul']);          // иконки без плитки и рамки (вырезаны по контуру): берутся целиком
 export function inner(name) { const im = tile(name); if (!im) return null; if (CUT.has(name)) return { im, sx: 0, sy: 0, sw: im.naturalWidth, sh: im.naturalHeight }; return { im, sx: 9, sy: 9, sw: 78, sh: 78 }; }

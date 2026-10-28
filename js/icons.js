@@ -1,7 +1,7 @@
 // Пакет иконок в «рисованном» стиле Warcraft 3: квадрат с бронзовой фаской, насыщенный фон, жирный контур, глянец.
 // Всё рисуется кодом; иконки кэшируются в canvas и dataURL.
-import { OUT, S as ART_S, mk, cached, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow } from './art.js?v=20261028185043';
-import { GLYPH_IMG, tile, inner } from './iconmap.js?v=20261028185043';
+import { OUT, S as ART_S, mk, cached, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow } from './art.js?v=20261028194558';
+import { GLYPH_IMG, tile, inner } from './iconmap.js?v=20261028194558';
 
 const T2 = Math.PI * 2;
 export const PALETTE = {
@@ -12,7 +12,7 @@ export const PALETTE = {
 const FRAMES = { gold: ['#ffe9a8', '#c99a3a', '#5a3c12'], silver: ['#f4f8ff', '#a0a8b8', '#3a4050'], blood: ['#ffb0a8', '#c0382c', '#4a0e0a'], ice: ['#e8f8ff', '#6ab0e0', '#1a3a5a'], nature: ['#d8ffc0', '#6ab04a', '#1a3a12'], arcane: ['#f0d8ff', '#9a60d8', '#2a1250'], dark: ['#9a9aa4', '#4a4a54', '#14141a'] };
 
 // ───── рамка + фон ─────
-export function makeIcon(size, { bg = PALETTE.tower, frame = 'gold', draw, sprite, spriteScale = 1, spriteDy = 0, badge = null, badgeCol = '#ffd24a' } = {}) {
+export function makeIcon(size, { bg = PALETTE.tower, frame = 'gold', draw, sprite, crop = null, spriteScale = 1, spriteDy = 0, badge = null, badgeCol = '#ffd24a' } = {}) {
   const k = size / 64;
   return mk(size, size, (g) => {
     g.scale(k, k);
@@ -24,7 +24,10 @@ export function makeIcon(size, { bg = PALETTE.tower, frame = 'gold', draw, sprit
     g.fillStyle = rad(g, 32, 26, 2, 46, [[0, bg[0]], [0.6, shade(bg[0], -0.35)], [1, bg[1]]]); g.fillRect(0, 0, W, W);
     // лучи
     g.globalAlpha = 0.12; g.fillStyle = '#fff'; for (let i = 0; i < 7; i++) { const a = (i / 7) * T2; g.beginPath(); g.moveTo(32, 30); g.arc(32, 30, 48, a, a + 0.18); g.closePath(); g.fill(); } g.globalAlpha = 1;
-    if (sprite) {
+    if (sprite && crop) {                                           // вырезка из спрайта (логические единицы): голова башни крупным планом
+      const m = sprite.width / sprite.lw; g.imageSmoothingQuality = 'high';
+      g.drawImage(sprite, crop.x * m, crop.y * m, crop.w * m, crop.h * m, 5.4, 5.4, 53.2, 53.2);
+    } else if (sprite) {
       const sw = sprite.lw, sh = sprite.lh, sc = Math.min(50 / sw, 56 / sh) * spriteScale;
       g.drawImage(sprite, 32 - (sw * sc) / 2, 33 - (sh * sc) / 2 + spriteDy, sw * sc, sh * sc);
     }
@@ -133,8 +136,8 @@ export function glyphIcon(name, { size = 64, bg, frame = 'gold' } = {}) {
   }
   return cached(`gi:${name}:${size}:${frame}:${bg ? bg[0] : ''}`, () => makeIcon(size, { bg: bg || PALETTE[CAT[name]] || PALETTE.tower, frame, draw: G[name] }));
 }
-export function spriteIcon(key, sprite, { size = 64, bg = PALETTE.tower, frame = 'gold', spriteScale = 1, spriteDy = 0, badge = null, badgeCol } = {}) {
-  return cached(`si:${key}:${size}:${frame}:${badge || ''}`, () => makeIcon(size, { bg, frame, sprite, spriteScale, spriteDy, badge, badgeCol }));
+export function spriteIcon(key, sprite, { size = 64, bg = PALETTE.tower, frame = 'gold', crop = null, spriteScale = 1, spriteDy = 0, badge = null, badgeCol } = {}) {
+  return cached(`si:${key}:${size}:${frame}:${badge || ''}`, () => makeIcon(size, { bg, frame, sprite, crop, spriteScale, spriteDy, badge, badgeCol }));
 }
 export function iconUrl(canvas) {
   if (!canvas._url) { const c = document.createElement('canvas'); c.width = canvas.width; c.height = canvas.height; c.getContext('2d').drawImage(canvas, 0, 0); canvas._url = c.toDataURL(); }
@@ -151,7 +154,7 @@ export function bareGlyph(name, size = 20) {
 export function bareGlyphUrl(name, size = 20) { return iconUrl(bareGlyph(name, size * 2)); }
 
 // ───── соответствия ─────
-export const STAT_GLYPH = { dmg: 'dmg', rate: 'rate', range: 'range', splash: 'blast', chains: 'chain', pierce: 'pierce', critMult: 'skull', execute: 'skull', slow: 'frost', freeze: 'frost', brittle: 'frost', shatter: 'frost', poison: 'poison', stacks: 'poison', plague: 'poison', shred: 'poison', orbit: 'dmg', bounce: 'dmg', stun: 'rate', cleave: 'dmg', rateBuff: 'banner', dmgBuff: 'banner', mark: 'skull', cluster: 'blast', fire: 'fire', burn: 'fire', spread: 'fire', trail: 'fire', pull: 'vortex', collapseMult: 'vortex', anchor: 'chain', heavyMult: 'crown', armorPierce: 'pierce', income: 'coins', bonus: 'coins', cap: 'coins' };
+export const STAT_GLYPH = { coin: 'coins', buff: 'arrowup', dmg: 'dmg', rate: 'rate', range: 'range', splash: 'blast', chains: 'chain', pierce: 'pierce', critMult: 'skull', execute: 'skull', slow: 'frost', freeze: 'frost', brittle: 'frost', shatter: 'frost', poison: 'poison', stacks: 'poison', plague: 'poison', shred: 'poison', orbit: 'dmg', bounce: 'dmg', stun: 'rate', cleave: 'dmg', rateBuff: 'banner', dmgBuff: 'banner', mark: 'skull', cluster: 'blast', fire: 'fire', burn: 'fire', spread: 'fire', trail: 'fire', pull: 'vortex', collapseMult: 'vortex', anchor: 'chain', heavyMult: 'crown', armorPierce: 'pierce', income: 'coins', bonus: 'coins', cap: 'coins' };
 export const SPELL_GLYPH = { meteor: 'meteor', stasis: 'stasis', rush: 'rush' };
 export const PERK_GLYPH = { treasury: 'coins', fortress: 'heart', taxes: 'chart', temper: 'dmg', greed: 'bag', luck: 'gold', merchant: 'scales', aim: 'skull', wisdom: 'book' };
 export const ACH_GLYPH = {

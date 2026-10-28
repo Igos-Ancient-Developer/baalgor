@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261028185043';
+import * as D from './data.js?v=20261028194558';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -178,7 +178,7 @@ export class Sim {
   // варианты следующего улучшения (для башен — выбор из 2–3, для зданий — один)
   rollOffer() { const drop = Math.floor(this.orng() * 3) + 1; return [1, 2, 3].filter((v) => v !== drop); }
   upgradeOptions(b) {
-    if (b.kind === 'tower') return D.upgradeOptions(b.type, b.level, b.branch, b.picks).filter((o) => o.kind !== 'pick' || !b.offers || b.offers[b.level - 1].includes(o.choice));
+    if (b.kind === 'tower') return D.upgradeOptions(b.type, b.level, b.branch, b.picks, b.prem ? 3 : 5).filter((o) => o.kind !== 'pick' || !b.offers || b.offers[b.level - 1].includes(o.choice));
     const c = D.econUpgradeCost(b.type, b.level); if (c == null) return [];
     const nx = D.econStats(b.type, b.level + 1), cur = b.st, delta = [];
     for (const k of Object.keys(nx)) if (nx[k] !== cur[k]) delta.push({ k, from: cur[k] ?? 0, to: nx[k] });
@@ -231,14 +231,16 @@ export class Sim {
     this.emit('econ', { kind: 'horde', i });
     return true;
   }
-  mineIncome() { let s = 0; for (const b of this.buildings) if (b.type === 'mine') s += b.st.income; return s; }
-  bankInterest() {
-    let s = 0;
-    for (const b of this.buildings) if (b.type === 'bank') s += Math.min(b.st.cap, Math.floor(this.gold * b.st.rate));
-    return s;
+  // прибавка соседним зданиям добычи: каждый банк рядом даёт +5 / 10 / 15% (по уровню банка) к их монетам и к награде алтаря
+  econBuff(b) {
+    let m = 0;
+    for (const o of this.buildings) if (o !== b && o.type === 'bank' && Math.hypot(o.x - b.x, o.y - b.y) <= o.st.range * CELL) m += o.st.buff;
+    return m;
   }
+  mineIncome() { let s = 0; for (const b of this.buildings) if (b.type === 'mine') s += b.st.income * (1 + this.econBuff(b)); return s; }
+  bankIncome() { let s = 0; for (const b of this.buildings) if (b.type === 'bank') s += b.st.coin * (1 + this.econBuff(b)); return s; }
   // Доход, как в Plants vs Zombies: золото «просто так» не капает. Каждое здание добычи само выбрасывает монеты — их нужно тапнуть.
-  incomePerTick() { return Math.round((this.mineIncome() + this.bankInterest()) * D.TICK / D.COIN_PERIOD); }   // золото за 10 с при полном сборе
+  incomePerTick() { return Math.round((this.mineIncome() * (1 + this.mods.mine) + this.bankIncome()) * D.TICK / D.COIN_PERIOD); }   // золото за 10 с при полном сборе
   spawnCoin(kind, amt, x, y, b) {
     amt = Math.round(amt); if (amt <= 0) return;
     const bag = { kind, x, y, amt, t: 0, life: D.COIN_LIFE, b };
@@ -251,8 +253,8 @@ export class Sim {
       b.coinT = (b.coinT ?? D.COIN_FIRST) - dt;
       if (b.coinT > 0) continue;
       b.coinT += D.COIN_PERIOD;
-      if (b.type === 'mine') this.spawnCoin('mine', b.st.income * (1 + this.mods.mine), b.x, b.y - 10, b);
-      else this.spawnCoin('bank', Math.min(b.st.cap, Math.floor(this.gold * b.st.rate)) * (D.COIN_PERIOD / D.TICK), b.x, b.y - 8, b);
+      if (b.type === 'mine') this.spawnCoin('mine', b.st.income * (1 + this.mods.mine + this.econBuff(b)), b.x, b.y - 10, b);
+      else this.spawnCoin('bank', b.st.coin * (1 + this.econBuff(b)), b.x, b.y - 8, b);
     }
   }
   collectBag(bag, tapped) {
@@ -454,7 +456,7 @@ export class Sim {
     let g = 0;                                          // золото за убийство даёт только кровавый алтарь рядом
     for (const b of this.buildings) {
       if (b.type !== 'altar') continue;
-      if (Math.hypot(b.x - e.x, b.y - e.y) <= b.st.range * CELL) { g += b.st.bonus; b.altarFlash = 0.4; }
+      if (Math.hypot(b.x - e.x, b.y - e.y) <= b.st.range * CELL) { g += b.st.bonus * (1 + this.econBuff(b)); b.altarFlash = 0.4; }
     }
     if (g > 0) {
       if (this.rushT > 0) g *= 2;

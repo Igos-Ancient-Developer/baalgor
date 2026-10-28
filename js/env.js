@@ -1,9 +1,9 @@
 // Окружение: фон карт, пятна крови, иконки интерфейса. На картах стоят только деревья и валуны; портал и ворота — на концах дороги.
-import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261028185043';
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261028185043';
-import { UI_IMG, inner } from './iconmap.js?v=20261028185043';
-import { BLOOD } from './enemies.js?v=20261028185043';
-import { SPR, img } from './sprites.js?v=20261028185043';
+import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261028194558';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261028194558';
+import { UI_IMG, inner } from './iconmap.js?v=20261028194558';
+import { BLOOD } from './enemies.js?v=20261028194558';
+import { SPR, img } from './sprites.js?v=20261028194558';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -113,7 +113,7 @@ function natDecor(g, L, kind, x, y, key) {
 
 // ───── портал врагов и ворота крепости ─────
 // портал: зев в центре клетки, откуда выходят враги; ворота: проём у нижнего края дороги, где враги исчезают
-export const PORTAL = { w: 96 }, GATE = { w: 92, floor: 0.92 };
+export const PORTAL = { w: 96 }, GATE = { w: 62, floor: 0.9 };
 function drawPortal(g, L, x, y) {
   const pm = L.m.portal && L.m.portal.base; if (!L.portal || !pm) return;
   const w = PORTAL.w, h = w * pm.h / pm.w, top = y - 4 - h * pm.my, left = x - w * pm.mx;

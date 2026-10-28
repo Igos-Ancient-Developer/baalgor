@@ -1,13 +1,13 @@
 // Экраны меню: Кузница душ и Достижения (иконки в стиле WC3).
-import * as D from './data.js?v=20261028185043';
-import { uiIcon } from './env.js?v=20261028185043';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261028185043';
-import { towerIcon, econIcon } from './ui.js?v=20261028185043';
-import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261028185043';
-import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261028185043';
-import { ACH_IMG } from './iconmap.js?v=20261028185043';
-import { url as imgUrl } from './sprites.js?v=20261028185043';
-import { Wallet } from './wallet.js?v=20261028185043';
+import * as D from './data.js?v=20261028194558';
+import { uiIcon } from './env.js?v=20261028194558';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261028194558';
+import { towerIcon, econIcon } from './ui.js?v=20261028194558';
+import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261028194558';
+import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261028194558';
+import { ACH_IMG } from './iconmap.js?v=20261028194558';
+import { url as imgUrl } from './sprites.js?v=20261028194558';
+import { Wallet } from './wallet.js?v=20261028194558';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -22,7 +22,7 @@ export function renderForge(save, sfx, onChange, openShop) {
     const lv = save.perks[p.id] || 0, max = lv >= p.max, cost = max ? 0 : perkCost(p, lv);
     const row = el('div', 'frow' + (max ? ' max' : ''));
     const pips = Array.from({ length: p.max }, (_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('');
-    row.innerHTML = `<img class="fi" src="${imgUrl('ui/ic/perk_' + p.id + '.webp')}" alt=""><div class="ft"><div class="fn">${p.name}<span class="pips">${pips}</span></div><div class="fd">${p.per}</div></div>`;
+    row.innerHTML = `<img class="fi" src="${imgUrl('ui/ic/perk_' + p.id + '.webp')}" alt=""><div class="ft"><div class="fn">${p.name}<span class="pips">${pips}</span></div><div class="fd">${p.per}</div><div class="fnow${lv ? '' : ' zero'}">Сейчас: <b>${lv ? p.now(lv) : '0'}</b></div></div>`;
     const b = el('button', 'fbuy' + (!max && save.souls < cost ? ' poor' : ''), max ? 'МАКС' : `${SOUL(18)}${cost}`);
     if (!max) b.onclick = () => { const r = buyPerk(save, p.id); if (r === true) { sfx.play('upgrade'); onChange(); } else { sfx.play('error'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); } };
     row.appendChild(b); box.appendChild(row);
@@ -59,7 +59,7 @@ export function renderForge(save, sfx, onChange, openShop) {
     ub.appendChild(row);
   }
   // кристаллы: платёж через Telegram Stars; здесь они нужны для того, что игрок получит сразу
-  const top = el('div', 'frow'); top.innerHTML = `<img class="fi" src="${bareGlyphUrl('gem', 40)}" alt=""><div class="ft"><div class="fn">Кристаллы</div><div class="fd">Любая башня, слот или усиление — сразу, без долгого гринда душ</div></div>`;
+  const top = el('div', 'frow'); top.innerHTML = `<img class="fi" src="${bareGlyphUrl('gem', 40)}" alt=""><div class="ft"><div class="fn">Кристаллы</div></div>`;
   const tb = el('button', 'fbuy gem', 'Пополнить'); tb.onclick = () => { sfx.play('click'); openShop && openShop(); }; top.appendChild(tb); ub.prepend(top);
   // премиум-башни: только за кристаллы
   const pb = $('#premium'); pb.innerHTML = '';

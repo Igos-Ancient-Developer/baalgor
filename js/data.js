@@ -1,18 +1,18 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261028185043';
+import { COLS, ROWS } from './layouts.js?v=20261028194558';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
-export const PAD = { l: 26, r: 26, t: 76, b: 190 };           // фон карты шире поля: портал и ворота не прячутся за краем, а нижние ряды можно поднять над панелью здания
+export const PAD = { l: 26, r: 26, t: 76, b: 118 };           // фон карты шире поля: портал и ворота не прячутся за краем, а нижние ряды можно поднять над панелью здания
 export const VIEW_COLS = 6.8;                                  // сколько клеток в ширину видно на экране: карта больше экрана и двигается пальцем
 export const TICK = 10;          // «такт» дохода для подсчёта «золота за 10 секунд» в интерфейсе
 export const COIN_PERIOD = 12;   // каждое здание добычи выбрасывает монету раз в столько секунд
 export const COIN_FIRST = 6;     // первая монета — через столько секунд после постройки
 export const COIN_LIFE = 12;     // секунд, пока монету можно подобрать
 export const START_LIVES = 5;      // докупаются: перк «Крепость» в Кузнице и усилитель за кристаллы
-export const START_GOLD = 175;
+export const START_GOLD = 120;       // хватает на одно здание добычи (рудник 60) и одно боевое (арбалет 50)
 export const BASE_INCOME = 0;    // золота «просто так» нет: только монеты зданий добычи и награды за убийства
 export const SELL_RATE = 0.7;
 // Сундук-сюрприз: может появиться на карте один раз за уровень; три касания — взрывается, высыпает монеты и даёт фиксированную сумму
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261028185043';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261028194558';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -290,8 +290,8 @@ export const ECON = {
   },
   bank: {
     name: 'Банк', cost: 140, grow: 1, max: 2,
-    short: 'Раз в такт выбрасывает монету — процент с золота в кармане.',
-    lv: [{ rate: 0.02, cap: 8 }, { cost: 120, rate: 0.03, cap: 16 }, { cost: 200, rate: 0.04, cap: 28 }, { cost: 320, rate: 0.05, cap: 45 }, { cost: 480, rate: 0.06, cap: 70 }],
+    short: 'Над банком появляется крупная монета: тапни, чтобы забрать. Здания добычи рядом приносят больше.',
+    lv: [{ coin: 16, buff: 0.05, range: 2.3 }, { cost: 120, coin: 34, buff: 0.10, range: 2.3 }, { cost: 200, coin: 56, buff: 0.15, range: 2.3 }],
   },
   altar: {
     name: 'Алтарь крови', cost: 90, grow: 1, max: 4,
@@ -517,8 +517,9 @@ export function towerStats(type, level, branch, picks = [0, 0]) {
   return s;
 }
 // Варианты следующего улучшения для UI
-export function upgradeOptions(type, level, branch, picks) {
-  if (level >= 5) return [];
+export const maxLevelOf = (type) => (TOWERS[type] && TOWERS[type].premium ? 3 : 5);      // у премиум-башен три уровня (три картинки), у остальных пять
+export function upgradeOptions(type, level, branch, picks, maxLv = 5) {
+  if (level >= maxLv) return [];
   const cost = towerUpgradeCost(type, level, branch), d = TOWERS[type], cur = towerStats(type, level, branch, picks);
   const diff = (n) => { const out = []; for (const k of Object.keys(n)) if (typeof n[k] === 'number' && Math.abs((cur[k] ?? 0) - n[k]) > 1e-6) out.push({ k, from: cur[k] ?? 0, to: n[k] }); return out; };
   if (level <= 2) {
@@ -541,7 +542,7 @@ export function econStats(type, level) {
   delete s.cost; return s;
 }
 export function econUpgradeCost(type, level) {
-  const d = ECON[type]; return level >= 5 ? null : d.lv[level].cost;
+  const d = ECON[type]; return level >= d.lv.length ? null : d.lv[level].cost;
 }
 
 // Закрытые вещи: открываются в Кузнице за души или за донат-кристаллы. Свободны с начала только арбалет и рудник.

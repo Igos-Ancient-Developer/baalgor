@@ -1,18 +1,18 @@
 // Мета-прогресс: души, дары кузницы, открытие башен, достижения. Не зависит от DOM (можно тестировать в Node).
-import * as D from './data.js?v=20261028185043';
+import * as D from './data.js?v=20261028194558';
 
 export const SOUL_K = 0.5;                  // общий множитель душ: души дают прокачку, поэтому капают вдвое скупее прежнего
 export const DIFF_SOULS = [0.7, 1, 1.8];   // множитель душ по сложности (индекс как в DIFFS)
 
 // ───── Дары кузницы ─────
 export const PERKS = [
-  { id: 'treasury', name: 'Казна', icon: 'coin', max: 5, c0: 25, per: '+15 золота на старте', mod: (l) => ({ startGold: 15 * l }) },
-  { id: 'fortress', name: 'Крепость', icon: 'heart', max: 5, c0: 30, per: '+2 жизни', mod: (l) => ({ lives: 2 * l }) },
-  { id: 'taxes', name: 'Налоги', icon: 'income', max: 5, c0: 40, per: '+8% золота с каждой монеты рудника', mod: (l) => ({ mine: 0.08 * l }) },
-  { id: 'temper', name: 'Закалка', icon: 'sword', max: 5, c0: 50, per: '+2.5% урона башен', mod: (l) => ({ dmg: 0.025 * l }) },
-  { id: 'luck', name: 'Золотая рука', icon: 'income', max: 3, c0: 35, per: '+10% золота с каждой монеты', mod: (l) => ({ bag: 0.1 * l }) },
-  { id: 'aim', name: 'Меткость', icon: 'crit', max: 10, c0: 30, g: 1.28, per: '+5% шанса крита (до 50%). Крит бьёт сильнее с 3-го уровня башни', mod: (l) => ({ crit: 0.05 * l }) },
-  { id: 'merchant', name: 'Торговец', icon: 'sell', max: 3, c0: 30, per: '+4% при продаже', mod: (l) => ({ sell: 0.04 * l }) },
+  { id: 'treasury', now: (l) => `+${15 * l} золота`, name: 'Казна', icon: 'coin', max: 5, c0: 25, per: '+15 золота на старте', mod: (l) => ({ startGold: 15 * l }) },
+  { id: 'fortress', now: (l) => `+${2 * l} жизни`, name: 'Крепость', icon: 'heart', max: 5, c0: 30, per: '+2 жизни', mod: (l) => ({ lives: 2 * l }) },
+  { id: 'taxes', now: (l) => `+${8 * l}% с рудника`, name: 'Налоги', icon: 'income', max: 5, c0: 40, per: '+8% золота с каждой монеты рудника', mod: (l) => ({ mine: 0.08 * l }) },
+  { id: 'temper', now: (l) => `+${(2.5 * l).toFixed(1).replace('.0', '')}% урона`, name: 'Закалка', icon: 'sword', max: 5, c0: 50, per: '+2.5% урона башен', mod: (l) => ({ dmg: 0.025 * l }) },
+  { id: 'luck', now: (l) => `+${10 * l}% с монеты`, name: 'Золотая рука', icon: 'income', max: 3, c0: 35, per: '+10% золота с каждой монеты', mod: (l) => ({ bag: 0.1 * l }) },
+  { id: 'aim', now: (l) => `+${5 * l}% крита`, name: 'Меткость', icon: 'crit', max: 10, c0: 30, g: 1.28, per: '+5% шанса крита (до 50%). Крит бьёт сильнее с 3-го уровня башни', mod: (l) => ({ crit: 0.05 * l }) },
+  { id: 'merchant', now: (l) => `+${4 * l}% при продаже`, name: 'Торговец', icon: 'sell', max: 3, c0: 30, per: '+4% при продаже', mod: (l) => ({ sell: 0.04 * l }) },
 ];
 export const perkCost = (p, level) => Math.round(p.g ? p.c0 * Math.pow(p.g, level) : p.c0 * (1 + 0.7 * level));
 export function perkMods(levels) {
