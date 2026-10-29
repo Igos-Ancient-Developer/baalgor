@@ -1,9 +1,9 @@
 // Расчленёнка, кровь и частицы. Подписывается на события симуляции и рисует в постоянный «слой крови».
-import { tr } from './i18n.js?v=20261029162201';
-import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261029162201';
-import { S as ART_S } from './art.js?v=20261029162201';
-import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261029162201';
-import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261029162201';
+import { tr } from './i18n.js?v=20261029163338';
+import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261029163338';
+import { S as ART_S } from './art.js?v=20261029163338';
+import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261029163338';
+import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261029163338';
 
 const GRAV = 560;
 const LAYERS = 3, SPAN = 6, HOLD = 6, FADE = 5;   // секунд игрового времени
@@ -143,6 +143,7 @@ export class Gore {
     if (d.kind === 'mortar') { this.dust(x, y + 12, 4, 14); }
   }
   onHit({ e, dmg, type, how, x, y, dx, dy, crit }) {
+    if (crit) this.floatText(x, y - 26, String(Math.round(dmg)), '#ffd24a', 1, 'crit');      // крит всегда показывается числом урона, при любом попадании, а не только при убийстве
     if (this.parts.length > MAX_PARTS - 40) return;
     const frac = dmg / e.maxHp;
     const dir = { x: dx, y: dy };
@@ -195,7 +196,6 @@ export class Gore {
     if (crit && how !== 'blast' && how !== 'crit' && how !== 'execute' && mode === 'topple') mode = 'headshot';
     if (boss && (mode === 'topple' || mode === 'headshot')) mode = 'explode_small';
     e._gibbed = ['explode', 'explode_small', 'dismember', 'headshot', 'shatter', 'implode'].includes(mode);      // тело разлетелось: анимацию «упал» не показываем
-    if (crit) this.floatText(x, y - 26, 'КРИТ', '#ffd24a', 1, 'crit');
     const poolKind = bk;
     const addPool = (scale = 1, T = 1.6) => this.pools.push({ x, y, kind: poolKind, t: 0, T, scale: scale * big, n: 0 });
     switch (mode) {

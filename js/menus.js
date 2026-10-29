@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029162201';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029162201';
-import * as D from './data.js?v=20261029162201';
-import * as M from './meta.js?v=20261029162201';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029162201';
-import { url as imgUrl } from './sprites.js?v=20261029162201';
-import { Net } from './net.js?v=20261029162201';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029162201';
-import { fillPlates, gemIc } from './res.js?v=20261029162201';
-import { gemHtml } from './gem3d.js?v=20261029162201';
-import { Wallet } from './wallet.js?v=20261029162201';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029163338';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029163338';
+import * as D from './data.js?v=20261029163338';
+import * as M from './meta.js?v=20261029163338';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029163338';
+import { url as imgUrl } from './sprites.js?v=20261029163338';
+import { Net } from './net.js?v=20261029163338';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029163338';
+import { fillPlates, gemIc } from './res.js?v=20261029163338';
+import { gemHtml } from './gem3d.js?v=20261029163338';
+import { Wallet } from './wallet.js?v=20261029163338';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -41,7 +41,7 @@ const ROADS = {
   'h1b>h2': [[968, 133], [1000, 125], [1030, 118], [1060, 113]],
   'h2>h3': [[1060, 113], [1105, 100], [1135, 85], [1148, 74]],
 };
-const SC = () => imgUrl('ui/score.webp');
+const SC = () => imgUrl('ui/score_cut.webp');
 const lvName = (lv) => (D.CAMPAIGN[lv - 1] || {}).name || '';
 export const RUN = { level: 'run', diff: 4 };      // рейтинговый забег хранится в таблице как уровень «run» на сложности «Хардкор»
 // подписи секторов на карте мира (координаты в пикселях картинки)
@@ -104,7 +104,7 @@ export class Menus {
   buildTitle() {
     const s = this.save, c = this.c;
     $('#title-logo').src = imgUrl('ui/logo.webp');
-    $('#b-ranked .tk').src = imgUrl('ui/icon_skull.webp');
+    $('#b-ranked .tk').src = imgUrl('ui/icon_skull_cut.webp');
     const me = Net.me() || c.TG.user(), pf = $('#pf'); pf.innerHTML = '';
     pf.appendChild(avatar(me && (me.photo || me.photo_url), me ? (me.name || me.first_name || me.username) : 'Игрок', me ? me.id : 0));
     $('#gem-ic').innerHTML = gemHtml(30, 0, true); $('#gem-n').textContent = (s.gems || 0).toLocaleString('ru-RU');
@@ -361,7 +361,7 @@ export class Menus {
         <div class="two"><div><img src="${bareGlyphUrl('hourglass', 26)}" alt=""><span>время забега<b>${clock(best.time)}</b></span></div><div><img src="${SC()}" alt=""><span>очки<b>${fmt(best.score)}</b></span></div></div>
         ${slotsHtml ? `<div class="slots">${slotsHtml}</div>` : ''}</div>
         ${best.fast ? `<div class="bf"><img src="${bareGlyphUrl('hourglass', 20)}" alt="">Весь путь пройден за <b>${clock(best.fast)}</b></div>` : ''}<div class="br" id="rk-myrank"></div></div>` : '';
-    body.innerHTML = `<div class="slab rk-slab" style="--c:#b08ad8"><div class="arch"><img src="${imgUrl('ui/icon_skull.webp')}" alt=""></div>
+    body.innerHTML = `<div class="slab rk-slab" style="--c:#b08ad8"><div class="arch"><img src="${imgUrl('ui/icon_skull_cut.webp')}" alt=""></div>
       <h3 class="carve">Один забег — все рубежи</h3><p class="carvep">Весь путь от первого уровня до последнего без остановки. В таблицу попадает самый далёкий уровень, время и очки.</p>
       ${bestHtml}
       <div class="rk-rules">

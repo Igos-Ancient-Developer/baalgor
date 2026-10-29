@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261029162201';
+import { createTrack, MENU_SPEC } from './music.js?v=20261029163338';
 // группы записей (сколько файлов) и кто какой группой умирает: [группа, скорость воспроизведения]
 const MON_FILES = { slime: 6, golem: 7, brute: 7, squeal: 4, bat: 5, ghost: 5, man: 3, roar: 8, wolf: 4, dry: 6, bone: 5 };
 const MON_OF = {
@@ -150,6 +150,27 @@ export class Sfx {
     }
   }
 
+  // Струя огня: один непрерывный голос (шипящий шум с «рёвом» и редкими хлопками), он держится, пока башни стреляют, и затихает через ~0,3 с после последнего выстрела.
+  flameJet(v = 1) {
+    const c = this.ctx, t = c.currentTime; this._jetUntil = t + 0.34; this._jetV = Math.max(this._jetV || 0, v);
+    if (this._jet) { const j = this._jet; j.g.gain.cancelScheduledValues(t); j.g.gain.setTargetAtTime(0.5 * v, t, 0.04); return; }
+    const mk = (type, f, q) => { const b = c.createBiquadFilter(); b.type = type; b.frequency.value = f; if (q) b.Q.value = q; return b; };
+    const src = c.createBufferSource(); src.buffer = this.noiseBuf; src.loop = true; src.loopStart = Math.random() * 0.5;
+    const hiss = mk('bandpass', 1500, 0.6), air = mk('highpass', 700), roar = mk('lowpass', 420), g = c.createGain(), gr = c.createGain(), flut = c.createGain(), lfo = c.createOscillator(), lfoG = c.createGain();
+    g.gain.value = 0.0001; gr.gain.value = 0.9; flut.gain.value = 1;
+    src.connect(hiss); hiss.connect(air); air.connect(g); src.connect(roar); roar.connect(gr); gr.connect(g); g.connect(this.sfxBus);
+    lfo.type = 'sine'; lfo.frequency.value = 9; lfoG.gain.value = 260; lfo.connect(lfoG); lfoG.connect(hiss.frequency);      // шипение «дышит»: частота полосы качается
+    src.start(t); lfo.start(t);
+    g.gain.setTargetAtTime(0.5 * v, t, 0.05);
+    const j = this._jet = { src, g, lfo, hiss, pops: 0 };
+    j.timer = setInterval(() => {
+      const n = c.currentTime;
+      if (n > this._jetUntil) { g.gain.setTargetAtTime(0.0001, n, 0.09); if (n > this._jetUntil + 0.5) { clearInterval(j.timer); try { src.stop(); lfo.stop(); } catch (e) { /* */ } this._jet = null; this._jetV = 0; } return; }
+      hiss.frequency.setTargetAtTime(1100 + Math.random() * 1500, n, 0.06);                                                    // струя переливается по тону
+      if (Math.random() < 0.55) this.noise('highpass', 3500 + Math.random() * 2500, 2500, 0.035, 0.14 * this._jetV, 0, 2);      // треск и хлопки горящего газа
+    }, 90);
+  }
+
   play(name, vol = 1) {
     if (!this.ctx || !this.sfxOn) return;
     const v = vol;
@@ -161,7 +182,7 @@ export class Sfx {
       case 'toxic': if (!this.gate('toxic', 0.08)) return; this.tone('sine', 260, 640, 0.14, 0.16 * v); this.noise('lowpass', 900, 400, 0.1, 0.1 * v); break;
       case 'saw': if (!this.gate('saw', 0.1)) return; this.tone('sawtooth', 300, 800, 0.18, 0.07 * v); this.noise('bandpass', 4000, 2500, 0.15, 0.08 * v, 0, 3); break;
       case 'sawhit': if (!this.gate('sawhit', 0.05)) return; this.tone('sawtooth', 700, 350, 0.06, 0.07 * v); break;
-      case 'flame': if (!this.gate('flame', 0.13)) return; this.noise('bandpass', 700, 1800, 0.18, 0.2 * v, 0, 0.8); this.noise('lowpass', 500, 200, 0.12, 0.15 * v); break;
+      case 'flame': this.flameJet(v); break;
       case 'void': if (!this.gate('void', 0.2)) return; this.tone('sine', 420, 55, 0.45, 0.3 * v); this.noise('bandpass', 1800, 150, 0.4, 0.16 * v, 0, 1.4); this.tone('triangle', 90, 40, 0.5, 0.25 * v, 0.1); break;
       case 'harpoon': if (!this.gate('harpoon', 0.2)) return; this.tone('triangle', 260, 50, 0.22, 0.4 * v); this.noise('highpass', 2000, 800, 0.1, 0.3 * v); this.noise('lowpass', 800, 100, 0.25, 0.4 * v, 0.05); break;
       case 'flesh': { if (!this.gate('flesh', 0.05)) return; const r = 0.85 + Math.random() * 0.3; this.punch(0.45 * v, r); this.wet(0.4 * v, 0.01, 0.12, r); break; }

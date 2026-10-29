@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261029162201';
-import * as A from './art.js?v=20261029162201';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261029162201';
-import { tile } from './iconmap.js?v=20261029162201';
-import { img } from './sprites.js?v=20261029162201';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261029162201';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261029163338';
+import * as A from './art.js?v=20261029163338';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261029163338';
+import { tile } from './iconmap.js?v=20261029163338';
+import { img } from './sprites.js?v=20261029163338';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261029163338';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -123,9 +123,10 @@ export class Renderer {
     this.drawBolts(ctx, gore);
     this.drawBags(ctx, t);
     this.drawOverlays(ctx, view, t);
-    if (this.floaters !== false) for (const f of gore.floaters) {
+    for (const f of gore.floaters) {
       const a = 1 - clamp((f.t - 0.6) / 0.5, 0, 1);
-      if (f.kind === 'crit') { drawCritText(ctx, f, a); continue; }
+      if (f.kind === 'crit') { drawCritText(ctx, f, a); continue; }       // числа критов видны всегда, даже если обычные числа урона выключены
+      if (this.floaters === false) continue;
       ctx.save(); ctx.globalAlpha = a; ctx.font = `800 ${Math.round(13 * f.k)}px "Oswald", Impact, sans-serif`; ctx.textAlign = 'center';
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(20,8,10,0.9)'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = f.col; ctx.fillText(f.text, f.x, f.y); ctx.restore();
     }
@@ -161,7 +162,7 @@ export class Renderer {
       const dir = Math.abs(e.dy) > Math.abs(e.dx) ? (e.dy > 0 ? 'D' : 'U') : 'R';
       e._dir = dir;
       const rows = a.anims.rows;
-      animName = 'walk' + (def.air && dir === 'D' ? 'U' : dir); const n = rows[animName].n;                                  // у мыши нет вида спереди: берём вид сверху-сзади, он симметричный
+      animName = 'walk' + dir; const n = rows[animName].n;                                  // вниз (к зрителю) — вид спереди, вверх — со спины; раньше у летающих вниз брался вид со спины, и гаргулья летела «задом наперёд»
       fi = def.air ? Math.floor((((t * (FLAP[e.type] || 2) + e.id * 0.37) % 1) + 1) % 1 * n) % n : speed > 0 ? Math.floor((((e.d / (36 * def.size)) % 1) + 1) % 1 * n) % n : 0;
       mirror = mirror && animName === 'walkR';
     } else {
