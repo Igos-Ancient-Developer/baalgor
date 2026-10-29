@@ -1215,3 +1215,6 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .sh-card.starter { content-visibility: visible; contain: none; margin-top: 12px; overflow: visible; }
 .sh-card.starter .rib { top: -11px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
 .freech .btn { white-space: nowrap; font-size: 13px; padding-left: 8px; padding-right: 8px; }
+/* премиум-башни в магазине: последний неполный ряд по центру, а не прижат влево */
+.sh-prem { display: flex; flex-wrap: wrap; justify-content: center; }
+.sh-prem .pcard { flex: 0 0 calc((100% - 2 * var(--gap, 8px)) / 3); min-width: 0; box-sizing: border-box; }

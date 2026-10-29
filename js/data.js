@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261029183609';
+import { COLS, ROWS } from './layouts.js?v=20261029184620';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029183609';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029184620';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -324,14 +324,15 @@ export const TOWER_ORDER = ['bolt', 'frost', 'mortar', 'tesla', 'toxic', 'saw', 
 // свечение и значок короны). mult — множители характеристик, add — прибавки. В рейтинговом забеге премиум недоступен: условия равные.
 export const PREMIUM_ORDER = ['gold_bolt', 'storm_tesla', 'hell_flame', 'thunder', 'winter', 'bloodstorm', 'plague'];
 export const PREMIUM = {
-  gold_bolt:   { base: 'bolt',  name: 'Золотой арбалет', gems: 150, costMul: 1.4, mult: { dmg: 1.7, rate: 1.25, range: 1.1 }, tint: '#ffd24a', short: 'Позолоченные болты: на 70% сильнее и быстрее обычного арбалета, бьёт дальше.' },
-  storm_tesla: { base: 'tesla', name: 'Грозовой шпиль',  gems: 220, costMul: 1.4, mult: { dmg: 1.6, range: 1.15 }, add: { chains: 2 }, tint: '#7ad0ff', short: 'Молния перескакивает ещё на двух врагов и бьёт на 60% сильнее.' },
-  thunder:     { base: 'mortar', name: 'Громобой', gems: 220, costMul: 1.4, mult: { dmg: 1.6, range: 1.2 }, add: { cluster: 3 }, tint: '#4ab0ff', short: 'Снаряд делится на три малые бомбы: бьёт на 60% сильнее и дальше обычной мортиры.' },
-  winter:      { base: 'frost', name: 'Вечная зима', gems: 200, costMul: 1.4, mult: { dmg: 1.6, range: 1.15 }, add: { aura: 0.3 }, tint: '#8ae4ff', short: 'Постоянная аура: все враги вокруг замедлены. Ледяной шар разбрасывает осколки.' },
-  bloodstorm:  { base: 'saw', name: 'Кровавый вихрь', gems: 240, costMul: 1.4, mult: { dmg: 1.5, rate: 1.15 }, add: { bounce: 3 }, tint: '#ff4a3a', short: 'Три окровавленные пилы: лезвие рикошетит между врагами и бьёт на 50% сильнее.' },
-  plague:      { base: 'toxic', name: 'Чумной алхимик', gems: 230, costMul: 1.4, mult: { dmg: 1.5, poison: 1.5, splash: 1.3 }, add: { plague: 1.5 }, tint: '#8aff3a', short: 'Яд переходит на соседей при гибели цели, склянки и облако намного сильнее.' },
-  hell_flame:  { base: 'flame', name: 'Адское пламя',    gems: 300, costMul: 1.4, mult: { dmg: 1.8, burn: 1.8, range: 1.15 }, tint: '#ff5a2a', short: 'Огненный конус почти вдвое мощнее: жжёт всех впереди и добивает ожогом.' },
+  gold_bolt:   { base: 'bolt',  name: 'Золотой арбалет', gems: 180, costMul: 1.4, mult: { dmg: 1.5, rate: 1.12, range: 1.1 }, tint: '#ffd24a', short: 'Позолоченные болты: урон +50%, скорость +12%, дальность +10% к обычному арбалету.' },
+  storm_tesla: { base: 'tesla', name: 'Грозовой шпиль',  gems: 200, costMul: 1.4, mult: { dmg: 1.5, range: 1.15 }, add: { chains: 1 }, tint: '#7ad0ff', short: 'Молния бьёт на 50% сильнее, дальше и перескакивает на одного врага больше.' },
+  hell_flame:  { base: 'flame', name: 'Адское пламя',    gems: 260, costMul: 1.4, mult: { dmg: 1.7, burn: 1.7, range: 1.15 }, tint: '#ff5a2a', short: 'Огненный конус: урон и ожог +70%, дальность +15% к обычной драконьей пасти.' },
+  thunder:     { base: 'mortar', name: 'Громобой', gems: 220, costMul: 1.4, mult: { dmg: 0.9, range: 1.2 }, add: { cluster: 3 }, tint: '#4ab0ff', short: 'Снаряд делится на 3 бомбы по 90% урона мортиры, дальность +20%. Против толпы силён вдвойне.' },
+  winter:      { base: 'frost', name: 'Вечная зима', gems: 200, costMul: 1.4, mult: { dmg: 1.6, range: 1.15 }, add: { aura: 0.3 }, tint: '#8ae4ff', short: 'Постоянная аура замедляет всех вокруг на 30%, урон шаров +60%, дальность +15%.' },
+  bloodstorm:  { base: 'saw', name: 'Кровавый вихрь', gems: 220, costMul: 1.4, mult: { dmg: 1.45, rate: 1.12 }, add: { bounce: 3 }, tint: '#ff4a3a', short: 'Пила рикошетит между тремя врагами: урон +45%, скорость +12% к обычной пилораме.' },
+  plague:      { base: 'toxic', name: 'Чумной алхимик', gems: 200, costMul: 1.4, mult: { dmg: 1.6, poison: 1.6, splash: 1.3 }, add: { plague: 1.5 }, tint: '#8aff3a', short: 'Яд и урон +60%, облако шире на 30%; при гибели цели яд переходит на соседей.' },
 };
+
 // с какими башнями каждая работает лучше всего (строка-сноска в карточке); 'all' — со всеми боевыми башнями; у премиум-башен то же, что у базовой
 const COMBO = { bolt: ['banner', 'frost'], frost: 'all', mortar: ['magnet', 'voidwell', 'frost'], tesla: ['frost', 'banner', 'toxic'], toxic: ['banner', 'magnet', 'voidwell'], saw: ['magnet', 'voidwell', 'frost'], banner: 'all',
   flame: ['voidwell', 'magnet', 'frost'], voidwell: ['mortar', 'flame', 'saw', 'toxic'], harpoon: ['frost', 'voidwell', 'banner'], magnet: ['grinder', 'mortar', 'saw'], grinder: ['magnet', 'voidwell'], miner: ['magnet', 'voidwell', 'frost'], bell: ['bolt', 'tesla', 'harpoon'], pendulum: ['grinder', 'magnet', 'frost'] };
