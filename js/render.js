@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261029182134';
-import * as A from './art.js?v=20261029182134';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261029182134';
-import { tile } from './iconmap.js?v=20261029182134';
-import { img } from './sprites.js?v=20261029182134';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261029182134';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261029182712';
+import * as A from './art.js?v=20261029182712';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261029182712';
+import { tile } from './iconmap.js?v=20261029182712';
+import { img } from './sprites.js?v=20261029182712';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261029182712';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -549,7 +549,7 @@ export class Renderer {
     for (const f of this.sim.fx) {
       if (f.kind === 'ring') {                         // расходящееся кольцо: звон колокольни, взмах маятника, пульс вечной зимы
         const k = f.t / f.T, R = f.r * (0.25 + 0.75 * k);
-        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = f.col; ctx.lineWidth = 3 * (1 - k) + 1; ctx.globalAlpha = 0.7 * (1 - k); ctx.beginPath(); ctx.ellipse(f.x, f.y, R, R * 0.7, 0, 0, T2); ctx.stroke(); ctx.restore();
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = f.col; ctx.lineWidth = 2.4 * (1 - k) + 1; ctx.globalAlpha = 0.5 * (1 - k); ctx.beginPath(); ctx.ellipse(f.x, f.y, R, R * 0.7, 0, 0, T2); ctx.stroke(); ctx.restore();
         continue;
       }
       if (f.kind === 'meteor') {

@@ -4,4 +4,4 @@
 export const SUPABASE_URL = 'https://sqhbrxjefabzybwtcvkt.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_DsExdZ4Wa0nJST1N_iRMMQ_9DXMWG_Q';
 // Ссылка на мини-приложение в Telegram (https://t.me/<бот>/<короткое имя приложения>): по ней друзья приглашаются как «?startapp=f<твой id>». Пока пусто — кнопка приглашения подскажет заполнить.
-export const APP_LINK = '';
+export const APP_LINK = 'https://t.me/BloodKeepTD_bot';      // если у приложения есть короткое имя из /newapp, впиши полную ссылку: https://t.me/BloodKeepTD_bot/<имя>
