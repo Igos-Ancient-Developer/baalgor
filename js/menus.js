@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029214441';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029214441';
-import * as D from './data.js?v=20261029214441';
-import * as M from './meta.js?v=20261029214441';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029214441';
-import { url as imgUrl } from './sprites.js?v=20261029214441';
-import { Net } from './net.js?v=20261029214441';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029214441';
-import { fillPlates, gemIc } from './res.js?v=20261029214441';
-import { gemHtml } from './gem3d.js?v=20261029214441';
-import { Wallet } from './wallet.js?v=20261029214441';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029215158';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029215158';
+import * as D from './data.js?v=20261029215158';
+import * as M from './meta.js?v=20261029215158';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029215158';
+import { url as imgUrl } from './sprites.js?v=20261029215158';
+import { Net } from './net.js?v=20261029215158';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029215158';
+import { fillPlates, gemIc } from './res.js?v=20261029215158';
+import { gemHtml } from './gem3d.js?v=20261029215158';
+import { Wallet } from './wallet.js?v=20261029215158';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -422,7 +422,11 @@ export class Menus {
       const d = D.TOWERS[t] || D.ECON[t], u = D.unlockOf(t), isOpen = open(t);
       inf.innerHTML = itemCard(t);
       if (!isOpen && u && u.premium) { const bt = el('button', 'btn gold', `Купить · ${gemIc(18)} ${u.gems}`); bt.onclick = async () => { const r = await Wallet.spend('unlock', t, u.gems); if (r && r.ok) { c.sfx.play('win'); this.refreshLoadout(); } else { shake(bt); c.note(r && r.error === 'gems' ? 'Не хватает кристаллов' : 'Не получилось'); if (r && r.error === 'gems') setTimeout(() => c.openShop(), 500); } }; inf.appendChild(bt); }
-      else if (!isOpen && u) { const bt = el('button', 'btn gold', `Открыть в Кузнице · <img src="${bareGlyphUrl('soul', 18)}" alt="" style="width:18px;height:18px">${u.souls}`); bt.onclick = () => c.openForge(); inf.appendChild(bt); }
+      else if (!isOpen && u) {                                           // кнопка горит только когда души есть; иначе серая и не нажимается
+        const can = (this.save.souls || 0) >= u.souls, bt = el('button', 'btn gold' + (can ? '' : ' poor'), `Открыть в Кузнице · <img src="${bareGlyphUrl('soul', 18)}" alt="" style="width:18px;height:18px">${u.souls}`);
+        if (can) bt.onclick = () => c.openForge(); else bt.disabled = true;
+        inf.appendChild(bt);
+      }
     }
     $('#lo-go').classList.toggle('poor', !lo.sel.length);
     const cnt = $('#lo-cnt'); cnt.innerHTML = `<img src="${bareGlyphUrl('tower', 22)}" alt=""><b>${lo.sel.length}/${lo.slots}</b>`; cnt.classList.toggle('full', lo.sel.length >= lo.slots);

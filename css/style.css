@@ -1281,3 +1281,8 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .frow.bld .fbuys { display: flex; flex-direction: row; gap: 10px; }
 .frow.bld .fbuy { flex: 1 1 0; min-width: 0; height: 40px; padding: 0 8px; font-size: 16px; box-sizing: border-box; border-radius: 11px; }
 .frow.bld > .fbuy { height: 34px; flex: none; }
+
+/* плитки и слоты подготовки: ровные одинаковые отступы (обводка выбранной плитки занимает ~4 px, поэтому зазор больше) */
+.lo-slots { gap: 12px; padding-left: 8px; padding-right: 8px; }
+.lo-cards { gap: 14px 12px; padding: 4px 4px 2px; }
+.btn.gold.poor, .btn.gold:disabled { pointer-events: none; filter: grayscale(1) brightness(.6) !important; }
