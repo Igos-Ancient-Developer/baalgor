@@ -1,8 +1,8 @@
 // Кошелёк донат-кристаллов. В Telegram баланс, покупки и цены живут на сервере (supabase/schema.sql), клиент только показывает.
 // Вне Telegram (обычный браузер) работает локальный режим для разработки: траты считаются в сохранении, пополнение только с ?debug.
-import * as D from './data.js?v=20261029214128';
-import { Net } from './net.js?v=20261029214128';
-import { TG } from './tg.js?v=20261029214128';
+import * as D from './data.js?v=20261029214441';
+import { Net } from './net.js?v=20261029214441';
+import { TG } from './tg.js?v=20261029214441';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const debug = () => location.search.includes('debug');
@@ -24,7 +24,7 @@ export const Wallet = {
   },
   async sync() {
     if (!this.online) return null;
-    try { const w = await Net.call('wallet_get', { init_data: Net.initData() }); if (w && w.ok) { this.apply(w); return w; } } catch (e) { /* без связи */ }
+    try { const w = await Net.call('wallet_get', { init_data: Net.initData() }); if (w && w.ok) { this.apply(w); if (!this._warm) { this._warm = 1; setTimeout(() => this.prefetchInvoices(), 2500); } return w; } } catch (e) { /* без связи */ }      // счета Stars готовим сразу после входа: первый запуск функции на сервере занимает несколько секунд
     return null;
   },
   // kind: unlock | slot | boost; cost нужен только локальному режиму (на сервере цену считает сервер)
