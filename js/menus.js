@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029161329';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029161329';
-import * as D from './data.js?v=20261029161329';
-import * as M from './meta.js?v=20261029161329';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029161329';
-import { url as imgUrl } from './sprites.js?v=20261029161329';
-import { Net } from './net.js?v=20261029161329';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029161329';
-import { fillPlates, gemIc } from './res.js?v=20261029161329';
-import { gemHtml } from './gem3d.js?v=20261029161329';
-import { Wallet } from './wallet.js?v=20261029161329';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029162201';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029162201';
+import * as D from './data.js?v=20261029162201';
+import * as M from './meta.js?v=20261029162201';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029162201';
+import { url as imgUrl } from './sprites.js?v=20261029162201';
+import { Net } from './net.js?v=20261029162201';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029162201';
+import { fillPlates, gemIc } from './res.js?v=20261029162201';
+import { gemHtml } from './gem3d.js?v=20261029162201';
+import { Wallet } from './wallet.js?v=20261029162201';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -125,6 +125,7 @@ export class Menus {
     row('Громкость музыки', '', slider(() => st.musVol, (v) => { st.musVol = v; }));
     body.appendChild(el('div', 'sect-title', 'Бой'));
     row('Числа над врагами', 'Урон и золото при убийстве', toggle(() => st.dmg, (v) => { st.dmg = v; }));
+    { const NAMES = ['Экономия', 'Авто', 'Плавно'], b = el('button', 'btn', NAMES[st.perf ?? 1]); b.style.minWidth = '110px'; b.onclick = () => { st.perf = ((st.perf ?? 1) + 1) % 3; b.textContent = NAMES[st.perf]; c.sfx.play('click'); save(); }; row('Плавность боя', '', b); }
     row('Подтверждать выход из боя', 'Telegram спросит перед закрытием', toggle(() => st.confirm, (v) => { st.confirm = v; }));
     body.appendChild(el('div', 'sect-title', 'Друзья'));
     { const r = el('div', 'srow inv'); r.innerHTML = `<img class="sr-ic" src="${imgUrl('ui/ic/friend.webp')}" alt=""><div class="lb">Пригласить друга<small>Друг откроет игру по твоей ссылке, и вы появитесь в списках друг у друга</small></div>`;

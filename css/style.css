@@ -38,7 +38,7 @@ img[data-icon] { width: 20px; height: 20px; display: block; pointer-events: none
 
 /* ───── ЭКРАНЫ ───── */
 .screen { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; overflow-y: auto; padding: calc(var(--sa-top) + 14px) 16px calc(var(--sa-bottom) + 16px); background: radial-gradient(ellipse at 50% 20%, #3a1420 0%, #120709 55%, #0b0609 100%); }
-.screen.overlay { background: rgba(8,3,5,.86); justify-content: center; backdrop-filter: blur(3px); z-index: 30; }
+.screen.overlay { background: rgba(8,3,5,.92); justify-content: center; z-index: 30; }      /* размытие подложки убрано: оно пересчитывалось на каждом кадре и грело телефон */
 #help { z-index: 40; }
 .logo { text-align: center; margin: 6px 0 10px; }
 .logo small { display: block; font-size: 11px; letter-spacing: .22em; color: var(--muted); text-transform: uppercase; }
@@ -430,7 +430,7 @@ body.ranked #bossbar { top: 64px; }
 .abtn.mode { width: 54px; font-size: 14px; } .abtn.x { width: 44px; font-size: 20px; color: var(--muted); }
 
 /* окно улучшения: пауза, размытый фон, до двух табличек */
-#upmodal { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: calc(var(--sa-top) + 12px) 12px calc(var(--sa-bottom) + 12px); background: rgba(8,3,6,.5); -webkit-backdrop-filter: blur(8px) brightness(.7); backdrop-filter: blur(8px) brightness(.7); animation: fadein .18s ease-out; }
+#upmodal { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: calc(var(--sa-top) + 12px) 12px calc(var(--sa-bottom) + 12px); background: rgba(8,3,6,.5); animation: fadein .18s ease-out; }
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
 .um-box { position: relative; width: min(100%, 410px); display: flex; flex-direction: column; gap: 12px; }
 .um-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; font-family: var(--gothic); font-size: 21px; color: #f0ecdc; text-shadow: 0 2px 4px #000; }
@@ -581,7 +581,7 @@ body.ranked #bossbar { top: 64px; }
 .umc { min-height: 236px; padding: 10px 8px; gap: 6px; }
 .umc .upr { padding: 2px 11px 2px 7px; font-size: 15px; gap: 3px; } .umc .upr img { width: 16px; height: 16px; }
 .umc .uicon { width: 80px; height: 80px; }
-#sellmodal { position: absolute; inset: 0; z-index: 42; display: grid; place-items: center; background: rgba(8,3,6,.5); -webkit-backdrop-filter: blur(6px) brightness(.7); backdrop-filter: blur(6px) brightness(.7); animation: fadein .15s ease-out; }
+#sellmodal { position: absolute; inset: 0; z-index: 42; display: grid; place-items: center; background: rgba(8,3,6,.5); animation: fadein .15s ease-out; }
 .sm-box { width: 220px; padding: 12px 12px 12px; border-radius: 16px; background: var(--slab); box-shadow: var(--slabline), 0 10px 28px rgba(0,0,0,.85); display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .sm-top { display: flex; align-items: center; gap: 10px; } .sm-top #sm-ic { width: 48px; height: 48px; border-radius: 10px; }
 .sm-v { display: flex; align-items: center; gap: 4px; padding: 2px 10px 2px 6px; border-radius: 999px; background: rgba(0,0,0,.6); border: 1.5px solid var(--gold); font-family: var(--font); font-weight: 700; font-size: 18px; color: var(--gold); } .sm-v img { width: 20px; height: 20px; }
@@ -1135,11 +1135,10 @@ body.hastabs #title .title-actions { margin-top: 34px; margin-bottom: auto; }
 #tabbar .tab.dot::after { content: ''; position: absolute; top: 6px; right: calc(50% - 34px); width: 14px; height: 14px; border-radius: 50%; background: #ff3b30; border: 2px solid #1a0a08; box-shadow: 0 0 8px rgba(255,60,48,.8); z-index: 2; }
 
 /* кровавый уровень недели: красная пульсирующая обводка вокруг значка на карте и красная плашка */
-.node.weekly img.ni { animation: wkpulse 1.5s ease-in-out infinite; }
-@keyframes wkpulse {
-  0%, 100% { filter: drop-shadow(2px 0 0 #c4000a) drop-shadow(-2px 0 0 #c4000a) drop-shadow(0 2px 0 #c4000a) drop-shadow(0 -2px 0 #c4000a) drop-shadow(0 0 7px #ff1a0a) drop-shadow(0 0 14px rgba(255,10,0,.8)); }
-  50% { filter: drop-shadow(2px 0 0 #ff1a1a) drop-shadow(-2px 0 0 #ff1a1a) drop-shadow(0 2px 0 #ff1a1a) drop-shadow(0 -2px 0 #ff1a1a) drop-shadow(0 0 12px #ff2a1a) drop-shadow(0 0 26px rgba(255,10,0,1)); }
-}
+.node.weekly img.ni { filter: drop-shadow(2px 0 0 #c4000a) drop-shadow(-2px 0 0 #c4000a) drop-shadow(0 2px 0 #c4000a) drop-shadow(0 -2px 0 #c4000a) drop-shadow(0 0 7px #ff1a0a); }      /* обводка по форме иконки: статичная, без анимации фильтра (она грела телефон) */
+.node.weekly::before { content: ''; position: absolute; left: 50%; top: -12px; width: 92px; height: 92px; margin-left: -46px; border-radius: 50%; background: radial-gradient(circle, rgba(255,30,20,.6) 0%, rgba(255,30,20,.28) 42%, rgba(255,30,20,0) 70%); animation: wkglow 2.2s ease-in-out infinite; will-change: opacity; pointer-events: none; z-index: 0; }
+@keyframes wkglow { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+
 .wk { margin: 8px 0 2px; padding: 10px 10px 9px; border-radius: 12px; background: linear-gradient(180deg, rgba(120,10,16,.75), rgba(40,4,8,.85)); box-shadow: 0 0 0 2px #0b0c0c, 0 0 0 3.5px #d21e1e, 0 0 16px rgba(255,30,20,.45); text-align: center; }
 .wk-t { font-family: var(--gothic); font-size: 17px; color: #ffd9d4; text-shadow: 0 2px 0 #000, 0 0 10px rgba(255,60,40,.8); }
 .wk-r { display: flex; justify-content: center; gap: 18px; margin-top: 7px; } .wk-r span { display: flex; align-items: center; gap: 5px; } .wk-r b { font-family: var(--font); font-size: 20px; color: #fff1c8; }
@@ -1150,7 +1149,7 @@ body.hastabs #title .title-actions { margin-top: 34px; margin-bottom: auto; }
 .node.weekly::after { content: ''; position: absolute; left: 50%; top: 22px; width: 74px; height: 30px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(ellipse, rgba(110,8,12,.95) 0%, rgba(50,4,8,.9) 62%, rgba(20,2,4,0) 100%); box-shadow: 0 0 16px rgba(255,20,10,.55); z-index: 0; pointer-events: none; }
 .node.weekly img.ni { position: relative; z-index: 1; width: 52px; }
 .node.weekly .nl { position: relative; z-index: 1; background: rgba(90,6,10,.82); color: #ffd9d4; }
-.node.weekly.wkdone img.ni { animation: none; filter: grayscale(.75) brightness(.7) drop-shadow(0 2px 3px rgba(0,0,0,.75)); }
+.node.weekly.wkdone img.ni { filter: grayscale(.75) brightness(.7) drop-shadow(0 2px 3px rgba(0,0,0,.75)); } .node.weekly.wkdone::before { display: none; }
 .node.weekly.wkdone::after { box-shadow: none; opacity: .5; } .node.weekly.wkdone .nl { background: rgba(20,20,24,.82); color: #aeb2b8; }
 .wk-time { margin-top: 9px; padding-top: 7px; border-top: 1px solid rgba(255,120,100,.3); display: flex; flex-direction: column; align-items: center; gap: 2px; } .wk-time small { font-size: 11px; color: #f0b8b0; } .wk-time b { font-family: var(--font); font-size: 18px; color: #fff1c8; }
 
@@ -1159,3 +1158,19 @@ body.hastabs #title .title-actions { margin-top: 34px; margin-bottom: auto; }
 
 /* пауза: текущая сложность */
 .ps-d { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 2px 0 8px; } .ps-d img { width: 34px; height: 34px; object-fit: contain; filter: drop-shadow(0 2px 3px #000); } .ps-d b { font-family: var(--gothic); font-size: 20px; color: var(--dc, #ffd24a); text-shadow: 0 2px 0 #000, 0 0 10px color-mix(in srgb, var(--dc, #ffd24a) 60%, transparent); font-weight: 400; } .ps-d span { font-size: 11px; color: #ff8f84; border: 1px solid #a0302a; border-radius: 9px; padding: 1px 6px; }
+
+/* итоги уровня: плита неподвижна, всё вмещается в экран; эмблема победы или поражения и плашка сложности */
+#endmenu { overflow: hidden; overscroll-behavior: none; touch-action: none; }
+#endmenu .modal { max-height: none; touch-action: none; -webkit-user-select: none; user-select: none; }
+#end-hero { display: flex; justify-content: center; margin: -4px 0 -6px; } #end-hero:empty { display: none; }
+.eh { position: relative; width: 92px; height: 92px; display: grid; place-items: center; }
+.eh .ehr { position: absolute; inset: -14px; border-radius: 50%; background: conic-gradient(from 0deg, rgba(255,214,90,0), rgba(255,214,90,.55), rgba(255,214,90,0) 25%, rgba(255,214,90,.55) 50%, rgba(255,214,90,0) 75%, rgba(255,214,90,.55), rgba(255,214,90,0)); -webkit-mask: radial-gradient(circle, transparent 42%, #000 44%, #000 70%, transparent 72%); mask: radial-gradient(circle, transparent 42%, #000 44%, #000 70%, transparent 72%); }
+.eh .ehi { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 36% 28%, #7a5d2a, #1c1208 78%); box-shadow: 0 0 0 3px #e0b04a, 0 0 0 5px #1a1005, 0 0 26px rgba(255,200,80,.6), inset 0 0 14px rgba(0,0,0,.7); } .eh .ehi img { width: 52px; height: 52px; object-fit: contain; filter: drop-shadow(0 2px 3px #000); }
+.eh.lose .ehr { background: conic-gradient(from 0deg, rgba(255,60,50,0), rgba(255,60,50,.45), rgba(255,60,50,0) 25%, rgba(255,60,50,.45) 50%, rgba(255,60,50,0) 75%, rgba(255,60,50,.45), rgba(255,60,50,0)); } .eh.lose .ehi { background: radial-gradient(circle at 36% 28%, #6a2424, #170707 78%); box-shadow: 0 0 0 3px #c0382c, 0 0 0 5px #1a0605, 0 0 26px rgba(255,60,50,.55), inset 0 0 14px rgba(0,0,0,.7); }
+#end-sub:empty { display: none; } .es { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: -2px; } .es b { font-family: var(--gothic); font-weight: 400; font-size: 16px; color: #e8dcc0; text-shadow: 0 2px 0 #000; }
+.es span { display: inline-flex; align-items: center; gap: 6px; padding: 2px 12px 2px 5px; border-radius: 999px; background: rgba(0,0,0,.5); border: 1.5px solid var(--dc, #ffd24a); color: var(--dc, #ffd24a); font-size: 13px; font-weight: 700; letter-spacing: .03em; text-shadow: 0 1px 0 #000; } .es span img { width: 26px; height: 26px; object-fit: contain; filter: drop-shadow(0 1px 2px #000); }
+
+/* плавность прокрутки и нагрев: свои слои, прокрутка не передаётся странице, карточки вне экрана не рисуются */
+.screen, .subbody, .dbody, #worldscroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+#worldmap { transform: translateZ(0); backface-visibility: hidden; }
+.sh-card, .chcard, .pcard, .frow, .krow, .ach, .ach-row { content-visibility: auto; contain-intrinsic-size: auto 120px; }

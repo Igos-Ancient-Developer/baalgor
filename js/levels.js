@@ -1,5 +1,5 @@
 // Уровни кампании: секторы, раскладки, связи (after = открывается после прохождения ЛЮБОГО из перечисленных).
-import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261029161329';
+import { LAYOUTS, COLS, ROWS, expand } from './layouts.js?v=20261029162201';
 
 export const SECTORS = [
   { id: 'grave', name: 'Проклятый погост', theme: 'grave', color: '#7fa86a' },
@@ -113,6 +113,8 @@ export const levelById = (id) => LEVELS.find((l) => l.id === id);
 // Раскладка, сектор и крепость врагов меняются от недели к неделе; сила и виды врагов берутся с одного из поздних уровней кампании (lvl), поэтому сектору соответствуют и монстры.
 export const WEEKLY_LEVEL = { id: 'wk', name: 'Кровавый уровень', sector: 'ice', theme: 'ice', layout: 'twin', paths: LAYOUTS.twin, block: blockCells(LAYOUTS.twin), decor: [], waves: 15, wavesFull: 15, hp: 0.3, after: [], pos: [850, 705], index: LEVELS.length, lvl: 13, weekly: true, weeklyHp: 1.35, tier: 6 };       // у недельного уровня своя крепость врагов: сдвиг tier 6 вместо сдвига «Ночного кошмара», плюс weeklyHp
 LEVELS.push(WEEKLY_LEVEL);
+// свободные от дорог места на карте мира (острова и вода): каждую неделю узел стоит в другом
+export const WEEKLY_SPOTS = [[100, 60], [228, 44], [700, 30], [1342, 365], [1300, 520]];
 export const WEEKLY_LAYOUTS = ['twin', 'trap', 'merge', 'cross', 'pincer', 'bridge', 'lattice', 'triad', 'abattoir'];
 const WEEKLY_NAMES = { grave: 'Кровавый погост', forest: 'Кровавая чаща', desert: 'Кровавые пески', ice: 'Кровавая метель', hell: 'Кровавая бойня' };
 export function configureWeekly(wk) {
@@ -120,6 +122,6 @@ export function configureWeekly(wk) {
   const pick = (m) => { h = (Math.imul(h, 1103515245) + 12345) >>> 0; return (h >>> 8) % m; };
   const refs = CAMPAIGN.filter((l) => l.lvl >= 9), ref = refs[pick(refs.length)], layout = WEEKLY_LAYOUTS[pick(WEEKLY_LAYOUTS.length)], paths = LAYOUTS[layout];
   Object.assign(WEEKLY_LEVEL, { name: WEEKLY_NAMES[ref.sector] || 'Кровавый уровень', sector: ref.sector, theme: ref.theme, layout, paths, block: blockCells(paths), decor: autoDecor(paths, ref.theme, h % 997 + 3, ref.lvl),
-    waves: Math.min(15, ref.waves), wavesFull: ref.wavesFull, hp: ref.hp, lvl: ref.lvl, ref: ref.id, weeklyHp: 1.0 + pick(5) * 0.1 });
+    waves: Math.min(15, ref.waves), wavesFull: ref.wavesFull, hp: ref.hp, lvl: ref.lvl, ref: ref.id, weeklyHp: 1.0 + pick(5) * 0.1, pos: WEEKLY_SPOTS[pick(WEEKLY_SPOTS.length)] });
   return WEEKLY_LEVEL;
 }

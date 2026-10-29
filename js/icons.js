@@ -1,7 +1,7 @@
 // Пакет иконок в «рисованном» стиле Warcraft 3: квадрат с бронзовой фаской, насыщенный фон, жирный контур, глянец.
 // Всё рисуется кодом; иконки кэшируются в canvas и dataURL.
-import { OUT, S as ART_S, mk, cached, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow } from './art.js?v=20261029161329';
-import { GLYPH_IMG, tile, inner } from './iconmap.js?v=20261029161329';
+import { OUT, S as ART_S, mk, cached, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow } from './art.js?v=20261029162201';
+import { GLYPH_IMG, tile, inner } from './iconmap.js?v=20261029162201';
 
 const T2 = Math.PI * 2;
 export const PALETTE = {
@@ -147,13 +147,13 @@ export function cutIcon(key, sprite, { size = 64, crop = null, badge = null, bad
       if (sprite && crop) { const m = sprite.width / sprite.lw; g.drawImage(sprite, crop.x * m, crop.y * m, crop.w * m, crop.h * m, 0, 0, T, T); }
       else if (sprite) { const sc = Math.min(T / sprite.width, T / sprite.height); g.drawImage(sprite, (T - sprite.width * sc) / 2, (T - sprite.height * sc) / 2, sprite.width * sc, sprite.height * sc); }
     });
-    let x0 = T, y0 = T, x1 = 0, y1 = 0;
-    try { const d = t.getContext('2d').getImageData(0, 0, T, T).data; for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) if (d[(y * T + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } } catch (e) { x0 = 0; y0 = 0; x1 = T - 1; y1 = T - 1; }
-    if (x1 <= x0 || y1 <= y0) { x0 = 0; y0 = 0; x1 = T - 1; y1 = T - 1; }
-    const bw = x1 - x0 + 1, bh = y1 - y0 + 1, pad = size * 0.06, k = Math.min((size - pad * 2) / bw, (size - pad * 2) / bh);
+    const PW = t.width, PH = t.height; let x0 = PW, y0 = PH, x1 = 0, y1 = 0;          // t хранится в пикселях масштаба арта (mk): границы ищем в них
+    try { const d = t.getContext('2d').getImageData(0, 0, PW, PH).data; for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) if (d[(y * PW + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } } catch (e) { x0 = 0; y0 = 0; x1 = PW - 1; y1 = PH - 1; }
+    if (x1 <= x0 || y1 <= y0) { x0 = 0; y0 = 0; x1 = PW - 1; y1 = PH - 1; }
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1, sc = PW / T, bwL = bw / sc, bhL = bh / sc, pad = size * 0.06, k = Math.min((size - pad * 2) / bwL, (size - pad * 2) / bhL);
     return mk(size, size, (g) => {
       g.imageSmoothingQuality = 'high'; g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = size * 0.05; g.shadowOffsetY = size * 0.025;
-      g.drawImage(t, x0, y0, bw, bh, (size - bw * k) / 2, (size - bh * k) / 2, bw * k, bh * k);
+      g.drawImage(t, x0, y0, bw, bh, (size - bwL * k) / 2, (size - bhL * k) / 2, bwL * k, bhL * k);
       g.shadowColor = 'transparent';
       if (badge && G[badge]) { const r = size * 0.19; circ(g, size - r - 1, r + 1, r); fillStroke(g, rad(g, size - r - 2, r, 1, r * 1.3, [[0, shade(badgeCol, 0.2)], [1, shade(badgeCol, -0.6)]]), 1.6); g.save(); g.translate(size - 2 * r + r * 0.18, r * 0.18 + 1); g.scale((r * 1.64) / 64, (r * 1.64) / 64); G[badge](g, 64); g.restore(); }
     });

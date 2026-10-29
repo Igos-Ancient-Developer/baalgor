@@ -1,28 +1,28 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261029161329';
-import * as A from './art.js?v=20261029161329';
-import { Sim } from './sim.js?v=20261029161329';
-import { Gore } from './gore.js?v=20261029161329';
-import { Renderer } from './render.js?v=20261029161329';
-import { GameUI } from './ui.js?v=20261029161329';
-import { Tutorial } from './tutorial.js?v=20261029161329';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261029161329';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261029161329';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261029161329';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261029161329';
-import { mapBG, releaseBG } from './env.js?v=20261029161329';
-import { MENU_SPEC } from './music.js?v=20261029161329';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261029161329';
-import { renderForge, renderAchs } from './screens.js?v=20261029161329';
-import { renderShop } from './shop.js?v=20261029161329';
-import { freeChestReady } from './chests.js?v=20261029161329';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261029161329';
-import { Wallet } from './wallet.js?v=20261029161329';
-import { initLang, pickLang } from './i18n.js?v=20261029161329';
-import { Menus, RUN, clock } from './menus.js?v=20261029161329';
-import { Net } from './net.js?v=20261029161329';
-import { gemIc } from './res.js?v=20261029161329';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261029161329';
+import * as D from './data.js?v=20261029162201';
+import * as A from './art.js?v=20261029162201';
+import { Sim } from './sim.js?v=20261029162201';
+import { Gore } from './gore.js?v=20261029162201';
+import { Renderer } from './render.js?v=20261029162201';
+import { GameUI } from './ui.js?v=20261029162201';
+import { Tutorial } from './tutorial.js?v=20261029162201';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261029162201';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261029162201';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261029162201';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261029162201';
+import { mapBG, releaseBG } from './env.js?v=20261029162201';
+import { MENU_SPEC } from './music.js?v=20261029162201';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261029162201';
+import { renderForge, renderAchs } from './screens.js?v=20261029162201';
+import { renderShop } from './shop.js?v=20261029162201';
+import { freeChestReady } from './chests.js?v=20261029162201';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261029162201';
+import { Wallet } from './wallet.js?v=20261029162201';
+import { initLang, pickLang } from './i18n.js?v=20261029162201';
+import { Menus, RUN, clock } from './menus.js?v=20261029162201';
+import { Net } from './net.js?v=20261029162201';
+import { gemIc } from './res.js?v=20261029162201';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261029162201';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -40,7 +40,11 @@ let save = defaultSave();
 let renderer, gore, ui, sim, meta, menus, tutorial, pollT = 0;
 let run = null;   // состояние рейтингового забега (null — обычная игра)
 let wasFrozen = false, needDraw = false, drawAcc = 0;
-const DRAW_MIN = TG.isMobile ? 0.029 : 0;
+// Плавность боя (настройка «Плавность»): 0 — экономия (на телефоне рисуем ~30 кадров/с, холст мельче), 1 — авто (60 кадров, пока кадр дешёвый, иначе 30), 2 — плавно (всегда 60).
+// Симуляция всегда идёт 60 раз в секунду: меняется только частота перерисовки холста.
+let drawMin = TG.isMobile ? 0.029 : 0, renderEma = 3;
+const perfMode = () => (save.set && save.set.perf !== undefined ? save.set.perf : 1);
+const dprFor = () => { const d = window.devicePixelRatio || 1, m = perfMode(); return Math.min(d, m === 0 ? 1.25 : m === 2 ? 2 : TG.isMobile ? 1.5 : 2); };
 let panning = false;
 let running = false, paused = false, held = false, acc = 0, ending = null, last = 0, diffI = 1, levelIdx = 0, lastHud = '', tally = 0;
 
@@ -51,15 +55,15 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261029161329').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261029161329').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261029162201').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261029162201').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
     let back = 0; for (let l = 0; l < save.perks.luck; l++) back += Math.round(35 * (1 + 0.7 * l)); save.souls = (save.souls || 0) + back; delete save.perks.luck;
   }
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
-  const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
+  const dpr = dprFor();
   A.setScale(Renderer.pickScale(window.innerWidth, Math.max(300, window.innerHeight - 56), dpr));
   await loadSprites((f) => { $('#loadfill').style.width = Math.round(f * 100) + '%'; });
   menus = new Menus(ctrl); ctrl.menus = menus;
@@ -168,6 +172,7 @@ function applySettings() {
   const st = save.set = { ...defaultSettings(), ...(save.set || {}) };
   sfx.setVolumes(st.sfxVol, st.musVol); TG.allowConfirm = st.confirm;
   if (gore) gore.level = 1; if (renderer) renderer.floaters = st.dmg;
+  if (!TG.isMobile) drawMin = 0; else if (st.perf === 2) drawMin = 0; else if (st.perf === 0) drawMin = 0.029; if (ctrl.fit) ctrl.fit();
 }
 
 function setupOverlays() {
@@ -256,7 +261,7 @@ function setupGameUi() {
   $('#b-pause').onclick = () => setPause(!paused);
   const stage = $('#stage');
   renderer = new Renderer($('#cv')); ctrl.renderer = renderer;
-  const fit = () => { const r = stage.getBoundingClientRect(); if (r.width > 0) { needDraw = true; renderer.resize(r.width, r.height, Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2)); }; };
+  const fit = () => { const r = stage.getBoundingClientRect(); if (r.width > 0) { needDraw = true; renderer.resize(r.width, r.height, dprFor()); }; };
   new ResizeObserver(fit).observe(stage); window.addEventListener('resize', fit); ctrl.fit = fit;
 }
 // Подготовка к уровню: окно выбора зданий по слотам (обучение и повтор уровня идут без него)
@@ -377,6 +382,12 @@ async function playVerdict(v, token) {
   await count(tot.querySelector('b'), v.sub, v.total, 800);
   tot.classList.add('done'); modal.classList.remove('tally');
 }
+// плита итогов всегда помещается в экран целиком и не двигается: масштаб подбирается по высоте (zoom), прокрутка и «резинка» отключены в CSS
+function fitEnd() {
+  const m = $('#endmenu .modal'), box = $('#endmenu'); m.style.zoom = ''; const H = box.clientHeight - 24, h = m.offsetHeight;
+  if (h > H && H > 200) m.style.zoom = String(Math.max(0.6, H / h));
+}
+window.addEventListener('resize', () => { if (!$('#endmenu').classList.contains('hidden')) fitEnd(); });
 function showEnd(won) {
   const s = sim.stats, r = meta.run, v = sim.verdict, tut = !!D.MAPS[levelIdx].tutorial;
   const L = bareGlyphUrl;
@@ -385,6 +396,9 @@ function showEnd(won) {
   $('#end-title').style.color = won ? '#8fe36a' : '#ff5a6a';
   const dl = D.DIFFS[diffI];
   const par = clock(v.par);
+  const diffImg = new URL(`../img/ui/ic/diff_${diffI}.webp`, import.meta.url).href;
+  $('#end-hero').innerHTML = `<div class="eh ${won ? 'win' : 'lose'}"><i class="ehr"></i><div class="ehi"><img src="${L(won ? 'crown' : 'skull', 64)}" alt=""></div></div>`;
+  $('#end-sub').innerHTML = tut ? '' : `<div class="es"><b>${run ? 'Рейтинговый забег' : D.MAPS[levelIdx].name}</b><span style="--dc:${dl.color}"><img src="${diffImg}" alt="">${dl.name}${weeklyRun ? ' · недельный' : ''}</span></div>`;
   $('#end-verdict').innerHTML = tut ? '' : `
     <div class="vr" data-k="waves"><span><img src="${L('flag', 22)}" alt="">Волны</span><b>+0</b></div>
     <div class="vr" data-k="kills"><span><img src="${L('skull', 22)}" alt="">Сильные враги</span><b>+0</b></div>
@@ -406,7 +420,7 @@ function showEnd(won) {
   $('#e-again').textContent = run ? 'Новый забег' : 'Ещё раз'; $('#e-again').classList.toggle('hidden', more || (tut && won));
   $('#e-menu').textContent = run ? 'В меню' : tut ? 'В меню' : 'На карту';
   if (tut && won) { $('#e-next').classList.remove('hidden'); $('#e-next').textContent = 'К карте'; }
-  show('#endmenu');
+  show('#endmenu'); fitEnd();
   if (!tut) { $('#endmenu .modal').classList.add('tally'); const token = ++tally; playVerdict(v, token); }
   else $('#endmenu .modal').classList.remove('tally');
   if (ending && ending.submit) ending.submit.then((res) => { if (res && res.ok && !run && !$('#endmenu').classList.contains('hidden')) { const e = $('#end-rank'); e.innerHTML = `<img src="${L('crown', 28)}" alt="">#${res.level_rank}`; e.classList.remove('hidden'); } });
@@ -433,7 +447,10 @@ function frame(now) {
   if (!paused && tutorial) tutorial.update(dt);
   drawAcc += dt;
   const camMove = panning || renderer.vx || renderer.vy || renderer.goal;                        // карта едет — рисуем каждый кадр, иначе прокрутка идёт рывками
-  if ((drawAcc >= DRAW_MIN || camMove) && (!frozen || !wasFrozen || needDraw)) { renderer.render(frozen ? 0 : Math.min(drawAcc, 0.1), view); needDraw = false; drawAcc = 0; }     // на паузе и в окнах холст не перерисовывается; на телефоне рисуем не чаще ~30 к/с, расчёт при этом идёт 60 раз в секунду
+  if ((drawAcc >= drawMin || camMove) && (!frozen || !wasFrozen || needDraw)) {
+    const t0 = performance.now(); renderer.render(frozen ? 0 : Math.min(drawAcc, 0.1), view); needDraw = false; drawAcc = 0;
+    if (!frozen) { renderEma = renderEma * 0.92 + (performance.now() - t0) * 0.08; if (TG.isMobile) { const m = perfMode(); drawMin = m === 2 ? 0 : m === 0 ? 0.029 : renderEma < 5 ? 0 : renderEma > 8 ? 0.029 : drawMin; } }
+  }     // на паузе и в окнах холст не перерисовывается; на телефоне рисуем не чаще ~30 к/с, расчёт при этом идёт 60 раз в секунду
   wasFrozen = frozen;
   ui.update(frozen ? 0 : dt); updateRunHud();
 }

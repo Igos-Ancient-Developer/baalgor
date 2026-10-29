@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261029161329';
+import { createTrack, MENU_SPEC } from './music.js?v=20261029162201';
 // группы записей (сколько файлов) и кто какой группой умирает: [группа, скорость воспроизведения]
 const MON_FILES = { slime: 6, golem: 7, brute: 7, squeal: 4, bat: 5, ghost: 5, man: 3, roar: 8, wolf: 4, dry: 6, bone: 5 };
 const MON_OF = {
@@ -45,7 +45,7 @@ export class Sfx {
     this.delay = this.ctx.createDelay(1.2); this.delay.delayTime.value = 0.42; const fb = this.ctx.createGain(); fb.gain.value = 0.38; const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800;
     this.delay.connect(lp); lp.connect(fb); fb.connect(this.delay); lp.connect(this.musBus);
     // реверберация для музыки: затухающий шум 2.8 с
-    const rl = Math.floor(this.ctx.sampleRate * 1.3), ir = this.ctx.createBuffer(1, rl, this.ctx.sampleRate);
+    const rl = Math.floor(this.ctx.sampleRate * (/Android|iPhone|iPad/i.test(navigator.userAgent) ? 0.7 : 1.3)), ir = this.ctx.createBuffer(1, rl, this.ctx.sampleRate);
     for (let ch = 0; ch < 1; ch++) { const d2 = ir.getChannelData(ch); for (let i = 0; i < rl; i++) d2[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / rl, 2.6); }
     const cv = this.ctx.createConvolver(); cv.buffer = ir; const rg = this.ctx.createGain(); rg.gain.value = 0.6; cv.connect(rg); rg.connect(this.musBus); this.rev = cv;
     if (this.musOn && this.wantMusic) this.startMusic();
