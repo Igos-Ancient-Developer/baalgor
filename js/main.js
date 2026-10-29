@@ -1,28 +1,28 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261029205035';
-import * as A from './art.js?v=20261029205035';
-import { Sim } from './sim.js?v=20261029205035';
-import { Gore } from './gore.js?v=20261029205035';
-import { Renderer } from './render.js?v=20261029205035';
-import { GameUI } from './ui.js?v=20261029205035';
-import { Tutorial } from './tutorial.js?v=20261029205035';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261029205035';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261029205035';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261029205035';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261029205035';
-import { mapBG, releaseBG } from './env.js?v=20261029205035';
-import { MENU_SPEC } from './music.js?v=20261029205035';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261029205035';
-import { renderForge, renderAchs } from './screens.js?v=20261029205035';
-import { renderShop } from './shop.js?v=20261029205035';
-import { freeChestReady } from './chests.js?v=20261029205035';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261029205035';
-import { Wallet } from './wallet.js?v=20261029205035';
-import { initLang, pickLang } from './i18n.js?v=20261029205035';
-import { Menus, RUN, clock } from './menus.js?v=20261029205035';
-import { Net } from './net.js?v=20261029205035';
-import { gemIc } from './res.js?v=20261029205035';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261029205035';
+import * as D from './data.js?v=20261029205855';
+import * as A from './art.js?v=20261029205855';
+import { Sim } from './sim.js?v=20261029205855';
+import { Gore } from './gore.js?v=20261029205855';
+import { Renderer } from './render.js?v=20261029205855';
+import { GameUI } from './ui.js?v=20261029205855';
+import { Tutorial } from './tutorial.js?v=20261029205855';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261029205855';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261029205855';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261029205855';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261029205855';
+import { mapBG, releaseBG } from './env.js?v=20261029205855';
+import { MENU_SPEC } from './music.js?v=20261029205855';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261029205855';
+import { renderForge, renderAchs } from './screens.js?v=20261029205855';
+import { renderShop } from './shop.js?v=20261029205855';
+import { freeChestReady } from './chests.js?v=20261029205855';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261029205855';
+import { Wallet } from './wallet.js?v=20261029205855';
+import { initLang, pickLang } from './i18n.js?v=20261029205855';
+import { Menus, RUN, clock } from './menus.js?v=20261029205855';
+import { Net } from './net.js?v=20261029205855';
+import { gemIc } from './res.js?v=20261029205855';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261029205855';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -55,8 +55,8 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261029205035').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261029205035').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261029205855').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261029205855').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем

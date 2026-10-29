@@ -1,7 +1,7 @@
 // Настоящий 3D-сундук на three.js (js/vendor/three.module.min.js): корпус с досками или обивкой, окантовка, замок с камнем, откидывающаяся крышка на петле,
 // внутри золото и самоцветы, свет из сундука, искры, магический круг на полу. Рисуется в прозрачный canvas поверх затемнённого экрана.
 // Состояния: drop → idle → charge → burst → got. Если WebGL недоступен, createChest3D вернёт null и окно откроется на запасной (плоской) сцене.
-import * as THREE from './vendor/three.module.min.js?v=20261029205035';
+import * as THREE from './vendor/three.module.min.js?v=20261029205855';
 
 const PAL = {
   wood: { body: 0xffffff, trim: 0x474b55, trimMet: 0.5, trimRough: 0.62, gem: 0x2f2a28, lock: 0x575c68, glow: 0xffb35a, roughness: 0.85, metal: 0.0, cross: 3 },

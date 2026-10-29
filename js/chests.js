@@ -1,15 +1,15 @@
-// Сундуки (лутбоксы): три вида, продаются только за души. Бросок и анимация открытия; таблицы — js/chesttable.js (soulRows), игроку шансы не показываются.
-// Сундуки, которые лежат на сервере (куплены раньше), открывает сервер (supabase/chests.sql, chest_open).
-import { gemUrl } from './gem3d.js?v=20261029205035';
-import * as D from './data.js?v=20261029205035';
-import * as M from './meta.js?v=20261029205035';
-import { Net } from './net.js?v=20261029205035';
-import { Wallet } from './wallet.js?v=20261029205035';
-import { towerIcon, econIcon } from './ui.js?v=20261029205035';
-import { iconUrl } from './icons.js?v=20261029205035';
-import { url as imgUrl } from './sprites.js?v=20261029205035';
-import { CHEST_ROWS, POOL_OF, chanceOf, soulRows } from './chesttable.js?v=20261029205035';
-import { createChest3D } from './chest3d.js?v=20261029205035';
+// Сундуки (лутбоксы): три вида, продаются за кристаллы и за души. За кристаллы бросок делает сервер (supabase/chests.sql, chest_open), за души — клиент (rollChest).
+// Таблицы — js/chesttable.js; игроку шансы не показываются, только цвет редкости.
+import { gemUrl } from './gem3d.js?v=20261029205855';
+import * as D from './data.js?v=20261029205855';
+import * as M from './meta.js?v=20261029205855';
+import { Net } from './net.js?v=20261029205855';
+import { Wallet } from './wallet.js?v=20261029205855';
+import { towerIcon, econIcon } from './ui.js?v=20261029205855';
+import { iconUrl } from './icons.js?v=20261029205855';
+import { url as imgUrl } from './sprites.js?v=20261029205855';
+import { CHEST_ROWS, POOL_OF, chanceOf, soulRows } from './chesttable.js?v=20261029205855';
+import { createChest3D } from './chest3d.js?v=20261029205855';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -18,7 +18,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const META = { wood: { name: 'Деревянный сундук', theme: 'wood', color: '#c98a46' }, silver: { name: 'Серебряный сундук', theme: 'silver', color: '#a9cdee' }, gold: { name: 'Золотой сундук', theme: 'gold', color: '#ffd24a' } };
 export const CHESTS = {};
-for (const k of Object.keys(CHEST_ROWS)) CHESTS[k] = { ...META[k], souls: CHEST_ROWS[k].souls, table: soulRows(k).map((r) => (r.t === 'unlock' ? { ...r, pool: POOL_OF[r.id] } : r)) };
+for (const k of Object.keys(CHEST_ROWS)) CHESTS[k] = { ...META[k], souls: CHEST_ROWS[k].souls, gems: CHEST_ROWS[k].gems, table: soulRows(k).map((r) => (r.t === 'unlock' ? { ...r, pool: POOL_OF[r.id] } : r)), gtable: CHEST_ROWS[k].rows.map((r) => (r.t === 'unlock' ? { ...r, pool: POOL_OF[r.id] } : r)) };
 export const CHEST_ORDER = ['wood', 'silver', 'gold'];
 
 const rint = (a, b, rnd) => a + Math.floor(rnd() * (b - a + 1));
@@ -39,10 +39,12 @@ export function rollChest(kind, pay, save, rnd = Math.random) {
   return { t: row.t, n: rint(row.min, row.max, rnd) };
 }
 // редкость строки по её шансу, как в кейсах: чем реже, тем «краснее» и «золотее»
-const rarOfChance = (p) => (p >= 8 ? 'c' : p >= 2 ? 'u' : p >= 0.5 ? 'r' : p >= 0.05 ? 'e' : 'l');
-const rowRar = (kind, r) => rarOfChance(chanceOf(kind, r, CHESTS[kind].table));
+const rarOfChance = (p) => (p >= 12 ? 'c' : p >= 3 ? 'u' : p >= 1 ? 'r' : p >= 0.25 ? 'e' : 'l');
+// у сундука две таблицы: за души (CHESTS[k].table) и за кристаллы (gtable, бросает сервер); редкость считается по той таблице, где лежит строка. Премиум-башни всегда легендарные
+const rowRar = (kind, r) => { const c = CHESTS[kind]; return r.t === 'unlock' && D.isPremium(r.id) ? 'l' : rarOfChance(chanceOf(kind, r, c.gtable.includes(r) ? c.gtable : c.table)); };
+const tblOf = (kind, loot) => (loot.t === 'gems' || loot.t === 'stars' || (loot.t === 'unlock' && D.isPremium(loot.id)) ? CHESTS[kind].gtable : CHESTS[kind].table);
 const RARNAME = { c: 'Обычное', u: 'Необычное', r: 'Редкое', e: 'Эпическое', l: 'Легендарное' };
-const RARCOL = { c: '#aab0b8', u: '#5ab0ff', r: '#8a6aff', e: '#ff5ad0', l: '#ffcf3a' };
+const RARCOL = { c: '#aab0b8', u: '#5ab0ff', r: '#8a6aff', e: '#ff5ad0', l: '#ff9a1c' };
 
 // ───── картинки и значки добычи ─────
 const IC = (n) => imgUrl('ui/ic/' + n + '.webp');
@@ -56,12 +58,12 @@ const rowPic = (r) => (r.t === 'souls' ? IC('loot_souls') : r.t === 'gems' ? gem
 const lootName = (l) => (l.t === 'souls' ? `+${fmt(l.n)} душ` : l.t === 'gems' ? `+${fmt(l.n)} кристаллов` : l.t === 'stars' ? `${l.n} Telegram Stars` : nameOf(l.id));
 const lootSub = (l) => (l.dup ? `У тебя уже есть «${nameOf(l.dup)}», вместо него — компенсация` : l.t === 'stars' ? 'Главный приз! Мы свяжемся с тобой' : l.t === 'unlock' ? (D.isPremium(l.id) ? 'Премиум-башня, навсегда' : 'Новое здание, навсегда') : l.t === 'gems' ? 'Кристаллы на счёт' : 'Души в Кузницу');
 // какая строка таблицы выпала (для подсветки и подписи «шанс N%»)
-const winRow = (kind, loot) => CHESTS[kind].table.findIndex((r) => (loot.dup ? r.t === 'unlock' && r.id === loot.dup : loot.t === 'unlock' ? r.t === 'unlock' && r.id === loot.id : loot.t === 'stars' ? r.t === 'stars' : r.t === loot.t && loot.n >= r.min && loot.n <= r.max));
-const rarOf = (kind, loot) => { const i = winRow(kind, loot); return i >= 0 ? rowRar(kind, CHESTS[kind].table[i]) : loot.dup ? 'c' : 'u'; };
+const winRow = (kind, loot) => tblOf(kind, loot).findIndex((r) => (loot.dup ? r.t === 'unlock' && r.id === loot.dup : loot.t === 'unlock' ? r.t === 'unlock' && r.id === loot.id : loot.t === 'stars' ? r.t === 'stars' : r.t === loot.t && loot.n >= r.min && loot.n <= r.max));
+const rarOf = (kind, loot) => { const i = winRow(kind, loot); return i >= 0 ? rowRar(kind, tblOf(kind, loot)[i]) : loot.dup ? 'c' : 'u'; };
 // три самых редких приза сундука (кроме главного приза Stars): значки для карточки в магазине
 export function topPrizes(kind, n = 3) {
-  const c = CHESTS[kind];
-  return c.table.map((r) => ({ r, p: chanceOf(kind, r, c.table) })).sort((x, y) => x.p - y.p).map(({ r }) => ({ pic: rowPic(r), col: RARCOL[rowRar(kind, r)] })).filter((x, i, a) => a.findIndex((y) => y.pic === x.pic) === i).slice(0, n);
+  const c = CHESTS[kind], tb = c.gtable;                             // самые редкие призы сундука за кристаллы, включая премиум-башни
+  return tb.filter((r) => r.t !== 'stars').map((r) => ({ r, p: chanceOf(kind, r, tb) })).sort((x, y) => x.p - y.p).map(({ r }) => ({ pic: rowPic(r), col: RARCOL[rowRar(kind, r)] })).filter((x, i, a) => a.findIndex((y) => y.pic === x.pic) === i).slice(0, n);
 }
 // бесплатный деревянный сундук раз в 2 дня: падает на склад. Хранится номер суток по UTC (число), он переживает перезапуск игры (см. mergeSave в tg.js)
 export const FREE_CHEST_DAYS = 2;
@@ -86,9 +88,20 @@ export async function refreshStock(save) {
 // купить n сундуков про запас
 export async function buyChests(save, kind, pay, n) {
   const c = CHESTS[kind]; save.stock = save.stock || {};
-  if (pay !== 'souls' || !c.souls) return { error: 'bad' };                          // сундуки продаются только за души
-  if ((save.souls || 0) < c.souls * n) return { error: 'souls', price: c.souls * n };
-  save.souls -= c.souls * n; save.stock[kind] = (save.stock[kind] || 0) + n; Wallet.onChange(); return { ok: true };
+  if (pay === 'souls') {
+    if (!c.souls) return { error: 'bad' };
+    if ((save.souls || 0) < c.souls * n) return { error: 'souls', price: c.souls * n };
+    save.souls -= c.souls * n; save.stock[kind] = (save.stock[kind] || 0) + n; Wallet.onChange(); return { ok: true };
+  }
+  if (Wallet.online) {                                                                 // за кристаллы: сундуки кладёт на склад сервер
+    try {
+      const r = await Net.call('chest_buy', { init_data: Net.initData(), p: { kind, n } });
+      if (r && r.ok) { Wallet.apply(r); if (r.chests) save.chestsSrv = r.chests; Wallet.onChange(); return { ok: true }; }
+      return r || { error: 'net' };
+    } catch (e) { return { error: 'net' }; }
+  }
+  if ((save.gems || 0) < c.gems * n) return { error: 'gems', price: c.gems * n };      // вне Telegram (отладка): списываем у себя
+  save.gems -= c.gems * n; save.stock[kind] = (save.stock[kind] || 0) + n; Wallet.onChange(); return { ok: true };
 }
 // открыть n сундуков со склада: сначала купленные за души (бросок на клиенте), затем кристальные (бросок на сервере)
 export async function openChests(save, kind, n) {
@@ -126,7 +139,7 @@ const cardLabel = (r, amt) => (r.t === 'souls' ? fmt(amt) : r.t === 'gems' ? fmt
 const cardHtml = (kind, r, amt, extra = '') => `<div class="rc ${extra}" style="--rc:${RARCOL[rowRar(kind, r)]}"><img src="${rowPic(r)}" alt=""><small>${cardLabel(r, amt)}</small></div>`;
 // строка рулетки: случайные карточки по весам таблицы (с поправкой, чтобы редкие тоже мелькали), на заданном месте — выпавшая
 function buildStrip(kind, loot, wi, N, WIN) {
-  const rows = CHESTS[kind].table, ws = rows.map((r) => Math.pow(r.w, 0.55)), tot = ws.reduce((a, b) => a + b, 0), out = [];
+  const rows = tblOf(kind, loot), ws = rows.map((r) => Math.pow(r.w, 0.55)), tot = ws.reduce((a, b) => a + b, 0), out = [];
   for (let i = 0; i < N; i++) {
     if (i === WIN) { const r = rows[wi >= 0 ? wi : 0]; out.push(cardHtml(kind, r, loot.n || 0, 'win')); continue; }
     let x = Math.random() * tot, k = 0; for (; k < rows.length - 1; k++) { x -= ws[k]; if (x < 0) break; } out.push(cardHtml(kind, rows[k], amountOf(rows[k])));
@@ -137,7 +150,7 @@ const stageHtml = (c) => `<div class="cfx-stage"><div class="cfx-circle"><i></i>
 
 // ───── один сундук: 3D-сундук падает на магический круг, раскручивается, вспышка, крышка открыта; снизу рулетка, как в кейсах, останавливается на выпавшем предмете ─────
 export async function playOpening(kind, loot, ctrl, { again = null } = {}) {
-  const c = CHESTS[kind], sfx = ctrl.sfx, wi = winRow(kind, loot), rar = rarOf(kind, loot), row = wi >= 0 ? c.table[wi] : null, RC = RARCOL[rar];
+  const c = CHESTS[kind], sfx = ctrl.sfx, wi = winRow(kind, loot), rar = rarOf(kind, loot), row = wi >= 0 ? tblOf(kind, loot)[wi] : null, RC = RARCOL[rar];
   const root = el('div', 'cfx'); root.id = 'cfx'; root.style.setProperty('--cc', c.color); root.style.setProperty('--rc', RC);
   root.innerHTML = `<div class="cfx-rays"></div><div class="cfx-glow"></div><div class="cfx-title">${c.name}</div>${stageHtml(c)}
     <div class="cfx-loot${loot.t === 'unlock' ? ' tw' : ''}">${lootIcon(loot)}</div><div class="cfx-ring"></div>
@@ -164,7 +177,7 @@ export async function playOpening(kind, loot, ctrl, { again = null } = {}) {
   { const cols = ['#fff6c0', '#ffd24a', '#fff', c.color, RC];
     for (let i = 0; i < 40; i++) { const s = el('i', i % 3 === 0 ? 'st' : ''), a = Math.random() * Math.PI * 2, d = 110 + Math.random() * Math.min(window.innerWidth, 520) * 0.55; s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d * 0.85 - 30 + 'px'); s.style.setProperty('--c', cols[i % cols.length]); s.style.setProperty('--t', 0.7 + Math.random() * 0.7 + 's'); s.style.animationDelay = Math.random() * 0.12 + 's'; sparks.appendChild(s); }
     const a = layer.getBoundingClientRect(); layer.style.setProperty('--x0', a.width / 2 + 'px'); layer.style.setProperty('--y0', a.height * 0.4 + 'px');
-    c.table.slice().sort(() => Math.random() - 0.5).slice(0, 6).forEach((r, i) => setTimeout(() => fling(layer, rowPic(r), (i % 2 ? 1 : -1) * (40 + Math.random() * 120)), 80 + i * 90)); }
+    tblOf(kind, loot).slice().sort(() => Math.random() - 0.5).slice(0, 6).forEach((r, i) => setTimeout(() => fling(layer, rowPic(r), (i % 2 ? 1 : -1) * (40 + Math.random() * 120)), 80 + i * 90)); }
   await wait(650);
   // 5. рулетка снизу: быстро едет и плавно останавливается на выпавшем предмете
   const N = 70, WIN = 56, CW = 96, GAP = 6;

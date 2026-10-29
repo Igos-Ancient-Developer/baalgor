@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261029205035';
+import { COLS, ROWS } from './layouts.js?v=20261029205855';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029205035';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029205855';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
