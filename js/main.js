@@ -1,28 +1,28 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261029170857';
-import * as A from './art.js?v=20261029170857';
-import { Sim } from './sim.js?v=20261029170857';
-import { Gore } from './gore.js?v=20261029170857';
-import { Renderer } from './render.js?v=20261029170857';
-import { GameUI } from './ui.js?v=20261029170857';
-import { Tutorial } from './tutorial.js?v=20261029170857';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261029170857';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261029170857';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261029170857';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261029170857';
-import { mapBG, releaseBG } from './env.js?v=20261029170857';
-import { MENU_SPEC } from './music.js?v=20261029170857';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261029170857';
-import { renderForge, renderAchs } from './screens.js?v=20261029170857';
-import { renderShop } from './shop.js?v=20261029170857';
-import { freeChestReady } from './chests.js?v=20261029170857';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261029170857';
-import { Wallet } from './wallet.js?v=20261029170857';
-import { initLang, pickLang } from './i18n.js?v=20261029170857';
-import { Menus, RUN, clock } from './menus.js?v=20261029170857';
-import { Net } from './net.js?v=20261029170857';
-import { gemIc } from './res.js?v=20261029170857';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261029170857';
+import * as D from './data.js?v=20261029172153';
+import * as A from './art.js?v=20261029172153';
+import { Sim } from './sim.js?v=20261029172153';
+import { Gore } from './gore.js?v=20261029172153';
+import { Renderer } from './render.js?v=20261029172153';
+import { GameUI } from './ui.js?v=20261029172153';
+import { Tutorial } from './tutorial.js?v=20261029172153';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261029172153';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261029172153';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261029172153';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261029172153';
+import { mapBG, releaseBG } from './env.js?v=20261029172153';
+import { MENU_SPEC } from './music.js?v=20261029172153';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261029172153';
+import { renderForge, renderAchs } from './screens.js?v=20261029172153';
+import { renderShop } from './shop.js?v=20261029172153';
+import { freeChestReady } from './chests.js?v=20261029172153';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261029172153';
+import { Wallet } from './wallet.js?v=20261029172153';
+import { initLang, pickLang } from './i18n.js?v=20261029172153';
+import { Menus, RUN, clock } from './menus.js?v=20261029172153';
+import { Net } from './net.js?v=20261029172153';
+import { gemIc } from './res.js?v=20261029172153';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261029172153';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -55,8 +55,8 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261029170857').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261029170857').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261029172153').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261029172153').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
@@ -382,10 +382,10 @@ async function playVerdict(v, token) {
   await count(tot.querySelector('b'), v.sub, v.total, 800);
   tot.classList.add('done'); modal.classList.remove('tally');
 }
-// плита итогов всегда помещается в экран целиком и не двигается: масштаб подбирается по высоте (zoom), прокрутка и «резинка» отключены в CSS
+// плита итогов: если не помещается, слегка уменьшается (zoom), остальное прокручивается
 function fitEnd() {
   const m = $('#endmenu .modal'), box = $('#endmenu'); m.style.zoom = ''; const H = box.clientHeight - 24, h = m.offsetHeight;
-  if (h > H && H > 200) m.style.zoom = String(Math.max(0.6, H / h));
+  if (h > H && H > 200) m.style.zoom = String(Math.max(0.82, H / h));
 }
 window.addEventListener('resize', () => { if (!$('#endmenu').classList.contains('hidden')) fitEnd(); });
 function showEnd(won) {

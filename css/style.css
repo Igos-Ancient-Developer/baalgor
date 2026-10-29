@@ -1160,8 +1160,8 @@ body.hastabs #title .title-actions { margin-top: 34px; margin-bottom: auto; }
 .ps-d { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 2px 0 8px; } .ps-d img { width: 34px; height: 34px; object-fit: contain; filter: drop-shadow(0 2px 3px #000); } .ps-d b { font-family: var(--gothic); font-size: 20px; color: var(--dc, #ffd24a); text-shadow: 0 2px 0 #000, 0 0 10px color-mix(in srgb, var(--dc, #ffd24a) 60%, transparent); font-weight: 400; } .ps-d span { font-size: 11px; color: #ff8f84; border: 1px solid #a0302a; border-radius: 9px; padding: 1px 6px; }
 
 /* итоги уровня: плита неподвижна, всё вмещается в экран; эмблема победы или поражения и плашка сложности */
-#endmenu { overflow: hidden; overscroll-behavior: none; touch-action: none; }
-#endmenu .modal { max-height: none; touch-action: none; -webkit-user-select: none; user-select: none; }
+#endmenu { overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+#endmenu .modal { max-height: none; flex: none; margin: auto; }
 #end-hero { display: flex; justify-content: center; margin: -4px 0 -6px; } #end-hero:empty { display: none; }
 .eh { position: relative; width: 92px; height: 92px; display: grid; place-items: center; }
 .eh .ehr { position: absolute; inset: -14px; border-radius: 50%; background: conic-gradient(from 0deg, rgba(255,214,90,0), rgba(255,214,90,.55), rgba(255,214,90,0) 25%, rgba(255,214,90,.55) 50%, rgba(255,214,90,0) 75%, rgba(255,214,90,.55), rgba(255,214,90,0)); -webkit-mask: radial-gradient(circle, transparent 42%, #000 44%, #000 70%, transparent 72%); mask: radial-gradient(circle, transparent 42%, #000 44%, #000 70%, transparent 72%); }

@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029170857';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029170857';
-import * as D from './data.js?v=20261029170857';
-import * as M from './meta.js?v=20261029170857';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029170857';
-import { url as imgUrl } from './sprites.js?v=20261029170857';
-import { Net } from './net.js?v=20261029170857';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029170857';
-import { fillPlates, gemIc } from './res.js?v=20261029170857';
-import { gemHtml } from './gem3d.js?v=20261029170857';
-import { Wallet } from './wallet.js?v=20261029170857';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029172153';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029172153';
+import * as D from './data.js?v=20261029172153';
+import * as M from './meta.js?v=20261029172153';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029172153';
+import { url as imgUrl } from './sprites.js?v=20261029172153';
+import { Net } from './net.js?v=20261029172153';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029172153';
+import { fillPlates, gemIc } from './res.js?v=20261029172153';
+import { gemHtml } from './gem3d.js?v=20261029172153';
+import { Wallet } from './wallet.js?v=20261029172153';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -298,7 +298,7 @@ export class Menus {
           ${best ? `<div class="dbest"><img src="${SC()}" alt="">${fmt(best)}</div>` : ''}
         </div>
         ${unlocked ? '' : `<div class="dlock"><img src="${bareGlyphUrl('lock', 72)}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}
-        <div class="dbody"><div class="dsub">Испытания</div>${rows}<div class="dsub">Лучшие на этом рубеже</div><div class="dtop">${'<div class="skel"></div>'.repeat(3)}</div></div>
+        <div class="dbody"><div class="dsub">Испытания</div>${rows}</div>
         `;
       const foot = el('div', 'dfoot', '<button class="btn big play">Играть</button>');           // кнопка стоит под плитой, а не поверх прокручиваемого текста
       const col = el('div', 'dcol'); col.append(card, foot);
@@ -321,23 +321,6 @@ export class Menus {
     const start = this.startDiff(l.id);
     this.show('#diffsheet');
     requestAnimationFrame(() => { go(start, false); setCur(); });
-    // топ-3 каждой сложности (всегда на виду)
-    const fill = (tops) => {
-      if (seq !== this.diffSeq) return;
-      cards.forEach((card, i) => {
-        const box = card.querySelector('.dtop'); box.innerHTML = '';
-        const rows = (tops && tops[i]) || [];
-        for (let k = 0; k < 3; k++) {
-          const r = rows[k];
-          if (!r) { box.appendChild(el('div', 'trow empty', '—')); continue; }
-          const row = el('div', 'trow' + (Net.me() && r.tg_id === Net.me().id ? ' me' : ''));
-          row.appendChild(el('div', `rk r${k + 1}`, k + 1)); row.appendChild(avatar(r.photo, r.name, r.tg_id));
-          row.appendChild(el('div', 'nm', r.name.replace(/</g, '&lt;'))); row.appendChild(el('div', 'sc', fmt(r.score)));
-          box.appendChild(row);
-        }
-      });
-    };
-    if (!Net.enabled) fill(null); else Net.levelTops(l.id).then(fill).catch(() => fill(null));
   }
   // сложность, с которой открываем уровень: где играли в последний раз; иначе самая высокая пройденная; иначе первая
   startDiff(levelId) {
