@@ -1,28 +1,28 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261028210620';
-import * as A from './art.js?v=20261028210620';
-import { Sim } from './sim.js?v=20261028210620';
-import { Gore } from './gore.js?v=20261028210620';
-import { Renderer } from './render.js?v=20261028210620';
-import { GameUI } from './ui.js?v=20261028210620';
-import { Tutorial } from './tutorial.js?v=20261028210620';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261028210620';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261028210620';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261028210620';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261028210620';
-import { mapBG, releaseBG } from './env.js?v=20261028210620';
-import { MENU_SPEC } from './music.js?v=20261028210620';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261028210620';
-import { renderForge, renderAchs } from './screens.js?v=20261028210620';
-import { renderShop } from './shop.js?v=20261028210620';
-import { freeChestReady } from './chests.js?v=20261028210620';
-import { WEEKLY, weeklyState } from './weekly.js?v=20261028210620';
-import { Wallet } from './wallet.js?v=20261028210620';
-import { initLang, pickLang } from './i18n.js?v=20261028210620';
-import { Menus, RUN, clock } from './menus.js?v=20261028210620';
-import { Net } from './net.js?v=20261028210620';
-import { gemIc } from './res.js?v=20261028210620';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261028210620';
+import * as D from './data.js?v=20261029154931';
+import * as A from './art.js?v=20261029154931';
+import { Sim } from './sim.js?v=20261029154931';
+import { Gore } from './gore.js?v=20261029154931';
+import { Renderer } from './render.js?v=20261029154931';
+import { GameUI } from './ui.js?v=20261029154931';
+import { Tutorial } from './tutorial.js?v=20261029154931';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261029154931';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261029154931';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261029154931';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261029154931';
+import { mapBG, releaseBG } from './env.js?v=20261029154931';
+import { MENU_SPEC } from './music.js?v=20261029154931';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261029154931';
+import { renderForge, renderAchs } from './screens.js?v=20261029154931';
+import { renderShop } from './shop.js?v=20261029154931';
+import { freeChestReady } from './chests.js?v=20261029154931';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261029154931';
+import { Wallet } from './wallet.js?v=20261029154931';
+import { initLang, pickLang } from './i18n.js?v=20261029154931';
+import { Menus, RUN, clock } from './menus.js?v=20261029154931';
+import { Net } from './net.js?v=20261029154931';
+import { gemIc } from './res.js?v=20261029154931';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261029154931';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -51,9 +51,13 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261028210620').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261028210620').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261029154931').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261029154931').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
+  weeklyState(save);                                         // настроить недельный уровень на текущую неделю
+  if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
+    let back = 0; for (let l = 0; l < save.perks.luck; l++) back += Math.round(35 * (1 + 0.7 * l)); save.souls = (save.souls || 0) + back; delete save.perks.luck;
+  }
   sfx.sfxOn = save.sfx; sfx.musOn = save.mus; applySettings();
   const dpr = Math.min(window.devicePixelRatio || 1, TG.isMobile ? 1.5 : 2);      // на телефоне холст чуть мельче: меньше нагрев
   A.setScale(Renderer.pickScale(window.innerWidth, Math.max(300, window.innerHeight - 56), dpr));
@@ -71,10 +75,11 @@ async function boot() {
 // Листы врагов, фон карты и спрайты зданий готовим под уровень заранее (пока игрок выбирает сложность и здания) и освобождаем, когда уровень закрыт:
 // в памяти только то, что нужно сейчас.
 let warmId = null, warmP = null;
-function ensureLevel(L) {
-  if (warmId === L.id && warmP) return warmP;
-  warmId = L.id;
-  const types = D.levelTypes(L);
+function ensureLevel(L, diffIdx = 1) {
+  const tier = L.weekly ? L.tier : (D.DIFFS[diffIdx] || {}).tier || 0, key = L.id + ':' + tier;      // виды врагов зависят от сложности (сдвиг tier)
+  if (warmId === key && warmP) return warmP;
+  warmId = key;
+  const types = D.levelTypes(L, tier);
   warmP = (async () => {
     await loadEnemyImgs(enemyFiles(types));
     applyEnemySprites(types); releaseEnemies(types);
@@ -154,7 +159,7 @@ function setupNav() {
   ctrl.openAchs = () => { sfx.unlock(); sfx.play('click'); renderAchs(save); show('#achs'); updateBack(); };
   ctrl.toggleSnd = () => { sfx.unlock(); sfx.setSfx(!sfx.sfxOn); save.sfx = sfx.sfxOn; persist(); sfx.play('click'); };
   ctrl.toggleMus = () => { sfx.unlock(); sfx.setMusic(!sfx.musOn); save.mus = sfx.musOn; persist(); };
-  ctrl.startLevel = (id, d, weekly) => prepareLevel(id, d, false, weekly); ctrl.startRun = startRunFlow; ctrl.ensureTypes = async (types) => { const all = [...new Set([...types, ...types.map((t) => D.ENEMIES[t] && D.ENEMIES[t].split).filter(Boolean)])]; await loadEnemyImgs(enemyFiles(all)); applyEnemySprites(all); }; ctrl.warm = (id) => { const L = D.MAPS.find((l) => l.id === id); if (L) ensureLevel(L); };
+  ctrl.startLevel = (id, d, weekly) => prepareLevel(id, d, false, weekly); ctrl.startRun = startRunFlow; ctrl.ensureTypes = async (types) => { const all = [...new Set([...types, ...types.map((t) => D.ENEMIES[t] && D.ENEMIES[t].split).filter(Boolean)])]; await loadEnemyImgs(enemyFiles(all)); applyEnemySprites(all); }; ctrl.warm = (id, d) => { const L = D.MAPS.find((l) => l.id === id); if (L) ensureLevel(L, d); };
   ctrl.note = (text) => { const n = $('#note'); n.textContent = text; n.classList.add('show'); clearTimeout(ctrl._nt); ctrl._nt = setTimeout(() => n.classList.remove('show'), 2200); };
 }
 
@@ -255,7 +260,7 @@ function setupGameUi() {
 }
 // Подготовка к уровню: окно выбора зданий по слотам (обучение и повтор уровня идут без него)
 function prepareLevel(levelId, diffIdx, again = false, weekly = false) {
-  const L = D.MAPS.find((l) => l.id === levelId); ensureLevel(L);
+  const L = D.MAPS.find((l) => l.id === levelId); ensureLevel(L, diffIdx);
   if (L.tutorial) { startLevel(levelId, diffIdx, false, ['bolt', 'mine']); return; }
   if (again && save.loadout && getLoadout(save).some((t) => D.ECON[t])) { startLevel(levelId, diffIdx, false, getLoadout(save), [], weekly); return; }      // повтор без окна — только если в наборе есть здание добычи
   menus.openLoadout({ title: L.name, slots: slotsOf(save), all: false, initial: getLoadout(save), boosts: true, lvl: L.lvl, diff: diffIdx,
@@ -267,7 +272,7 @@ function prepareLevel(levelId, diffIdx, again = false, weekly = false) {
   updateBack();
 }
 function openLoadoutFor(levelId, diffIdx) {                 // перед каждым уровнем забега: слоты и открытые здания игрока, как в обычной игре
-  const lv = D.MAPS.find((l) => l.id === levelId); ensureLevel(lv);
+  const lv = D.MAPS.find((l) => l.id === levelId); ensureLevel(lv, diffIdx);
   menus.openLoadout({ title: `${run.i + 1}/${run.levels.length} · ${lv.name}`, slots: slotsOf(save), all: false, initial: run.loadout || getLoadout(save), nobackBtn: run.i > 0,
     onGo: (list) => { run.loadout = list.slice(); startLevel(levelId, diffIdx, true, list); } });
   updateBack();
@@ -277,14 +282,14 @@ let weeklyRun = false;                                    // идёт крова
 async function startLevel(levelId, diffIdx, ranked, loadout, boosts = [], weekly = false) {
   if (starting) return; starting = true;
   const tm = setTimeout(() => busy(true), 160);
-  try { await ensureLevel(D.MAPS.find((l) => l.id === levelId)); } finally { clearTimeout(tm); busy(false); starting = false; }
-  levelIdx = D.MAPS.findIndex((l) => l.id === levelId); diffI = diffIdx; weeklyRun = !!weekly && diffIdx === WEEKLY.diff && !ranked;
+  try { await ensureLevel(D.MAPS.find((l) => l.id === levelId), diffIdx); } finally { clearTimeout(tm); busy(false); starting = false; }
+  levelIdx = D.MAPS.findIndex((l) => l.id === levelId); diffI = diffIdx; weeklyRun = !!weekly && D.MAPS[levelIdx].weekly && diffIdx === WEEKLY.diff && !ranked && !weeklyState(save).done;
   const L = D.MAPS[levelIdx], tut = !!L.tutorial;
   hideAll(); show('#game'); tally++;
   if (!ranked) { run = null; ctrl.run = null; }
   const std = !tut;                                      // в обучении без даров Кузницы; в рейтинговом забеге действует всё, что игрок открыл и прокачал
   sim = new Sim({ mapId: levelIdx, diffIdx, seed: (Math.random() * 1e9) | 0, perks: boostMods(perkMods(std ? save.perks : {}), boosts, diffIdx), locked: std ? lockedItems(save) : [],
-    allowed: loadout, weeklyHp: weeklyRun ? WEEKLY.hp : 1, limits: tut ? { bolt: 1, mine: 1 } : null, gold: tut ? 110 : null, hold: tut });
+    allowed: loadout, weeklyHp: weeklyRun ? L.weeklyHp : 1, limits: tut ? { bolt: 1, mine: 1 } : null, gold: tut ? 110 : null, hold: tut });
   ctrl.sim = sim; if (location.search.includes('debug')) window.__bk = ctrl;
   if (gore) gore.dispose();
   gore = new Gore(); gore.muzzle = A.muzzle; gore.headAngle = A.headAngle; ctrl.gore = gore; gore.level = 1; gore.attach(sim); gore.onSound = (n, v) => { if (GORE_SOUNDS.has(n)) sfx.play(n, v); };
@@ -337,6 +342,7 @@ function onOver({ won }) {
 async function claimWeekly() {
   const w = weeklyState(save); if (w.done) return;
   w.won = true; persist();
+  save.life.weeklyWins = (save.life.weeklyWins || 0) + 1; if (meta) meta.poll();
   const r = await Wallet.weekly(w.wk);
   if (r && (r.ok || r.error === 'done')) { w.done = true; w.won = false; persist(); menus.buildTitle(); if (r.ok) { sfx.play('win'); ctrl.note(`Кровавый уровень пройден: +${r.souls} душ, +${r.gems} кристаллов`); } }
   else ctrl.note('Награда недели не начислена: нет связи, она придёт позже');
@@ -512,7 +518,7 @@ function handleTap(p, ptype) {
     view.hover = { c, r };
     return;
   }
-  if (b) { if (ui.selB === b) ui.deselect(); else { ui.select(b); sfx.play('select'); } }
+  if (b) { if (ui.selB === b) ui.deselect(); else ui.select(b); }
   else ui.deselect();
 }
 

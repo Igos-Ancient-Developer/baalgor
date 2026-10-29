@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, weeklyActive } from './weekly.js?v=20261028210620';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261028210620';
-import * as D from './data.js?v=20261028210620';
-import * as M from './meta.js?v=20261028210620';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261028210620';
-import { url as imgUrl } from './sprites.js?v=20261028210620';
-import { Net } from './net.js?v=20261028210620';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261028210620';
-import { fillPlates, gemIc } from './res.js?v=20261028210620';
-import { gemHtml } from './gem3d.js?v=20261028210620';
-import { Wallet } from './wallet.js?v=20261028210620';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029154931';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029154931';
+import * as D from './data.js?v=20261029154931';
+import * as M from './meta.js?v=20261029154931';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029154931';
+import { url as imgUrl } from './sprites.js?v=20261029154931';
+import { Net } from './net.js?v=20261029154931';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029154931';
+import { fillPlates, gemIc } from './res.js?v=20261029154931';
+import { gemHtml } from './gem3d.js?v=20261029154931';
+import { Wallet } from './wallet.js?v=20261029154931';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -73,6 +73,7 @@ export function diffLines(d, i) {
   const L = [];
   const mul = (v) => '×' + x(v);
   L.push({ k: 'horde', icon: 'horde', t: 'Размер орд', v: d.horde > 1 ? mul(d.horde) : 'обычный', cls: d.horde > 1 ? 'bad' : 'neutral', s: d.horde > 1 ? 'Больше врагов в каждой волне' : 'Состав волн по умолчанию' });
+  if (d.tier) L.push({ k: 'tier', icon: 'dmg', t: 'Сильные виды врагов', v: d.tier >= 8 ? 'с первых карт' : d.tier >= 5 ? 'намного раньше' : 'раньше', cls: 'bad', s: 'Монстры из середины и конца игры выходят уже на ранних уровнях' });
   L.push({ k: 'elite', icon: 'crown', t: 'Элитные враги', v: d.elite ? Math.round(d.elite * 100) + '%' : 'нет', cls: d.elite ? 'bad' : 'neutral', s: d.elite ? `Золотая аура: здоровье ×${x(d.eliteHp)}, скорость +${Math.round((d.eliteSpd - 1) * 100)}%, награда ×2` : 'Золотых элит в волнах нет' });
   L.push({ k: 'lives', icon: 'heart', t: 'Жизни крепости', v: d.lives ? String(d.lives) : String(D.START_LIVES), cls: d.lives ? 'bad' : 'neutral', s: d.lives ? 'Один пропущенный враг — и забег окончен' : 'Враги, дошедшие до ворот, отнимают жизни (тяжёлые — больше). Добавить жизни можно перком «Крепость» в Кузнице и усилителем за кристаллы' });
   L.push({ k: 'sep', t: 'Награды' });
@@ -160,21 +161,31 @@ export class Menus {
     // рубежи: маленькие тихие медальоны на нарисованных площадках; подробности — в плашке по нажатию
     this.closeLevel(); const nodes = $('#nodes'); nodes.innerHTML = '';
     for (const l of D.MAPS) {
+      if (l.weekly) continue;                                   // недельный уровень — отдельный узел ниже
       const unlocked = M.levelUnlocked(s, l), cleared = M.levelCleared(s, l.id);
       const state = !unlocked ? 'locked' : cleared ? 'cleared' : 'avail';
       const glyph = state === 'locked' ? 'skulllock' : state === 'cleared' ? 'flag' : 'dmg';
       const bg = state === 'locked' ? PALETTE.lock : state === 'cleared' ? PALETTE.special : PALETTE.danger;
       const frame = state === 'locked' ? 'dark' : state === 'cleared' ? 'nature' : 'blood';
       const nsrc = l.tutorial ? iconUrl(glyphIcon('book', { bg, frame })) : imgUrl(`ui/ic/sec_${l.sector}_${state}.webp`);          // у каждого сектора своя эмблема: закрыт / открыт / пройден
-      const n = el('button', `node ${state}${l.tutorial ? ' tutnode' : ''}${state !== 'locked' && weeklyActive(s, l.id) ? ' weekly' : ''}`, `<img class="ni" src="${nsrc}" alt="">${state === 'locked' ? '' : `<div class="nl">${l.name}</div>`}`);
+      const n = el('button', `node ${state}${l.tutorial ? ' tutnode' : ''}`, `<img class="ni" src="${nsrc}" alt="">${state === 'locked' ? '' : `<div class="nl">${l.name}</div>`}`);
       n.dataset.id = l.id;
       const lp = P(l.pos); n.style.left = (lp[0] / MAP_W) * 100 + '%'; n.style.top = (lp[1] / MAP_H) * 100 + '%';
       n.onclick = (e) => { e.stopPropagation(); if (state === 'locked') { c.sfx.play('error'); n.classList.remove('shake'); void n.offsetWidth; n.classList.add('shake'); return; } c.sfx.play('select'); if (l.tutorial) { c.startLevel(l.id, 1); return; } if (this.lpId === l.id) this.closeLevel(); else this.openLevel(l.id); };
       nodes.appendChild(n);
     }
+    { // недельный уровень: отдельная площадка вне дорог, с обратным отсчётом до конца недели
+      const ws = weeklyState(s), wl = WEEKLY_LEVEL, lp = P(wl.pos);
+      const n = el('button', `node weekly${ws.done ? ' wkdone' : ''}`, `<img class="ni" src="${imgUrl(`ui/ic/sec_${wl.sector}_avail.webp`)}" alt=""><div class="nl wkl"></div>`);
+      n.dataset.id = wl.id; n.style.left = (lp[0] / MAP_W) * 100 + '%'; n.style.top = (lp[1] / MAP_H) * 100 + '%';
+      n.onclick = (e) => { e.stopPropagation(); c.sfx.play('select'); this.openLevel(wl.id); };
+      nodes.appendChild(n);
+      const lab = n.querySelector('.wkl'), tick = () => { if (!lab.isConnected) { clearInterval(this._wkNode); return; } const l = weekLeft(); lab.textContent = (weeklyState(s).done ? 'Новый через ' : 'Ещё ') + (l.d ? `${l.d}д ${l.h}ч` : `${l.h}ч ${l.m}м`); };
+      tick(); clearInterval(this._wkNode); this._wkNode = setInterval(tick, 30000);
+    }
     map.onclick = (e) => { if (!e.target.closest('#lvp')) this.closeLevel(); };            // тап по пустому месту карты закрывает плашку
     // прокрутка к текущему рубежу
-    const target = D.MAPS.find((l) => l.id === focus) || D.MAPS.find((l) => M.levelUnlocked(s, l) && !M.levelCleared(s, l.id)) || D.MAPS[D.MAPS.length - 1];
+    const target = D.MAPS.find((l) => l.id === focus) || D.CAMPAIGN.find((l) => M.levelUnlocked(s, l) && !M.levelCleared(s, l.id)) || D.CAMPAIGN[D.CAMPAIGN.length - 1];
     requestAnimationFrame(() => { const tp = P(target.pos); sc.scrollLeft = Math.max(0, tp[0] * f - sc.clientWidth / 2); sc.scrollTop = Math.max(0, tp[1] * f - sc.clientHeight / 2); });
   }
   fitWorld() { /* размер карты считается в buildWorld */ }
@@ -182,7 +193,7 @@ export class Menus {
   // ───── плашка уровня рядом с рубежом ─────
   lvOpen() { return !!this.lpId; }
   closeLevel(quiet) {
-    const was = !!this.lpId; this.lpId = null; this.diffSeq++;
+    const was = !!this.lpId; this.lpId = null; this.diffSeq++; clearInterval(this._wkPlate);
     if (this.lpEl) { this.lpEl.remove(); this.lpEl = null; }
     document.querySelectorAll('#nodes .node.sel').forEach((n) => n.classList.remove('sel'));
     return was;
@@ -190,16 +201,16 @@ export class Menus {
   openLevel(levelId) {
     const l = D.MAPS.find((q) => q.id === levelId), s = this.save, c = this.c;
     this.closeLevel(); const seq = ++this.diffSeq;
-    this.lpId = levelId; if (c.warm) c.warm(levelId);              // пока игрок смотрит плашку, готовим листы врагов и фон карты
+    this.lpId = levelId; if (c.warm) c.warm(levelId, l.weekly ? WEEKLY.diff : undefined);              // пока игрок смотрит плашку, готовим листы врагов и фон карты
     const map = $('#worldmap'), sc = $('#worldscroll'), f = this.f || 1;
     document.querySelectorAll('#nodes .node').forEach((n) => n.classList.toggle('sel', n.dataset.id === levelId));
-    const wk = weeklyActive(s, l.id);       // кровавый уровень недели: своя плашка, сразу «Ночной кошмар»
+    const wk = !!l.weekly, wkDone = wk && weeklyState(s).done;       // кровавый уровень недели: своя плашка, сразу «Ночной кошмар»
     const diff = this.startDiff(l.id);      // результаты на плашке — по сложности, с которой обычно открывается уровень
     const wrap = el('div', 'lvp'); wrap.id = 'lvp'; this.lpEl = wrap;
     const card = el('div', 'lvp-card'), go = el('button', 'btn big lvp-go', 'Начать');
     wrap.append(card, go); map.appendChild(wrap);
     wrap.onclick = (e) => { e.stopPropagation(); if (e.target.closest('.rarr')) setTimeout(() => place(false), 0); };      // раскрыли строку — плашка могла вырасти, подвинем, чтобы не вылезала за экран
-    go.onclick = () => { c.sfx.play('click'); this.closeLevel(); if (wk) c.startLevel(l.id, WEEKLY.diff, true); else this.openDiff(l.id); };      // дальше — экран выбора сложности
+    go.onclick = () => { c.sfx.play('click'); if (wkDone) { c.sfx.play('error'); return; } this.closeLevel(); if (wk) c.startLevel(l.id, WEEKLY.diff, true); else this.openDiff(l.id); };      // дальше — экран выбора сложности
     const SECT = { grave: 'Погост', forest: 'Лес', desert: 'Пустыня', ice: 'Лёд', hell: 'Ад' };
     const nameEsc = (t) => String(t).replace(/</g, '&lt;');
     const lp = P(l.pos), nx = lp[0] * f, ny = lp[1] * f;
@@ -224,7 +235,11 @@ export class Menus {
         card.innerHTML = `<div class="lvp-h"><div class="lvp-t"><b>${l.name}</b><small>${SECT[l.sector] || ''} · рубеж ${l.lvl}</small></div></div>
           <div class="wk"><div class="wk-t">Кровавый уровень недели</div>
           <div class="wk-r"><span><img src="${bareGlyphUrl('soul', 26)}" alt="" style="width:26px;height:26px"><b>${WEEKLY.souls}</b></span><span>${gemHtml(26)}<b>${WEEKLY.gems}</b></span></div>
-          <div class="wk-c">Только «${D.DIFFS[WEEKLY.diff].name}»: одна жизнь, враги крепче</div></div>`;
+          <div class="wk-c">${wkDone ? 'Пройден: награда получена' : `Только «${D.DIFFS[WEEKLY.diff].name}»: одна жизнь, враги крепче`}</div>
+          <div class="wk-time"><small>${wkDone ? 'Новый уровень откроется через' : 'Уровень закроется через'}</small><b></b></div></div>`;
+        const tb = card.querySelector('.wk-time b'), upd = () => { if (tb.isConnected) tb.textContent = leftText(weekLeft()); };
+        upd(); clearInterval(this._wkPlate); this._wkPlate = setInterval(upd, 20000);
+        go.textContent = wkDone ? 'Пройден' : 'Начать'; go.classList.toggle('poor', wkDone);
         place(false); return;
       }
       const d = D.DIFFS[diff], best = M.bestScore(s, l.id, diff), my = data.me, meU = Net.me(), ctx = { total: l.waves };

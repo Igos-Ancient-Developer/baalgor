@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261028210620';
+import * as D from './data.js?v=20261029154931';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -49,7 +49,7 @@ export { TARGET_MODES };
 export class Sim {
   constructor({ mapId = 0, diffIdx = 1, seed = 1, perks = null, locked = [], allowed = null, limits = null, gold = null, hold = false, autoCollect = false, weeklyHp = 1 } = {}) {
     this.autoCollect = autoCollect;      // боты: монеты собираются сами; у игрока — только тапом
-    this.mods = Object.assign({ startGold: 0, lives: 0, baseIncome: 0, mine: 0, crit: 0, dmg: 0, gold: 0, bag: 0, sell: 0, spellCd: 0 }, perks || {});
+    this.mods = Object.assign({ startGold: 0, lives: 0, baseIncome: 0, mine: 0, crit: 0, dmg: 0, gold: 0, bag: 0, sell: 0, spellCd: 0, build: 0, rate: 0, call: 0 }, perks || {});
     this.locked = new Set(locked);
     this.allowed = allowed ? new Set(allowed) : null;      // набор зданий, взятых в бой (слоты); null — можно всё
     this.limits = limits;                                  // потолок по типам (обучение)
@@ -59,7 +59,7 @@ export class Sim {
     this.map = D.MAPS[mapId];
     this.weeklyHp = weeklyHp;                              // кровавый уровень недели: враги крепче
     this.mapId = mapId;
-    this.diffIdx = diffIdx; this.D = D.DIFFS[diffIdx]; this.total = this.map.waves; this.score = 0; this.buildIdxMap();
+    this.diffIdx = diffIdx; this.D = this.map.weekly ? { ...D.DIFFS[diffIdx], tier: this.map.tier, hp: 1 } : D.DIFFS[diffIdx]; this.total = this.map.waves; this.score = 0; this.buildIdxMap();
     this.lf = D.levelMult(this.map.lvl);                   // множитель глубины уровня
     this.parts = { waves: 0, kills: 0, time: 0, leaks: 0 }; this.verdict = null;
     this.rng = mulberry32(seed);
@@ -147,9 +147,10 @@ export class Sim {
   canBuildAny() { for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (this.canBuild(c, r)) return true; return false; }
   countOf(kind, type) { let n = 0; for (const b of this.buildings) if (b.kind === kind && (b.type === type || b.prem === type)) n++; return n; }
   buildCost(kind, type) {
-    if (kind === 'tower') return D.TOWERS[type].cost;
+    const k = 1 - this.mods.build;                         // дар «Зодчий»: скидка на постройки и улучшения
+    if (kind === 'tower') return Math.round(D.TOWERS[type].cost * k);
     const d = D.ECON[type];
-    return Math.round(d.cost * Math.pow(d.grow, this.countOf('econ', type)));
+    return Math.round(d.cost * Math.pow(d.grow, this.countOf('econ', type)) * k);
   }
   buildLimit(kind, type) { return kind === 'econ' ? D.ECON[type].max : 99; }
 
@@ -179,8 +180,9 @@ export class Sim {
   // варианты следующего улучшения (для башен — выбор из 2–3, для зданий — один)
   rollOffer() { const drop = Math.floor(this.orng() * 3) + 1; return [1, 2, 3].filter((v) => v !== drop); }
   upgradeOptions(b) {
-    if (b.kind === 'tower') return D.upgradeOptions(b.type, b.level, b.branch, b.picks, b.prem ? 3 : 5).filter((o) => o.kind !== 'pick' || !b.offers || b.offers[b.level - 1].includes(o.choice));
-    const c = D.econUpgradeCost(b.type, b.level); if (c == null) return [];
+    const k = 1 - this.mods.build;
+    if (b.kind === 'tower') return D.upgradeOptions(b.type, b.level, b.branch, b.picks, b.prem ? 3 : 5).filter((o) => o.kind !== 'pick' || !b.offers || b.offers[b.level - 1].includes(o.choice)).map((o) => (k === 1 ? o : { ...o, cost: Math.round(o.cost * k) }));
+    let c = D.econUpgradeCost(b.type, b.level); if (c == null) return []; c = Math.round(c * k);
     const nx = D.econStats(b.type, b.level + 1), cur = b.st, delta = [];
     for (const k of Object.keys(nx)) if (nx[k] !== cur[k]) delta.push({ k, from: cur[k] ?? 0, to: nx[k] });
     return [{ kind: 'econ', choice: 'U', name: D.ECON[b.type].name + ' ' + (b.level + 1), cost: c, level: b.level + 1, delta }];
@@ -291,8 +293,7 @@ export class Sim {
   }
   waveDefRaw(n) {
     if (this.map.waveList) return this.map.waveList[Math.min(n, this.total) - 1];
-    if (this.map.lvl && n <= this.total) return D.genWave(this.map.lvl, n, this.total);
-    return D.genWave(this.map.lvl || 1, n, this.total);
+    return D.genWave(this.map.lvl || 1, n, this.total, this.D.tier || 0);
   }
   // Вызов следующей волны раньше срока. Волны выстраиваются в очередь и идут друг за другом (не одновременно);
   // бонус золота — только за реально сэкономленное время, т.е. если предыдущая волна уже выпущена целиком.
@@ -308,7 +309,7 @@ export class Sim {
   }
   callAllWaves() { let n = 0; while (this.canCallWave()) { this.callWave(true); n++; } return n; }
   // золото за ранний вызов: за всё оставшееся до волны время (EARLY_FROM — доля паузы, за которую не платят)
-  earlyBonus() { const gap = D.waveGap(this.idx(this.wave)), t = Math.max(0, this.nextWaveT - gap * D.EARLY_FROM); return Math.round(t * (0.8 + 0.03 * this.idx(this.wave)) * (1 + this.D.gold)); }
+  earlyBonus() { const gap = D.waveGap(this.idx(this.wave)), t = Math.max(0, this.nextWaveT - gap * D.EARLY_FROM); return Math.round(t * (0.8 + 0.03 * this.idx(this.wave)) * (1 + this.D.gold) * (1 + this.mods.call)); }
   waveBonus() { return this.qi < this.queue.length ? 0 : this.earlyBonus(); }
   canCallWave() { return this.state === 'play' && this.wave < this.total && this.nextWaveT > 2; }
   startWave() {
@@ -337,7 +338,7 @@ export class Sim {
     const path = def.air ? this.flyPaths[pathIdx % this.flyPaths.length] : this.paths[pathIdx];
     const n = this.idx(Math.max(1, o.w || this.wave));       // сила врага — по номеру его волны (волны могут стоять в очереди)
     const elite = !o.sent && !def.heavy && !o.noBounty && this.D.elite > 0 && this.rng() < this.D.elite;
-    const hs = D.hpScale(n) * this.map.hp * (this.map.lvl && !this.map.waveList ? 1 + (this.map.lvl - 1) * 0.12 * Math.max(0, ((o.w || this.wave) - 1) / Math.max(1, this.total - 1)) : 1) * (o.sent ? 0.85 : 1) * (o.hpMult || 1) * (elite ? this.D.eliteHp : 1) * this.weeklyHp;
+    const hs = D.hpScale(n) * this.map.hp * (this.map.lvl && !this.map.waveList ? 1 + (this.map.lvl - 1) * 0.12 * Math.max(0, ((o.w || this.wave) - 1) / Math.max(1, this.total - 1)) : 1) * (o.sent ? 0.85 : 1) * (o.hpMult || 1) * (elite ? this.D.eliteHp : 1) * this.weeklyHp * (this.D.hp || 1);
     const e = {
       id: ++this.eid, type, def, path, pathIdx, d: o.d || 0, x: 0, y: 0, dx: 0, dy: 1,
       hp: def.hp * hs, maxHp: def.hp * hs, size: def.size,
@@ -740,7 +741,7 @@ export class Sim {
       let da = want - b.angle; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
       b.angle += da * Math.min(1, dt * 14);
     }
-    b.cd -= dt * b.rateMult;
+    b.cd -= dt * b.rateMult * (1 + this.mods.rate);
     if (b.cd <= 0) {
       if (tg) {
         if (b.type === 'giant') { b.windT = (b.windT || 0) + dt; if (b.windT < 0.75) return; b.windT = 0; }      // Гигант сначала наклоняется за камнем, поднимает и замахивается

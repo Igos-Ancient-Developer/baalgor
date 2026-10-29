@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261028210620';
+import { COLS, ROWS } from './layouts.js?v=20261029154931';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261028210620';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029154931';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -30,11 +30,11 @@ export { SECTORS };
 // Сложность меняет только численность орд (horde), долю «элитных» врагов (elite) и их силу (eliteHp, eliteSpd), число жизней крепости,
 // а также награды: score — очки, gold — прибавка ко всему золоту, souls — множитель душ. lives: null = обычно.
 export const DIFFS = [
-  { id: 'squire', name: 'Страх', hp: 1, spd: 1, score: 0.8, gold: 0, lives: null, horde: 0.8, elite: 0, eliteHp: 1.6, eliteSpd: 1.15, souls: 0.7, demon: 'imp', color: '#8fd86a' },
-  { id: 'warrior', name: 'Ужас', hp: 1, spd: 1, score: 1, gold: 0, lives: null, horde: 1, elite: 0.05, eliteHp: 2, eliteSpd: 1.2, souls: 1, demon: 'brute', color: '#ffd24a' },
-  { id: 'nightmare', name: 'Пекло', hp: 1, spd: 1, score: 1.6, gold: 0, lives: null, horde: 1.2, elite: 0.1, eliteHp: 2.6, eliteSpd: 1.25, souls: 1.5, demon: 'succubus', color: '#ff9a3a' },
-  { id: 'hell', name: 'Ад', hp: 1, spd: 1, score: 2.4, gold: 0, lives: null, horde: 1.4, elite: 0.16, eliteHp: 3.4, eliteSpd: 1.3, souls: 2.2, demon: 'pitlord', color: '#ff4a3a' },
-  { id: 'hardcore', name: 'Ночной кошмар', hp: 1, spd: 1, score: 4, gold: 0.25, lives: 1, horde: 1.65, elite: 0.24, eliteHp: 4.4, eliteSpd: 1.35, souls: 3.5, demon: 'archdemon', color: '#c01a2a' },
+  { id: 'squire', name: 'Страх', hp: 1, spd: 1, tier: 0, score: 0.8, gold: 0, lives: null, horde: 0.8, elite: 0, eliteHp: 1.6, eliteSpd: 1.15, souls: 0.7, demon: 'imp', color: '#8fd86a' },
+  { id: 'warrior', name: 'Ужас', hp: 1, spd: 1, tier: 0, score: 1, gold: 0, lives: null, horde: 1, elite: 0.05, eliteHp: 2, eliteSpd: 1.2, souls: 1, demon: 'brute', color: '#ffd24a' },
+  { id: 'nightmare', name: 'Пекло', hp: 1.3, spd: 1, tier: 6, score: 1.6, gold: 0, lives: null, horde: 1.2, elite: 0.1, eliteHp: 2.6, eliteSpd: 1.25, souls: 1.5, demon: 'succubus', color: '#ff9a3a' },
+  { id: 'hell', name: 'Ад', hp: 2.0, spd: 1, tier: 12, score: 2.4, gold: 0, lives: null, horde: 1.4, elite: 0.16, eliteHp: 3.4, eliteSpd: 1.3, souls: 2.2, demon: 'pitlord', color: '#ff4a3a' },
+  { id: 'hardcore', name: 'Ночной кошмар', hp: 1.6, spd: 1, tier: 16, score: 4, gold: 0.25, lives: 1, horde: 1.65, elite: 0.24, eliteHp: 4.4, eliteSpd: 1.35, souls: 3.5, demon: 'archdemon', color: '#c01a2a' },
 ];
 
 // ───────────────────────── Башни ─────────────────────────
@@ -378,15 +378,16 @@ const IVAL = { skeleton: 1.0, zombie: 1.4, goblin: 0.9, mummy: 1.5, hound: 0.8, 
 export const eqWave = (L, n, T) => { const s = 1 + (L - 1) * 0.25, e = 7 + (L - 1) * 2.4; return Math.max(1, Math.round(T > 1 ? s + ((e - s) * (n - 1)) / (T - 1) : s)); };
 // своя локация у монстра (sector: строка или список); у общих (скелет, зомби, гоблин, мышь, слизень, рыцарь, жнец, берсерк, горгулья, лич, огр) поля нет: они везде
 const inSector = (t, sec) => { const x = ENEMIES[t].sector; return !x || (Array.isArray(x) ? x.includes(sec) : x === sec); };
-export function genWave(L, n, T) {
+export function genWave(L, n, T, tier = 0) {        // tier — сдвиг сложности: на высоких сложностях виды врагов и размер волн берутся как с более поздних уровней
   let a = (L * 1009 + n * 7919) | 0; const R = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const W0 = (LEVELS[L - 1] && LEVELS[L - 1].wavesFull) || T, nv = T > 1 ? 1 + ((n - 1) * (1 + 0.35 * (W0 - T) / (T - 1))) : n;      // при сжатии уровня до 15 волн каждая волна чуть сильнее (экономика копится по времени, поэтому сжимаем лишь на треть)
-  const budget = 3 + (nv - 1) * (1.0 + TUNE.bud1 * L) + TUNE.bud2 * L;
+  const Le = L + tier;                                      // «эффективный» уровень: от него зависят виды врагов, бюджет волны и частота новых видов
+  const budget = 3 + (nv - 1) * (1.0 + TUNE.bud1 * Le) + TUNE.bud2 * Le;
   const STRONG = ['knight', 'butcher', 'yeti', 'ogre', 'reaper', 'berserker', 'lich', 'sandgolem', 'pharaoh', 'snowgolem', 'ultrayeti', 'lavagolem', 'baron', 'anubis', 'pinky'], SIDE = ['bat', 'gargoyle'];     // сильные — не в первых волнах уровня; лекарь и летуны — не основа волны
   const sec = LEVELS[L - 1] && LEVELS[L - 1].sector;       // монстры сектора выходят только на его картах
-  const avail = Object.keys(UNLOCK_LV).filter((t) => UNLOCK_LV[t] <= L && inSector(t, sec) && !(L === 2 && t === 'zombie' && n < 2) && !(n < Math.max(5, T * 0.45) && STRONG.includes(t)) && !(L === UNLOCK_LV[t] && L > 2 && n < T * 0.4));        // новый вид выходит в середине своего уровня, а сильные — не в первых волнах
-  const w = (t) => (1 + R()) * (UNLOCK_LV[t] <= 2 ? 1.3 : Math.min(1, 0.25 + (L - UNLOCK_LV[t] + n / T) / 2.5)) / (1 + Math.max(0, L - UNLOCK_LV[t] - 6) * 0.12) * (HEAVY_CAP[t] ? 0.45 : 1);          // новые виды сначала редки, потом становятся обычными; совсем старые — реже
-  const picks = [], pool = [...avail], k = Math.min(pool.length, 1 + (n >= 3 ? 1 : 0) + (n >= T * 0.6 && L >= 5 ? 1 : 0));
+  const avail = Object.keys(UNLOCK_LV).filter((t) => UNLOCK_LV[t] <= Le && inSector(t, sec) && !(L === 2 && t === 'zombie' && n < 2) && !(n < Math.max(5, T * 0.45) && STRONG.includes(t)) && !(Le === UNLOCK_LV[t] && Le > 2 && n < T * 0.4));        // новый вид выходит в середине своего уровня, а сильные — не в первых волнах
+  const w = (t) => (1 + R()) * (UNLOCK_LV[t] <= 2 ? 1.3 : Math.min(1, 0.25 + (Le - UNLOCK_LV[t] + n / T) / 2.5)) / (1 + Math.max(0, Le - UNLOCK_LV[t] - 6) * 0.12) * (HEAVY_CAP[t] ? 0.45 : 1);          // новые виды сначала редки, потом становятся обычными; совсем старые — реже
+  const picks = [], pool = [...avail], k = Math.min(pool.length, 1 + (n >= 3 ? 1 : 0) + (n >= T * 0.6 && Le >= 5 ? 1 : 0));
   while (picks.length < k) {
     const ok = picks.length ? pool : pool.filter((t) => !SIDE.includes(t)), src = ok.length ? ok : pool;
     const ws = src.map(w), sum = ws.reduce((x, y) => x + y, 0); let r = R() * sum, i = 0; while (i < src.length - 1 && (r -= ws[i]) > 0) i++;
@@ -402,10 +403,10 @@ export function genWave(L, n, T) {
 }
 export const FIRST_WAVE_DELAY = 30;
 // какие виды врагов появятся на уровне (для загрузки только нужных листов): все из волн, их порождения и вызванные; гоблин, скелет и зомби нужны для орд
-export function levelTypes(map) {
+export function levelTypes(map, tier = 0) {
   const s = new Set(['skeleton', 'zombie']);
   if (map.waveList) for (const w of map.waveList) for (const g of w) s.add(g[0]);
-  else for (let n = 1; n <= map.waves; n++) for (const g of genWave(map.lvl, n, map.waves)) s.add(g[0]);
+  else for (let n = 1; n <= map.waves; n++) for (const g of genWave(map.lvl, n, map.waves, tier)) s.add(g[0]);
   for (const t of [...s]) { const d = ENEMIES[t]; if (d && d.split) s.add(d.split); }
   return [...s];
 }
@@ -584,7 +585,7 @@ export const PACKS = [
 ];
 export const STARTER = { stars: 25, gems: 300, souls: 300, tower: 'gold_bolt' };      // один раз на аккаунт
 export const FIRST_BONUS = 2;                                                           // первая покупка каждого пакета: кристаллов ×2
-export const DAILY = [3, 3, 5, 3, 6, 8, 15];                                            // ежедневный подарок — ДУШИ (не кристаллы), серия 7 дней
+export const DAILY = [60, 60, 90, 70, 110, 140, 300];                                            // ежедневный подарок — ДУШИ (не кристаллы), серия 7 дней
 export const BOOSTS = {
   gold:  { name: 'Золотой старт', short: '+100 золота на старте уровня', base: 3 },
   lives: { name: 'Запас жизней',  short: '+5 жизней (не действует на «Ночном кошмаре»)', base: 5 },

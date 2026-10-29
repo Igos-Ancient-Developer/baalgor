@@ -1,13 +1,13 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261028210620';
-import { Wallet } from './wallet.js?v=20261028210620';
-import { fillPlates, gemIc } from './res.js?v=20261028210620';
-import { towerIcon } from './ui.js?v=20261028210620';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261028210620';
-import { SHOP_IMG } from './iconmap.js?v=20261028210620';
-import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, oddsOf, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest } from './chests.js?v=20261028210620';
+import * as D from './data.js?v=20261029154931';
+import { Wallet } from './wallet.js?v=20261029154931';
+import { fillPlates, gemIc } from './res.js?v=20261029154931';
+import { towerIcon } from './ui.js?v=20261029154931';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261029154931';
+import { SHOP_IMG } from './iconmap.js?v=20261029154931';
+import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, oddsOf, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest, freeChestIn } from './chests.js?v=20261029154931';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
 
 const $ = (s) => document.querySelector(s);
@@ -50,7 +50,7 @@ export function renderShop(save, ctrl, redraw) {
   // бесплатный деревянный сундук раз в сутки: забрал и сразу открыл
   { const ready = freeChestReady(save), fr = el('div', 'freech' + (ready ? '' : ' off'));
     fr.innerHTML = `<img src="${chestImg('wood')}" alt=""><b>Бесплатный сундук</b>`;
-    const b = el('button', 'btn chb go' + (ready ? '' : ' poor'), ready ? 'Забрать' : 'Завтра');
+    const b = el('button', 'btn chb go' + (ready ? '' : ' poor'), ready ? 'Забрать' : freeChestIn(save) > 1 ? `Через ${freeChestIn(save)} дн.` : 'Завтра');
     b.onclick = async () => { if (!ready) { fail(b); return; } if (claimFreeChest(save)) { ctrl.persist(); await openLoop('wood'); } };
     fr.appendChild(b); cg.appendChild(fr); }
   ctrl._chestQty = ctrl._chestQty || {};

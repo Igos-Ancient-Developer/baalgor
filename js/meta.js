@@ -1,8 +1,7 @@
 // Мета-прогресс: души, дары кузницы, открытие башен, достижения. Не зависит от DOM (можно тестировать в Node).
-import * as D from './data.js?v=20261028210620';
+import * as D from './data.js?v=20261029154931';
 
-export const SOUL_K = 0.5;                  // общий множитель душ: души дают прокачку, поэтому капают вдвое скупее прежнего
-export const DIFF_SOULS = [0.7, 1, 1.8];   // множитель душ по сложности (индекс как в DIFFS)
+export const SOUL_K = 5;                    // общий множитель душ: полное прохождение уровня на «Ужасе» даёт около 95 душ, на «Ночном кошмаре» около 330; вся прокачка и открытие всего стоит около 10 000
 
 // ───── Дары кузницы ─────
 export const PERKS = [
@@ -10,8 +9,11 @@ export const PERKS = [
   { id: 'fortress', now: (l) => `+${2 * l} жизни`, name: 'Крепость', icon: 'heart', max: 5, c0: 30, per: '+2 жизни', mod: (l) => ({ lives: 2 * l }) },
   { id: 'taxes', now: (l) => `+${8 * l}% с рудника`, name: 'Налоги', icon: 'income', max: 5, c0: 40, per: '+8% золота с каждой монеты рудника', mod: (l) => ({ mine: 0.08 * l }) },
   { id: 'temper', now: (l) => `+${(2.5 * l).toFixed(1).replace('.0', '')}% урона`, name: 'Закалка', icon: 'sword', max: 5, c0: 50, per: '+2.5% урона башен', mod: (l) => ({ dmg: 0.025 * l }) },
-  { id: 'luck', now: (l) => `+${10 * l}% с монеты`, name: 'Золотая рука', icon: 'income', max: 3, c0: 35, per: '+10% золота с каждой монеты', mod: (l) => ({ bag: 0.1 * l }) },
   { id: 'aim', now: (l) => `+${5 * l}% крита`, name: 'Меткость', icon: 'crit', max: 10, c0: 30, g: 1.28, per: '+5% шанса крита (до 50%). Крит бьёт сильнее с 3-го уровня башни', mod: (l) => ({ crit: 0.05 * l }) },
+  { id: 'builder', now: (l) => `-${3 * l}% к ценам`, name: 'Зодчий', icon: 'tower', max: 5, c0: 45, per: '-3% к цене построек и улучшений', mod: (l) => ({ build: 0.03 * l }) },
+  { id: 'spells', now: (l) => `-${8 * l}% к перезарядке`, name: 'Мастер чар', icon: 'book', max: 5, c0: 40, per: '-8% к перезарядке заклинаний', mod: (l) => ({ spellCd: 0.08 * l }) },
+  { id: 'rhythm', now: (l) => `+${2 * l}% скорости`, name: 'Боевой ритм', icon: 'rate', max: 5, c0: 55, per: '+2% к скорострельности всех башен', mod: (l) => ({ rate: 0.02 * l }) },
+  { id: 'caller', now: (l) => `+${10 * l}% золота`, name: 'Нетерпение', icon: 'hourglass', max: 5, c0: 35, per: '+10% золота за ранний вызов волны', mod: (l) => ({ call: 0.1 * l }) },
   { id: 'merchant', now: (l) => `+${4 * l}% при продаже`, name: 'Торговец', icon: 'sell', max: 3, c0: 30, per: '+4% при продаже', mod: (l) => ({ sell: 0.04 * l }) },
 ];
 export const perkCost = (p, level) => Math.round(p.g ? p.c0 * Math.pow(p.g, level) : p.c0 * (1 + 0.7 * level));
@@ -97,13 +99,13 @@ export const ACH = [
   { id: 'mine_king', name: 'Горный король', desc: 'Построй 6 рудников одновременно', goal: 6, val: R('maxMines'), reward: 20 },
   { id: 'gold_lvl', name: 'Золотая лихорадка', desc: 'Прокачай рудник до 5 уровня', goal: 5, val: R('maxMineLvl'), reward: 15 },
   { id: 'tycoon', name: 'Магнат', desc: 'Доход 100 золота за тик', goal: 100, val: R('maxIncome'), reward: 40 },
-  { id: 'collector', name: 'Коллекционер', desc: 'Построй 8 разных башен за одну партию', goal: 8, val: R('typesBuilt'), reward: 25 },
+  { id: 'collector', name: 'Коллекционер', desc: 'Построй 4 разные башни за одну партию', goal: 4, val: R('typesBuilt'), reward: 25 },
   { id: 'master', name: 'Мастер', desc: 'Прокачай башню до 5 уровня', goal: 5, val: R('maxTowerLvl'), reward: 10 },
   { id: 'both_ways', name: 'Две дороги', desc: 'Имей ветки A и B одной башни одновременно', goal: 1, val: R('bothBranches'), reward: 15 },
   { id: 'impatient', name: 'Нетерпеливый', desc: 'Вызови 10 волн досрочно за партию', goal: 10, val: R('earlyCalls'), reward: 15 },
   { id: 'wave10', name: 'Выживший', desc: 'Дойди до 10 волны', goal: 10, val: L('bestWave'), reward: 10 },
-  { id: 'wave20', name: 'Ветеран', desc: 'Дойди до 20 волны', goal: 20, val: L('bestWave'), reward: 25 },
-  { id: 'win', name: 'Редут стоит', desc: 'Победи в кампании (30 волн)', goal: 1, val: L('wins'), reward: 60 },
+  { id: 'wave20', name: 'Ветеран', desc: 'Дойди до 15 волны', goal: 15, val: L('bestWave'), reward: 25 },
+  { id: 'win', name: 'Редут стоит', desc: 'Пройди любой уровень кампании', goal: 1, val: L('wins'), reward: 60 },
   { id: 'hell_win', name: 'Хозяин Ада', desc: 'Победи на сложности «Ад»', goal: 1, val: L('hellWin'), reward: 120 },
   { id: 'hardcore_win', name: 'Бессмертный', desc: 'Победи на «Ночном кошмаре»: одна жизнь', goal: 1, val: L('hardcoreWin'), reward: 250 },
   { id: 'levels10', name: 'Путешественник', desc: 'Пройди 10 уровней кампании', goal: 10, val: (c) => clearedCount(c.save), reward: 50 },
@@ -114,12 +116,13 @@ export const ACH = [
   { id: 'grim', name: 'Суровый воин', desc: 'Победи без рудников, банка, алтаря, рабочих и орды', goal: 1, val: L('noEconWin'), reward: 80 },
   { id: 'all_maps', name: 'Покоритель секторов', desc: 'Пройди хотя бы по одному уровню в каждом секторе', goal: 5, val: (c) => new Set(D.CAMPAIGN.filter((l) => levelCleared(c.save, l.id)).map((l) => l.sector)).size, reward: 70 },
   { id: 'arsenal', name: 'Арсенал', desc: 'Открой все башни в Кузнице душ', goal: 1, val: (c) => (lockedTowers(c.save).length === 0 ? 1 : 0), reward: 30 },
+  { id: 'weekly_win', name: 'Кровавая охота', desc: 'Пройди недельный уровень', goal: 1, val: L('weeklyWins'), reward: 60 },
   { id: 'tempered', name: 'Закалённый', desc: 'Прокачай любой дар Кузницы до максимума', goal: 1, val: (c) => (PERKS.some((p) => (c.save.perks[p.id] || 0) >= p.max) ? 1 : 0), reward: 25 },
 ];
-for (const a of ACH) a.reward = Math.max(1, Math.round(a.reward * 0.4 * SOUL_K * 1.5));      // награды душами скромные: прокачка идёт неспешно
+for (const a of ACH) a.reward = Math.max(1, Math.round(a.reward * 0.4 * SOUL_K * 0.75));      // за все достижения вместе около 2400 душ
 
 
-export function newLife() { return { kills: 0, decaps: 0, sawKills: 0, shatters: 0, airKills: 0, burnKills: 0, bagsTapped: 0, bosses: {}, bestWave: 0, wins: 0, hellWin: 0, flawless: 0, noEconWin: 0, hardcoreWin: 0, mapWins: {}, levels: 0 }; }
+export function newLife() { return { kills: 0, decaps: 0, sawKills: 0, shatters: 0, airKills: 0, burnKills: 0, bagsTapped: 0, bosses: {}, bestWave: 0, wins: 0, hellWin: 0, flawless: 0, noEconWin: 0, hardcoreWin: 0, weeklyWins: 0, mapWins: {}, levels: 0 }; }
 
 // ───── Трекер партии: слушает события симуляции, начисляет души и открывает достижения ─────
 export class Meta {
@@ -178,15 +181,14 @@ export class Meta {
   finish(won) {
     if (this.closed) return; this.closed = true;
     const save = this.save, life = save.life, sim = this.sim, run = this.run;
-    if (won && this.tut && !save.tutDone) { save.souls += 30; run.souls += 30; }      // подарок новичку: хватит на первую закрытую башню
+    if (won && this.tut && !save.tutDone) { save.souls += 60; run.souls += 60; }      // подарок новичку: хватит на первую закрытую башню
     if (won) {
       this.award(12);
       life.wins++; if (this.diffIdx >= 3) life.hellWin = 1;
       if (this.diffIdx === 4) life.hardcoreWin = 1;
       if (sim.lives >= run.startLives) life.flawless = 1;
       if (!run.econUsed) life.noEconWin = 1;
-      (life.mapWins ||= {})[sim.map.id] = 1;
-      markCleared(save, sim.map.id, this.diffIdx);
+      if (!sim.map.weekly) { (life.mapWins ||= {})[sim.map.id] = 1; markCleared(save, sim.map.id, this.diffIdx); }
     }
     { const k = `${sim.map.id}_${this.diffIdx}`; sim.score = Math.round(sim.score); if (sim.score > (save.prog.scores[k] || 0)) save.prog.scores[k] = sim.score; }
     life.bestWave = Math.max(life.bestWave, won ? sim.total : sim.wave);

@@ -1,14 +1,15 @@
 // Экраны меню: Кузница душ и Достижения (иконки в стиле WC3).
-import * as D from './data.js?v=20261028210620';
-import { uiIcon } from './env.js?v=20261028210620';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261028210620';
-import { towerIcon, econIcon } from './ui.js?v=20261028210620';
-import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261028210620';
-import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261028210620';
-import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261028210620';
-import { url as imgUrl } from './sprites.js?v=20261028210620';
-import { Wallet } from './wallet.js?v=20261028210620';
+import * as D from './data.js?v=20261029154931';
+import { uiIcon } from './env.js?v=20261029154931';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261029154931';
+import { towerIcon, econIcon } from './ui.js?v=20261029154931';
+import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261029154931';
+import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261029154931';
+import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261029154931';
+import { url as imgUrl } from './sprites.js?v=20261029154931';
+import { Wallet } from './wallet.js?v=20261029154931';
 
+const PERK_ART = new Set(['treasury', 'fortress', 'taxes', 'temper', 'aim', 'merchant']);      // у этих даров нарисованная иконка, у остальных значок из набора
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
 const SOUL = (n = 28) => `<img class="si" src="${bareGlyphUrl('soul', n)}" alt="">`;
@@ -32,7 +33,7 @@ export function renderForge(save, sfx, onChange, openShop) {
     const lv = save.perks[p.id] || 0, max = lv >= p.max, cost = max ? 0 : perkCost(p, lv);
     const row = el('div', 'frow' + (max ? ' max' : ''));
     const pips = Array.from({ length: p.max }, (_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('');
-    row.innerHTML = `<img class="fi" src="${imgUrl('ui/ic/perk_' + p.id + '.webp')}" alt=""><div class="ft"><div class="fn">${p.name}<span class="pips">${pips}</span></div><div class="fd">${p.per}</div><div class="fnow${lv ? '' : ' zero'}">Сейчас: <b>${lv ? p.now(lv) : '0'}</b></div></div>`;
+    row.innerHTML = `<img class="fi" src="${PERK_ART.has(p.id) ? imgUrl('ui/ic/perk_' + p.id + '.webp') : iconUrl(glyphIcon(p.icon, { size: 96, bg: PALETTE.perk, frame: 'gold' }))}" alt=""><div class="ft"><div class="fn">${p.name}<span class="pips">${pips}</span></div><div class="fd">${p.per}</div><div class="fnow${lv ? '' : ' zero'}">Сейчас: <b>${lv ? p.now(lv) : '0'}</b></div></div>`;
     const b = el('button', 'fbuy' + (!max && save.souls < cost ? ' poor' : ''), max ? 'МАКС' : `${SOUL(18)}${cost}`);
     if (!max) b.onclick = () => { const r = buyPerk(save, p.id); if (r === true) { sfx.play('upgrade'); onChange(); } else { sfx.play('error'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); } };
     row.appendChild(b); box.appendChild(row);

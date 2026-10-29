@@ -2,16 +2,16 @@
 // Деревянный: за души или за немного кристаллов, в основном души. Серебряный: только за кристаллы, в основном кристаллы.
 // Золотой: самый дорогой, лучшая добыча, редкие премиум-башни. Каждая башня — отдельная строка таблицы (js/chesttable.js).
 // Для кристаллов бросок делает сервер (supabase/chests.sql, функция chest_open) — по этой же таблице; здесь бросок нужен для оплаты душами (души хранятся в сохранении) и для локального режима вне Telegram.
-import { gemUrl } from './gem3d.js?v=20261028210620';
-import * as D from './data.js?v=20261028210620';
-import * as M from './meta.js?v=20261028210620';
-import { Net } from './net.js?v=20261028210620';
-import { Wallet } from './wallet.js?v=20261028210620';
-import { towerIcon, econIcon } from './ui.js?v=20261028210620';
-import { iconUrl } from './icons.js?v=20261028210620';
-import { url as imgUrl } from './sprites.js?v=20261028210620';
-import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261028210620';
-import { createChest3D } from './chest3d.js?v=20261028210620';
+import { gemUrl } from './gem3d.js?v=20261029154931';
+import * as D from './data.js?v=20261029154931';
+import * as M from './meta.js?v=20261029154931';
+import { Net } from './net.js?v=20261029154931';
+import { Wallet } from './wallet.js?v=20261029154931';
+import { towerIcon, econIcon } from './ui.js?v=20261029154931';
+import { iconUrl } from './icons.js?v=20261029154931';
+import { url as imgUrl } from './sprites.js?v=20261029154931';
+import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261029154931';
+import { createChest3D } from './chest3d.js?v=20261029154931';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -71,10 +71,12 @@ export function topPrizes(kind, n = 3) {
   const c = CHESTS[kind];
   return c.table.filter((r) => r.t !== 'stars').map((r) => ({ r, p: chanceOf(kind, r) })).sort((x, y) => x.p - y.p).map(({ r }) => ({ pic: rowPic(r), col: RARCOL[rowRar(kind, r)] })).filter((x, i, a) => a.findIndex((y) => y.pic === x.pic) === i).slice(0, n);
 }
-// бесплатный деревянный сундук раз в сутки: падает на склад
-const dayKey = () => new Date().toISOString().slice(0, 10);
-export const freeChestReady = (save) => (save || {}).freeChest !== dayKey();
-export function claimFreeChest(save) { if (!freeChestReady(save)) return false; save.freeChest = dayKey(); save.stock = save.stock || {}; save.stock.wood = (save.stock.wood || 0) + 1; return true; }
+// бесплатный деревянный сундук раз в 2 дня: падает на склад. Хранится номер суток по UTC (число), он переживает перезапуск игры (см. mergeSave в tg.js)
+export const FREE_CHEST_DAYS = 2;
+const dayNum = () => Math.floor(Date.now() / 864e5);
+export const freeChestReady = (save) => dayNum() - ((save || {}).freeChest || 0) >= FREE_CHEST_DAYS;
+export const freeChestIn = (save) => Math.max(0, ((save || {}).freeChest || 0) + FREE_CHEST_DAYS - dayNum());      // сколько суток осталось ждать
+export function claimFreeChest(save) { if (!freeChestReady(save)) return false; save.freeChest = dayNum(); save.stock = save.stock || {}; save.stock.wood = (save.stock.wood || 0) + 1; return true; }
 
 // ───── применить добычу к сохранению (души — всегда на клиенте; кристаллы и здания уже записал сервер, если платили кристаллами онлайн) ─────
 export function applyLoot(save, loot, { server = false } = {}) {

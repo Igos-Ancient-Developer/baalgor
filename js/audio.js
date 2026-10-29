@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261028210620';
+import { createTrack, MENU_SPEC } from './music.js?v=20261029154931';
 // группы записей (сколько файлов) и кто какой группой умирает: [группа, скорость воспроизведения]
 const MON_FILES = { slime: 6, golem: 7, brute: 7, squeal: 6, bat: 5, ghost: 5, man: 3, roar: 8, wolf: 4, dry: 6, bone: 5 };
 const MON_OF = {
@@ -217,6 +217,7 @@ export class Sfx {
       case 'death': { if (!this.gate('death', 0.07)) return; const r = 0.85 + Math.random() * 0.4; this.groan(0.8 * v, r); this.slop(0.55 * v, 0.03, r); break; }
       case 'pop': if (!this.gate('pop', 0.05)) return; this.tone('square', 480, 1100, 0.05, 0.07 * v); this.tone('square', 1100, 700, 0.06, 0.06 * v, 0.045); break;
       case 'click': this.chip([1568, 2093], 0.04, 'square', 0.07); break;
+      case 'chest': this.noise('lowpass', 900, 120, 0.12, 0.35 * v); this.tone('triangle', 180, 90, 0.1, 0.4 * v); this.chip([523, 659, 784, 1046, 1318], 0.06, 'square', 0.09 * v, 1.2); this.tone('sine', 2093, 2093, 0.35, 0.05 * v, 0.3); for (let i = 0; i < 4; i++) this.tone('square', 1319 + i * 120, 1319 + i * 120, 0.05, 0.06 * v, 0.12 + i * 0.07); break;
       case 'select': this.chip([784, 1175, 1568], 0.045, 'square', 0.08); break;
       case 'freeze': this.tone('sine', 2400, 1200, 0.18, 0.1 * v); this.noise('highpass', 5000, 4000, 0.1, 0.1 * v); break;
       case 'stomp': this.noise('lowpass', 500, 50, 0.5, 0.7 * v); this.tone('sine', 70, 30, 0.5, 0.7 * v); break;
@@ -256,6 +257,7 @@ export function attachSfx(sim, sfx) {
   sim.on('kill', (d) => sfx.death(d.e && d.e.type, 0.8));
   sim.on('upgrade', () => sfx.play('upgrade'));
   sim.on('bag', (d) => sfx.play(d.tapped ? 'bag' : 'coin', 0.8));
+  sim.on('chest', (d) => sfx.play(d.kind === 'open' ? 'chest' : 'crack', d.kind === 'open' ? 1 : 0.8));      // сундук-сюрприз на уровне: удары по крышке и открытие
 }
 // из звуков, которые шлёт «мясо» (gore.js), оставляем только сопровождающие гибель: удары и всплески при ударах по живым и стук кусков не нужны
 export const GORE_SOUNDS = new Set(['burst', 'squelch', 'chop', 'rip', 'spray', 'bone', 'thudwet', 'gib', 'gibbig', 'splat', 'voidpop', 'sizzle', 'glass', 'bubble', 'crackle', 'slap']);

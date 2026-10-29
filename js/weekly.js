@@ -1,20 +1,26 @@
-// Кровавый уровень недели: раз в неделю один открытый уровень подсвечен на карте красным. Проходится только на «Ночном кошмаре» (одна жизнь),
-// враги крепче обычного; награда один раз за неделю: души и кристаллы. Выбор стабилен всю неделю (хранится в save.weekly).
-import * as D from './data.js?v=20261028210620';
-import * as M from './meta.js?v=20261028210620';
-export const WEEKLY = { souls: 500, gems: 5, hp: 1.35, diff: 4 };
+// Кровавый уровень недели: отдельный узел на карте мира, вне дорог кампании. Раз в неделю (ISO-неделя по UTC, смена в понедельник 00:00 UTC)
+// открывается новый уровень: другая раскладка, сектор и крепость врагов (см. configureWeekly в levels.js). Проходится только на «Ночном кошмаре» (одна жизнь).
+// Награда один раз за неделю: души и кристаллы. Пройденный уровень повторно не открывается до следующей недели; состояние хранится в save.weekly.
+import { WEEKLY_LEVEL, configureWeekly } from './levels.js?v=20261029154931';
+export const WEEKLY = { souls: 500, gems: 5, diff: 4 };
 export function isoWeek(d = new Date()) {                         // та же неделя, что и на сервере: to_char(now() at time zone 'utc', 'IYYY-"W"IW')
   const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())), day = t.getUTCDay() || 7;
   t.setUTCDate(t.getUTCDate() + 4 - day); const y = t.getUTCFullYear(), w = Math.ceil(((t - Date.UTC(y, 0, 1)) / 864e5 + 1) / 7);
   return y + '-W' + String(w).padStart(2, '0');
 }
+// сколько осталось до конца недели (до понедельника 00:00 UTC)
+export function weekLeft(now = Date.now()) {
+  const d = new Date(now), day = d.getUTCDay() || 7, end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + (8 - day));
+  const ms = Math.max(0, end - now), m = Math.floor(ms / 6e4);
+  return { ms, d: Math.floor(m / 1440), h: Math.floor((m % 1440) / 60), m: m % 60 };
+}
+export const leftText = (l) => `${l.d ? l.d + ' д ' : ''}${l.h} ч ${l.m} мин`;
+let cfgWk = null;
 export function weeklyState(save) {
   const wk = isoWeek(); let w = save.weekly;
-  if (!w || w.wk !== wk) {
-    const open = D.MAPS.filter((l) => !l.tutorial && M.levelUnlocked(save, l)), hard = open.filter((l) => l.lvl >= 9), pool = hard.length ? hard : open;
-    let h = 7; for (const ch of wk) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-    save.weekly = w = { wk, id: pool.length ? pool[h % pool.length].id : null, done: false, won: false };
-  }
+  if (!w || w.wk !== wk) save.weekly = w = { wk, done: false, won: false };
+  if (cfgWk !== wk) { configureWeekly(wk); cfgWk = wk; }       // уровень этой недели
   return w;
 }
-export const weeklyActive = (save, levelId) => { const w = weeklyState(save); return !!w.id && w.id === levelId && !w.done; };
+export const weeklyOpen = (save) => !weeklyState(save).done;
+export { WEEKLY_LEVEL };

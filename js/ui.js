@@ -1,11 +1,11 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261028210620';
-import * as A from './art.js?v=20261028210620';
-import { uiIcon } from './env.js?v=20261028210620';
-import { SPR } from './sprites.js?v=20261028210620';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261028210620';
-import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261028210620';
-import { TARGET_MODES } from './sim.js?v=20261028210620';
+import * as D from './data.js?v=20261029154931';
+import * as A from './art.js?v=20261029154931';
+import { uiIcon } from './env.js?v=20261029154931';
+import { SPR } from './sprites.js?v=20261029154931';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261029154931';
+import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261029154931';
+import { TARGET_MODES } from './sim.js?v=20261029154931';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -186,7 +186,6 @@ export class GameUI {
   showInfo(i, card) { const e = $('#dinfo'), k = card.d.id; e.classList.remove('hidden'); if (this._ik !== k) { this._ik = k; e.innerHTML = `<b>${card.d.name}</b><span class="dch">${i.chips}</span>`; } }
   onCard(card) {
     const d = card.d, on = this.cardSel === d.id;
-    this.c.sfx.play('select');
     this.deselect();
     if (on) { this.disarm(); this.refreshCards(); return; }
     if (this.cardInfo(card).locked) { this.fail('limit', card.e); return; }
@@ -332,7 +331,7 @@ export class GameUI {
   // ───── кнопка вызова волны: справа сверху, круглая каменная кнопка с портретом и кольцом таймера ─────
   buildWaveCalls() {
     const e = $('#wcall'); this.wcall = e;
-    e.onclick = () => { this.sim.callWave(); };
+    e.onclick = () => { this.c.sfx.play('select'); this.sim.callWave(); };
     this.last.wmax = 0; this.last.wk = null;
   }
   updateWaveCalls(can) {
