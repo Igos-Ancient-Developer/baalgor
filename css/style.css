@@ -1202,3 +1202,16 @@ small.fc { display: block; margin-top: 6px; padding: 4px 8px; font-size: 11.5px;
 #tut { z-index: 46; transition: top .25s; }
 
 img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); background: none !important; border: 0 !important; box-shadow: none !important; }
+
+/* глобальная карта: крупнее значки и подписи рубежей */
+.node { width: 112px; }
+.node img.ni { width: 56px; }
+.node.cleared img.ni { width: 70px; margin-top: -5px; margin-bottom: -5px; }
+.node.tutnode img.ni { width: 42px; height: 42px; border-radius: 10px; }
+.node .nl { font-size: 11.5px; padding: 0 7px; max-width: 112px; }
+.node.weekly { width: 120px; } .node.weekly img.ni { width: 66px; }
+.node.weekly::before { top: -14px; width: 112px; height: 112px; margin-left: -56px; } .node.weekly::after { top: 28px; width: 90px; height: 36px; }
+/* плашка «Один раз» у стартового набора: content-visibility обрезала всё, что выступает за рамку карточки */
+.sh-card.starter { content-visibility: visible; contain: none; margin-top: 12px; overflow: visible; }
+.sh-card.starter .rib { top: -11px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+.freech .btn { white-space: nowrap; font-size: 13px; padding-left: 8px; padding-right: 8px; }

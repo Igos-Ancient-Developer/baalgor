@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029181307';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029181307';
-import * as D from './data.js?v=20261029181307';
-import * as M from './meta.js?v=20261029181307';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029181307';
-import { url as imgUrl } from './sprites.js?v=20261029181307';
-import { Net } from './net.js?v=20261029181307';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029181307';
-import { fillPlates, gemIc } from './res.js?v=20261029181307';
-import { gemHtml } from './gem3d.js?v=20261029181307';
-import { Wallet } from './wallet.js?v=20261029181307';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029182134';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029182134';
+import * as D from './data.js?v=20261029182134';
+import * as M from './meta.js?v=20261029182134';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029182134';
+import { url as imgUrl } from './sprites.js?v=20261029182134';
+import { Net } from './net.js?v=20261029182134';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029182134';
+import { fillPlates, gemIc } from './res.js?v=20261029182134';
+import { gemHtml } from './gem3d.js?v=20261029182134';
+import { Wallet } from './wallet.js?v=20261029182134';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -152,12 +152,13 @@ export class Menus {
     // дороги между рубежами
     const cv = $('#worldcv'); cv.width = MAP_W; cv.height = MAP_H; const g = cv.getContext('2d'); g.clearRect(0, 0, MAP_W, MAP_H);
     for (const l of D.MAPS) for (const a of l.after) {
-      const pts = ROADS[a + '>' + l.id]; if (!pts || !M.levelUnlocked(s, l)) continue;               // подсвечиваем только открытые участки; сама дорога нарисована на карте
-      const q = pts.map((v) => P(v));
+      const pts = ROADS[a + '>' + l.id]; if (!pts) continue;               // дорога между рубежами: пунктир поверх нарисованной на карте; открытая ярче, закрытая тише
+      const open = M.levelUnlocked(s, l), q = pts.map((v) => P(v));
       const trace = () => { g.beginPath(); g.moveTo(q[0][0], q[0][1]); for (let i = 1; i < q.length - 1; i++) g.quadraticCurveTo(q[i][0], q[i][1], (q[i][0] + q[i + 1][0]) / 2, (q[i][1] + q[i + 1][1]) / 2); g.lineTo(q[q.length - 1][0], q[q.length - 1][1]); g.stroke(); };
       g.lineCap = 'round'; g.lineJoin = 'round'; g.setLineDash([]);
-      g.strokeStyle = 'rgba(255,214,90,.38)'; g.lineWidth = 15; trace();                                    // тёплое свечение пройденного пути
-      g.setLineDash([2, 11]); g.strokeStyle = '#fff4b8'; g.lineWidth = 5; trace();
+      if (open) { g.strokeStyle = 'rgba(255,200,70,.34)'; g.lineWidth = 20; trace(); }                       // тёплое свечение открытого пути
+      g.strokeStyle = open ? 'rgba(28,14,4,.78)' : 'rgba(10,8,8,.6)'; g.lineWidth = 12; trace();             // тёмная подложка: точки читаются на любом фоне
+      g.setLineDash([0.5, 16]); g.strokeStyle = open ? '#fff6c4' : 'rgba(228,220,196,.82)'; g.lineWidth = 8; trace(); g.setLineDash([]);
     }
     // рубежи: маленькие тихие медальоны на нарисованных площадках; подробности — в плашке по нажатию
     this.closeLevel(); const nodes = $('#nodes'); nodes.innerHTML = '';

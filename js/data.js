@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261029181307';
+import { COLS, ROWS } from './layouts.js?v=20261029182134';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029181307';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029182134';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -623,11 +623,11 @@ export function econUpgradeCost(type, level) {
 
 // Закрытые вещи: открываются в Кузнице за души или за донат-кристаллы. Свободны с начала только арбалет и рудник.
 export const UNLOCKS = {
-  magnet: { souls: 280, gems: 47 }, grinder: { souls: 340, gems: 57 },
-  frost: { souls: 30, gems: 5 }, toxic: { souls: 45, gems: 8 }, mortar: { souls: 60, gems: 10 },
-  flame: { souls: 100, gems: 17 }, banner: { souls: 120, gems: 20 }, saw: { souls: 150, gems: 25 }, harpoon: { souls: 190, gems: 32 }, tesla: { souls: 230, gems: 38 },
-  bank: { souls: 260, gems: 43 }, voidwell: { souls: 320, gems: 53 }, altar: { souls: 380, gems: 63 },
-  bell: { souls: 170, gems: 29 }, miner: { souls: 200, gems: 34 }, pendulum: { souls: 240, gems: 40 },
+  magnet: { souls: 350, gems: 47 }, grinder: { souls: 425, gems: 57 },
+  frost: { souls: 40, gems: 5 }, toxic: { souls: 55, gems: 8 }, mortar: { souls: 75, gems: 10 },
+  flame: { souls: 125, gems: 17 }, banner: { souls: 150, gems: 20 }, saw: { souls: 190, gems: 25 }, harpoon: { souls: 240, gems: 32 }, tesla: { souls: 290, gems: 38 },
+  bank: { souls: 260, gems: 43 }, voidwell: { souls: 400, gems: 53 }, altar: { souls: 380, gems: 63 },
+  bell: { souls: 210, gems: 29 }, miner: { souls: 250, gems: 34 }, pendulum: { souls: 300, gems: 40 },
 };
 export const unlockOf = (type) => UNLOCKS[type] || (isPremium(type) ? { gems: PREMIUM[type].gems, premium: true } : undefined);
 
