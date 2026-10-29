@@ -1,15 +1,15 @@
 // Сундуки (лутбоксы): три вида, продаются за кристаллы и за души. За кристаллы бросок делает сервер (supabase/chests.sql, chest_open), за души — клиент (rollChest).
 // Таблицы — js/chesttable.js; игроку шансы не показываются, только цвет редкости.
-import { gemUrl } from './gem3d.js?v=20261029211930';
-import * as D from './data.js?v=20261029211930';
-import * as M from './meta.js?v=20261029211930';
-import { Net } from './net.js?v=20261029211930';
-import { Wallet } from './wallet.js?v=20261029211930';
-import { towerIcon, econIcon } from './ui.js?v=20261029211930';
-import { iconUrl } from './icons.js?v=20261029211930';
-import { url as imgUrl } from './sprites.js?v=20261029211930';
-import { CHEST_ROWS, POOL_OF, chanceOf, soulRows } from './chesttable.js?v=20261029211930';
-import { createChest3D } from './chest3d.js?v=20261029211930';
+import { gemUrl } from './gem3d.js?v=20261029212623';
+import * as D from './data.js?v=20261029212623';
+import * as M from './meta.js?v=20261029212623';
+import { Net } from './net.js?v=20261029212623';
+import { Wallet } from './wallet.js?v=20261029212623';
+import { towerIcon, econIcon } from './ui.js?v=20261029212623';
+import { iconUrl } from './icons.js?v=20261029212623';
+import { url as imgUrl } from './sprites.js?v=20261029212623';
+import { CHEST_ROWS, POOL_OF, chanceOf, soulRows } from './chesttable.js?v=20261029212623';
+import { createChest3D } from './chest3d.js?v=20261029212623';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };

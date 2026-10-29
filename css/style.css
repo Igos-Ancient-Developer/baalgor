@@ -1247,3 +1247,13 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .stn:not(.ranked) span, .btn span { font-size: inherit !important; }
 .stn-grid .stn, .langgrid .stn, #moremenu .stn, .title-aux .stn, .dfoot .btn, .dcol .dfoot .btn.play, .chcard .chb, .btn.tb-forge, .btn.perf, .stn.small { height: var(--btn-h) !important; min-height: var(--btn-h) !important; font-size: 17px !important; }
 .btn.tb-forge { width: auto; padding: 0 14px !important; }
+
+/* плитки выбора зданий для уровня: иконка занимает почти всю плитку, подпись и цена мельче и ниже */
+.lo-cards { grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 9px 7px; }
+.loc { padding: 4px 4px 5px; gap: 1px; border-radius: 11px; }
+.loc .ci { width: 100%; height: auto; aspect-ratio: 1; border-radius: 10px; }
+.loc .cn { font-size: 10.5px; line-height: 1.02; min-height: 0; height: 21px; letter-spacing: 0; }
+.loc .cc { font-size: 12px; gap: 3px; margin-top: 1px; } .loc .cc img { width: 12px; height: 12px; }
+.loc .chk { top: 3px; right: 3px; width: 19px; height: 19px; } .loc .chk.on::after { left: 6px; top: 2px; width: 5px; height: 10px; border-width: 0 2.5px 2.5px 0; }
+.loc .crn { top: 2px; left: 2px; width: 18px; height: 18px; }
+.loc .lk img { width: 22px; height: 22px; }
