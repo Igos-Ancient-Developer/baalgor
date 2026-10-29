@@ -20,7 +20,7 @@ const RAW = {
   ] },
   silver: { souls: 540, gems: 65, stars: 17, rows: [
     { w: 27, t: 'gems', min: 23, max: 40 }, { w: 19, t: 'gems', min: 41, max: 57 }, { w: 8, t: 'gems', min: 58, max: 89 }, { w: 2.6, t: 'gems', min: 90, max: 140 },
-    { w: 0.8, t: 'gems', min: 141, max: 300 }, { w: 0.1, t: 'gems', min: 301, max: 800 }, { w: 0.005, t: 'gems', min: 2000, max: 2500 },
+    { w: 0.8, t: 'gems', min: 141, max: 300 }, { w: 0.1, t: 'gems', min: 301, max: 800 },
     { w: 8, t: 'souls', min: 300, max: 650 }, { w: 2, t: 'souls', min: 700, max: 1500 }, { w: 0.05, t: 'souls', min: 5000, max: 5000 },
     T('frost', 1), T('mortar', 1), T('toxic', 1), T('flame', 1), T('banner', 1), T('saw', 1),
     T('harpoon', 3), T('tesla', 3), T('voidwell', 2.5), T('magnet', 2.5), T('grinder', 2), T('bank', 1.5), T('altar', 1.5), T('bell', 2.5), T('miner', 2.2), T('pendulum', 2),
@@ -28,7 +28,7 @@ const RAW = {
   ] },
   gold: { souls: 1250, gems: 180, stars: 45, rows: [
     { w: 23, t: 'gems', min: 70, max: 110 }, { w: 17, t: 'gems', min: 111, max: 180 }, { w: 8, t: 'gems', min: 181, max: 260 }, { w: 3, t: 'gems', min: 261, max: 400 },
-    { w: 0.6, t: 'gems', min: 401, max: 900 }, { w: 0.05, t: 'gems', min: 901, max: 2000 }, { w: 0.002, t: 'gems', min: 5000, max: 5000 },
+    { w: 0.6, t: 'gems', min: 275, max: 575 }, { w: 0.05, t: 'gems', min: 901, max: 2000 },
     { w: 8, t: 'souls', min: 900, max: 1800 }, { w: 1.5, t: 'souls', min: 1801, max: 4000 }, { w: 0.01, t: 'souls', min: 10000, max: 10000 },
     T('frost', 0.8), T('mortar', 0.8), T('toxic', 0.8), T('flame', 0.8), T('banner', 0.8), T('saw', 0.8),
     T('harpoon', 2), T('tesla', 2), T('voidwell', 2), T('magnet', 2), T('grinder', 2), T('bank', 2), T('altar', 2), T('bell', 2), T('miner', 2), T('pendulum', 2),
