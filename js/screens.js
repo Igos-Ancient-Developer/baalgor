@@ -1,13 +1,13 @@
 // Экраны меню: Кузница душ и Достижения (иконки в стиле WC3).
-import * as D from './data.js?v=20261029190723';
-import { uiIcon } from './env.js?v=20261029190723';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261029190723';
-import { towerIcon, econIcon } from './ui.js?v=20261029190723';
-import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261029190723';
-import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261029190723';
-import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261029190723';
-import { url as imgUrl } from './sprites.js?v=20261029190723';
-import { Wallet } from './wallet.js?v=20261029190723';
+import * as D from './data.js?v=20261029205035';
+import { uiIcon } from './env.js?v=20261029205035';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261029205035';
+import { towerIcon, econIcon } from './ui.js?v=20261029205035';
+import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261029205035';
+import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261029205035';
+import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261029205035';
+import { url as imgUrl } from './sprites.js?v=20261029205035';
+import { Wallet } from './wallet.js?v=20261029205035';
 
 const PERK_FILE = { treasury: 'treasury', fortress: 'fortress', taxes: 'taxes', temper: 'temper', aim: 'aim', merchant: 'merchant', builder: 'luck', spells: 'spells', rhythm: 'rhythm', caller: 'caller' };      // файл иконки каждого дара (img/ui/ic/perk_<файл>.webp); «Бережливость» — рука с монетой
 const $ = (s) => document.querySelector(s);
@@ -22,7 +22,7 @@ export function renderForge(save, sfx, onChange, openShop) {
   // ежедневный подарок: плашка в самом верху кузницы
   { const db = $('#dailybox'); db.innerHTML = '';
     const ready = Wallet.dailyReady(), streak = Wallet.online ? (save.streak || 0) : ((save.daily || {}).streak || 0), claimed = ready ? streak % 7 : streak;
-    const card = el('div', 'sh-card daily'); card.appendChild(el('div', 'sh-h', `<img class="sh-ic cutg" src="${bareGlyphUrl(SHOP_IMG.daily, 64)}" alt="">Ежедневный подарок`));
+    const card = el('div', 'sh-card daily'); card.appendChild(el('div', 'sh-h', `<img class="sh-ic" src="${iconUrl(glyphIcon(SHOP_IMG.daily, { size: 64 }))}" alt="">Ежедневный подарок`));
     const row = el('div', 'days');
     D.DAILY.forEach((g, i) => row.appendChild(el('div', 'day' + (i < claimed ? ' got' : i === claimed && ready ? ' now' : ''), `<small>день ${i + 1}</small><img class="si" src="${bareGlyphUrl('soul', 22)}" alt=""><b>${g}</b>${i < claimed ? '<i class="ck"></i>' : ''}`)));
     card.appendChild(row);
@@ -42,7 +42,7 @@ export function renderForge(save, sfx, onChange, openShop) {
   // слоты: сколько зданий можно взять в бой (в начале 2, максимум 5)
   const sbx = $('#slotsbox'); sbx.innerHTML = '';
   { const n = slotsOf(save), row = el('div', 'frow' + (n >= D.SLOT_MAX ? ' max' : '')), pips = Array.from({ length: D.SLOT_MAX }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('');
-    row.innerHTML = `<img class="fi cutg" src="${bareGlyphUrl('shield', 52)}" alt=""><div class="ft"><div class="fn">Слоты в бою<span class="pips">${pips}</span></div><div class="fd">Сколько зданий и башен берёшь на уровень: ${n} из ${D.SLOT_MAX}</div></div>`;
+    row.innerHTML = `<img class="fi" src="${iconUrl(glyphIcon('tower', { bg: PALETTE.tower, frame: 'gold' }))}" alt=""><div class="ft"><div class="fn">Слоты в бою<span class="pips">${pips}</span></div><div class="fd">Сколько зданий и башен берёшь на уровень: ${n} из ${D.SLOT_MAX}</div></div>`;
     if (n >= D.SLOT_MAX) row.appendChild(el('div', 'fbuy', 'МАКС'));
     else {
       const c = D.SLOT_COST[n], box = el('div', 'fbuys');

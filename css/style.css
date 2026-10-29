@@ -1226,3 +1226,13 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 /* шансы сундука: переключатель «За Stars / За души» */
 .chodds .odt { display: flex; gap: 6px; margin-bottom: 6px; } .chodds .odtab { flex: 1; min-height: 30px; border-radius: 9px; border: 1.5px solid #4a4f54; background: #141617; color: #b9bdc2; font-family: var(--font); font-size: 13px; }
 .chodds .odtab.on { border-color: #e0b040; color: #ffe9a8; background: #2a2210; }
+
+/* выбор сложности: плитка сложности как в исходной картинке, компактнее; кнопка «Играть» ниже */
+.dcard .arch.dic { width: 96px; height: 96px; margin: 0 auto; }
+.dcard .arch.dic img { filter: drop-shadow(0 3px 4px rgba(0,0,0,.8)); border-radius: 12px; }
+.dcard.locked .dport .arch.dic img { filter: grayscale(1) brightness(.5) drop-shadow(0 3px 4px rgba(0,0,0,.8)); }
+.dcard .dname { font-size: 25px; margin-top: 4px; margin-bottom: 4px; }
+.dcol .dfoot .btn.play { min-height: 36px; height: 38px; padding-top: 0; padding-bottom: 0; font-size: 18px; }
+/* названия сложностей: шрифт в духе Diablo 2 (Forum — ближайший свободный с кириллицей), мельче */
+.dcard .dname, .ps-d b { font-family: 'Forum', var(--gothic); font-size: 19px; letter-spacing: .08em; -webkit-text-stroke: .5px currentColor; }
+.ps-d b { font-size: 16px; }

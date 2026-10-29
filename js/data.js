@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261029190723';
+import { COLS, ROWS } from './layouts.js?v=20261029205035';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029190723';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029205035';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -651,14 +651,14 @@ export const levelMult = (index) => 1 + LEVEL_STEP * Math.max(0, index - 1);
 // Один кристалл дёшев (≈0,2 ⭐), но тратить их есть на что постоянно: слоты, закрытые здания, премиум-башни и одноразовые усилители,
 // цена которых растёт с глубиной уровня. Цены продублированы на сервере (supabase/schema.sql, private.gem_price) — клиенту верить нельзя.
 export const PACKS = [
-  { id: 'p1', stars: 15,   gems: 60,   tag: '' },
-  { id: 'p2', stars: 50,   gems: 220,  tag: '' },
-  { id: 'p3', stars: 100,  gems: 480,  tag: 'hit' },
-  { id: 'p4', stars: 250,  gems: 1300, tag: '' },
-  { id: 'p5', stars: 500,  gems: 2800, tag: '' },
-  { id: 'p6', stars: 1000, gems: 6000, tag: 'best' },
+  { id: 'p1', stars: 18,   gems: 60,   tag: '' },
+  { id: 'p2', stars: 60,   gems: 220,  tag: '' },
+  { id: 'p3', stars: 120,  gems: 480,  tag: 'hit' },
+  { id: 'p4', stars: 300,  gems: 1300, tag: '' },
+  { id: 'p5', stars: 600,  gems: 2800, tag: '' },
+  { id: 'p6', stars: 1200, gems: 6000, tag: 'best' },
 ];
-export const STARTER = { stars: 25, gems: 300, souls: 300, tower: 'gold_bolt' };      // один раз на аккаунт
+export const STARTER = { stars: 30, gems: 300, souls: 300, tower: 'gold_bolt' };      // один раз на аккаунт
 export const FIRST_BONUS = 2;                                                           // первая покупка каждого пакета: кристаллов ×2
 export const DAILY = [25, 25, 40, 30, 50, 60, 120];                                            // ежедневный подарок — ДУШИ (не кристаллы), серия 7 дней
 export const BOOSTS = {

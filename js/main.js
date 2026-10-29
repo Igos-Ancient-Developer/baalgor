@@ -1,35 +1,35 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261029190723';
-import * as A from './art.js?v=20261029190723';
-import { Sim } from './sim.js?v=20261029190723';
-import { Gore } from './gore.js?v=20261029190723';
-import { Renderer } from './render.js?v=20261029190723';
-import { GameUI } from './ui.js?v=20261029190723';
-import { Tutorial } from './tutorial.js?v=20261029190723';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261029190723';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261029190723';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261029190723';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261029190723';
-import { mapBG, releaseBG } from './env.js?v=20261029190723';
-import { MENU_SPEC } from './music.js?v=20261029190723';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261029190723';
-import { renderForge, renderAchs } from './screens.js?v=20261029190723';
-import { renderShop } from './shop.js?v=20261029190723';
-import { freeChestReady } from './chests.js?v=20261029190723';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261029190723';
-import { Wallet } from './wallet.js?v=20261029190723';
-import { initLang, pickLang } from './i18n.js?v=20261029190723';
-import { Menus, RUN, clock } from './menus.js?v=20261029190723';
-import { Net } from './net.js?v=20261029190723';
-import { gemIc } from './res.js?v=20261029190723';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261029190723';
+import * as D from './data.js?v=20261029205035';
+import * as A from './art.js?v=20261029205035';
+import { Sim } from './sim.js?v=20261029205035';
+import { Gore } from './gore.js?v=20261029205035';
+import { Renderer } from './render.js?v=20261029205035';
+import { GameUI } from './ui.js?v=20261029205035';
+import { Tutorial } from './tutorial.js?v=20261029205035';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261029205035';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261029205035';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261029205035';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261029205035';
+import { mapBG, releaseBG } from './env.js?v=20261029205035';
+import { MENU_SPEC } from './music.js?v=20261029205035';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261029205035';
+import { renderForge, renderAchs } from './screens.js?v=20261029205035';
+import { renderShop } from './shop.js?v=20261029205035';
+import { freeChestReady } from './chests.js?v=20261029205035';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261029205035';
+import { Wallet } from './wallet.js?v=20261029205035';
+import { initLang, pickLang } from './i18n.js?v=20261029205035';
+import { Menus, RUN, clock } from './menus.js?v=20261029205035';
+import { Net } from './net.js?v=20261029205035';
+import { gemIc } from './res.js?v=20261029205035';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261029205035';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
 const hide = (id) => $(id).classList.add('hidden');
 const fmt = (n) => Math.round(n).toLocaleString('ru-RU');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const SCORE_ICON = new URL('../img/ui/score_cut.webp', import.meta.url).href;
+const SCORE_ICON = new URL('../img/ui/score.webp', import.meta.url).href;
 window.addEventListener('error', (e) => console.error(e.error || e.message));
 
 const STEP = 1 / 60;
@@ -55,8 +55,8 @@ async function boot() {
   await initLang(pickLang());                                                   // язык интерфейса: до построения экранов
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261029190723').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261029190723').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261029205035').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261029205035').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
@@ -150,7 +150,7 @@ function setupNav() {
     if (!tutorialDone(save)) { prepareLevel('tut', 1); return; }               // новичка сразу ведём в обучение
     goWorld();
   };
-  for (const id of ['#world-forge', '#ds-forge', '#lo-forge', '#e-forge']) $(id).onclick = () => ctrl.openForge();      // Кузница доступна при выборе уровня, подготовке и после победы
+  for (const id of ['#world-forge', '#lo-forge', '#e-forge']) $(id).onclick = () => ctrl.openForge();      // Кузница доступна при выборе уровня, подготовке и после победы
   $('#b-ranked').onclick = () => { sfx.unlock(); sfx.play('click'); sfx.startMusic(MENU_SPEC); menus.openRanked(); updateBack(); };
   $('#b-forge').onclick = () => ctrl.openForge(); $('#b-achs').onclick = () => ctrl.openAchs();
   $('#b-board').onclick = () => { sfx.unlock(); sfx.play('click'); menus.openBoard({ global: true }); updateBack(); };
@@ -219,7 +219,7 @@ function setupRevive() {
 function renderPauseScore() {
   const box = $('#p-score'); if (!sim || D.MAPS[levelIdx].tutorial) { box.innerHTML = ''; return; }
   const sc = Math.round(sim.score), img = `<img src="${SCORE_ICON}" alt="">`, dd = D.DIFFS[diffI];
-  const dl = `<div class="ps-d" style="--dc:${dd.color}"><img src="${new URL(`../img/ui/ic/diffc_${diffI}.webp`, import.meta.url).href}" alt=""><b>${dd.name}</b>${weeklyRun ? '<span>недельный уровень</span>' : ''}</div>`;
+  const dl = `<div class="ps-d" style="--dc:${dd.color}"><img src="${new URL(`../img/ui/ic/diff_${diffI}.webp`, import.meta.url).href}" alt=""><b>${dd.name}</b>${weeklyRun ? '<span>недельный уровень</span>' : ''}</div>`;
   box.innerHTML = dl + (run
     ? `<div class="ps-v">${img}${fmt(run.score + sim.score)}</div><small>Рубеж ${run.i + 1} из ${run.levels.length} · время ${clock(run.time + sim.time)} · за этот рубеж +${fmt(sc)}</small>`
     : `<div class="ps-v">${img}${fmt(sc)}</div><small>Очки за уровень · волна ${sim.wave} из ${sim.total}</small>`);
@@ -396,7 +396,7 @@ function showEnd(won) {
   $('#end-title').style.color = won ? '#8fe36a' : '#ff5a6a';
   const dl = D.DIFFS[diffI];
   const par = clock(v.par);
-  const diffImg = new URL(`../img/ui/ic/diffc_${diffI}.webp`, import.meta.url).href;
+  const diffImg = new URL(`../img/ui/ic/diff_${diffI}.webp`, import.meta.url).href;
   $('#end-hero').innerHTML = `<div class="eh ${won ? 'win' : 'lose'}"><i class="ehr"></i><div class="ehi"><img src="${L(won ? 'crown' : 'skull', 64)}" alt=""></div></div>`;
   $('#end-sub').innerHTML = tut ? '' : `<div class="es"><b>${run ? 'Рейтинговый забег' : D.MAPS[levelIdx].name}</b><span style="--dc:${dl.color}"><img src="${diffImg}" alt="">${dl.name}${weeklyRun ? ' · недельный' : ''}</span></div>`;
   $('#end-verdict').innerHTML = tut ? '' : `

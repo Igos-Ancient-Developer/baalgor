@@ -1,11 +1,11 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261029190723';
-import * as A from './art.js?v=20261029190723';
-import { uiIcon } from './env.js?v=20261029190723';
-import { SPR, img } from './sprites.js?v=20261029190723';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261029190723';
-import { glyphIcon, spriteIcon, cutIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261029190723';
-import { TARGET_MODES } from './sim.js?v=20261029190723';
+import * as D from './data.js?v=20261029205035';
+import * as A from './art.js?v=20261029205035';
+import { uiIcon } from './env.js?v=20261029205035';
+import { SPR, img } from './sprites.js?v=20261029205035';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261029205035';
+import { glyphIcon, spriteIcon, cutIcon, iconUrl, bareGlyph, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261029205035';
+import { TARGET_MODES } from './sim.js?v=20261029205035';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -58,6 +58,14 @@ export const towerIcon = (type, lvl = 1, br = null, picks = null, o = {}) => {
   const raster = SPR.ok && SPR.towers[bt], crop = raster && !o.noCrop ? headCrop(bt, lvl, br) : null;
   return cutIcon(`t:${type}:${lvl}:${br || ''}:${picks ? picks.join('') : ''}:${o.k || ''}`, composite(bt, lvl, br, picks), { size: o.size || 64, crop, badge: prem ? 'crown' : null });
 };
+// у башни с готовой плиткой значок не зависит от выбора улучшения: в нижнем углу ставим кружок цвета точки улучшения с глифом, чтобы варианты различались
+const badged = (base, glyph, col, key, size) => A.cached(`ub:${key}:${size}`, () => A.mk(size, size, (g) => {
+  g.imageSmoothingQuality = 'high'; g.drawImage(base, 0, 0, size, size);
+  const r = size * 0.23, cx = size - r - 1, cy = size - r - 1;
+  g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fillStyle = hexMix(col, '#0a0608', 0.6); g.fill(); g.lineWidth = size * 0.07; g.strokeStyle = col; g.stroke();
+  g.beginPath(); g.arc(cx, cy, r + size * 0.035, 0, Math.PI * 2); g.lineWidth = size * 0.025; g.strokeStyle = '#0a0608'; g.stroke();
+  g.drawImage(bareGlyph(glyph, 64), cx - r * 0.66, cy - r * 0.66, r * 1.32, r * 1.32);
+}));
 export const econIcon = (type, lvl = 1, o = {}) => tileIcon(type, o.size || 64) || cutIcon(`e:${type}:${lvl}:${o.k || ''}`, A.econBody(type, lvl), { size: o.size || 64 });
 
 const STAT_LABEL = { coin: 'Монета банка', buff: 'Прибавка соседям', dmg: 'Урон', rate: 'Скорострельность', range: 'Дальность', splash: 'Радиус взрыва', burn: 'Горение', poison: 'Яд', chains: 'Прыжков молнии', pierce: 'Пробивает целей', critMult: 'Сила крита', execute: 'Казнь раненых', slow: 'Замедление', freeze: 'Шанс заморозки', brittle: 'Уязвимость ко льду', shatter: 'Осколки льда', stacks: 'Слоёв яда', plague: 'Радиус чумы', shred: 'Снятие брони', orbit: 'Лезвий вокруг', bounce: 'Рикошетов', stun: 'Шанс оглушения', cluster: 'Бомб в кассете', fire: 'Огонь', spread: 'Заражение огнём', trail: 'Огонь за целью', pull: 'Отбрасывание', collapseMult: 'Мощь схлопывания', anchor: 'Пригвождение', heavyMult: 'Урон по тяжёлым', armorPierce: 'Пробитие брони', rateBuff: 'Скорость союзников', dmgBuff: 'Урон союзников', mark: 'Метка на врагах', mines: 'Мин на дороге', airMul: 'Урон по воздуху', gMul: 'Урон по земле', stunT: 'Оглушение воздуха', push: 'Отбрасывание', bleed: 'Кровотечение', twice: 'Ударов за взмах', aura: 'Аура замедления', income: 'Золото с монеты', cap: 'Потолок монеты', bonus: 'Золото за убийство' };
@@ -227,7 +235,8 @@ export class GameUI {
     const spec = kind === 'pick' ? { bg: PALETTE[o.id], frame: { power: 'blood', speed: 'gold', special: 'nature' }[o.id], badge: D.PICK_STYLE[o.id].icon, badgeCol: D.PICK_STYLE[o.id].color }
       : kind === 'branch' ? { bg: PALETTE[o.branch], frame: o.branch === 'A' ? 'ice' : 'blood', badge: 'fork', badgeCol: BRANCH_COL[o.branch] }
         : { bg: PALETTE.final, frame: 'arcane', badge: 'star', badgeCol: '#ffd24a' };
-    return iconUrl(towerIcon(b.type, o.level, o.branch, o.picks, { k: 'up' + o.id, size: 96, ...spec }));
+    const ic = towerIcon(b.type, o.level, o.branch, o.picks, { k: 'up' + o.id, size: 96, ...spec });
+    return iconUrl(tileIcon(b.type, 96) === ic ? badged(ic, spec.badge, spec.badgeCol, `${b.type}:${o.kind}:${o.id}:${o.branch || ''}`, 96) : ic);
   }
   optColor(o) { return o.kind === 'pick' ? D.PICK_STYLE[o.id].color : o.kind === 'branch' ? BRANCH_COL[o.branch] : o.kind === 'final' ? '#ffd24a' : '#8fe36a'; }
   deltaChips(b, o, n = 4) {

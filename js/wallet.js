@@ -1,8 +1,8 @@
 // Кошелёк донат-кристаллов. В Telegram баланс, покупки и цены живут на сервере (supabase/schema.sql), клиент только показывает.
 // Вне Telegram (обычный браузер) работает локальный режим для разработки: траты считаются в сохранении, пополнение только с ?debug.
-import * as D from './data.js?v=20261029190723';
-import { Net } from './net.js?v=20261029190723';
-import { TG } from './tg.js?v=20261029190723';
+import * as D from './data.js?v=20261029205035';
+import { Net } from './net.js?v=20261029205035';
+import { TG } from './tg.js?v=20261029205035';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const debug = () => location.search.includes('debug');
@@ -66,20 +66,6 @@ export const Wallet = {
       } catch (e) { return { error: 'net' }; }
     }
     s.souls = (s.souls || 0) + W.souls; s.gems = (s.gems || 0) + W.gems; this.onChange(); return { ok: true, ...W };
-  },
-  // сундуки за Stars: счёт на n штук, после оплаты вебхук кладёт их на склад игрока (chest_stock)
-  async buyChest(kind, n, stock) {
-    if (!this.online) {
-      if (!debug()) return { error: 'notg' };
-      const s = this.save; s.stock = s.stock || {}; s.stock[kind] = (s.stock[kind] || 0) + n; this.onChange(); return { status: 'paid' };      // отладка вне Telegram: начисляем сразу
-    }
-    const before = await stock();
-    const inv = await Net.invoice('chest', { kind, n });
-    if (!inv || !inv.link) return { error: inv && inv.error || 'net' };
-    const status = await new Promise((res) => { try { TG.tg.openInvoice(inv.link, res); } catch (e) { res('failed'); } });
-    if (status !== 'paid') return { status };
-    for (let i = 0; i < 10; i++) { await new Promise((r) => setTimeout(r, 1200)); if ((await stock()) >= before + n) break; }      // ждём вебхук: склад на сервере вырастет
-    return { status: 'paid' };
   },
   // пакет за Stars: открывает счёт Telegram, после оплаты ждёт начисления от вебхука
   async buy(pack) {

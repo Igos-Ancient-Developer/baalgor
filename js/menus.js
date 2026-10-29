@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029190723';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029190723';
-import * as D from './data.js?v=20261029190723';
-import * as M from './meta.js?v=20261029190723';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029190723';
-import { url as imgUrl } from './sprites.js?v=20261029190723';
-import { Net } from './net.js?v=20261029190723';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029190723';
-import { fillPlates, gemIc } from './res.js?v=20261029190723';
-import { gemHtml } from './gem3d.js?v=20261029190723';
-import { Wallet } from './wallet.js?v=20261029190723';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029205035';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029205035';
+import * as D from './data.js?v=20261029205035';
+import * as M from './meta.js?v=20261029205035';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029205035';
+import { url as imgUrl } from './sprites.js?v=20261029205035';
+import { Net } from './net.js?v=20261029205035';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029205035';
+import { fillPlates, gemIc } from './res.js?v=20261029205035';
+import { gemHtml } from './gem3d.js?v=20261029205035';
+import { Wallet } from './wallet.js?v=20261029205035';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -41,7 +41,7 @@ const ROADS = {
   'h1b>h2': [[968, 133], [1000, 125], [1030, 118], [1060, 113]],
   'h2>h3': [[1060, 113], [1105, 100], [1135, 85], [1148, 74]],
 };
-const SC = () => imgUrl('ui/score_cut.webp');
+const SC = () => imgUrl('ui/score.webp');
 const lvName = (lv) => (D.CAMPAIGN[lv - 1] || {}).name || '';
 export const RUN = { level: 'run', diff: 4 };      // рейтинговый забег хранится в таблице как уровень «run» на сложности «Хардкор»
 // подписи секторов на карте мира (координаты в пикселях картинки)
@@ -104,7 +104,7 @@ export class Menus {
   buildTitle() {
     const s = this.save, c = this.c;
     $('#title-logo').src = imgUrl('ui/logo.webp');
-    $('#b-ranked .tk').src = imgUrl('ui/icon_skull_cut.webp');
+    $('#b-ranked .tk').src = imgUrl('ui/icon_skull.webp');
     const me = Net.me() || c.TG.user(), pf = $('#pf'); pf.innerHTML = '';
     pf.appendChild(avatar(me && (me.photo || me.photo_url), me ? (me.name || me.first_name || me.username) : 'Игрок', me ? me.id : 0));
     $('#gem-ic').innerHTML = gemHtml(30, 0, true); $('#gem-n').textContent = (s.gems || 0).toLocaleString('ru-RU');
@@ -287,18 +287,17 @@ export class Menus {
   openDiff(levelId) {
     const l = D.MAPS.find((q) => q.id === levelId), s = this.save, c = this.c, seq = ++this.diffSeq;
     this.level = l; if (c.warm) c.warm(levelId);              // пока игрок выбирает сложность, готовим листы врагов и фон карты
-    $('#ds-title').textContent = l.name;
     const car = $('#dcar'); car.innerHTML = '';
     const cards = D.DIFFS.map((d, i) => {
       const unlocked = M.diffUnlocked(s, l, i), best = M.bestScore(s, l.id, i);
       const rows = diffLines(d, i).map((r) => r.k === 'sep' ? `<div class="dsub">${r.t}</div>` : `<div class="mrow ${r.cls}"><img src="${bareGlyphUrl(r.icon, 24)}" alt=""><div class="mt">${r.t}<small>${r.s}</small></div><b>${r.v}</b></div>`).join('');
       const card = el('div', `dcard${unlocked ? '' : ' locked'}${i === 4 ? ' hc' : ''}`);
       card.style.setProperty('--c', d.color);
-      card.innerHTML = `<div class="dport"><div class="arch dic"><img src="${imgUrl('ui/ic/diffc_' + i + '.webp')}" alt=""></div>
+      card.innerHTML = `<div class="dport"><div class="arch dic"><img src="${imgUrl('ui/ic/diff_' + i + '.webp')}" alt=""></div>
           <div class="dname">${d.name}</div>
           ${best ? `<div class="dbest"><img src="${SC()}" alt="">${fmt(best)}</div>` : ''}
         </div>
-        ${unlocked ? '' : `<div class="dlock"><img src="${bareGlyphUrl('lock', 72)}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}
+        ${unlocked ? '' : `<div class="dlock"><img src="${iconUrl(glyphIcon('skulllock', { size: 96, bg: PALETTE.lock, frame: 'dark' }))}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}
         <div class="dbody"><div class="dsub">Испытания</div>${rows}</div>
         `;
       const foot = el('div', 'dfoot', '<button class="btn big play">Играть</button>');           // кнопка стоит под плитой, а не поверх прокручиваемого текста
@@ -345,7 +344,7 @@ export class Menus {
         <div class="two"><div><img src="${bareGlyphUrl('hourglass', 26)}" alt=""><span>время забега<b>${clock(best.time)}</b></span></div><div><img src="${SC()}" alt=""><span>очки<b>${fmt(best.score)}</b></span></div></div>
         ${slotsHtml ? `<div class="slots">${slotsHtml}</div>` : ''}</div>
         ${best.fast ? `<div class="bf"><img src="${bareGlyphUrl('hourglass', 20)}" alt="">Весь путь пройден за <b>${clock(best.fast)}</b></div>` : ''}<div class="br" id="rk-myrank"></div></div>` : '';
-    body.innerHTML = `<div class="slab rk-slab" style="--c:#b08ad8"><div class="arch"><img src="${imgUrl('ui/icon_skull_cut.webp')}" alt=""></div>
+    body.innerHTML = `<div class="slab rk-slab" style="--c:#b08ad8"><div class="arch"><img src="${imgUrl('ui/icon_skull.webp')}" alt=""></div>
       <h3 class="carve">Один забег — все рубежи</h3><p class="carvep">Весь путь от первого уровня до последнего без остановки. В таблицу попадает самый далёкий уровень, время и очки.</p>
       ${bestHtml}
       <div class="rk-rules">
@@ -394,7 +393,7 @@ export class Menus {
     const sb = $('#lo-slots'); sb.innerHTML = '';
     for (let i = 0; i < D.SLOT_MAX; i++) {
       const t = lo.sel[i];
-      if (i >= lo.slots) { const b = el('button', 'los lock', `<img src="${bareGlyphUrl('lock', 48)}" alt="">`); b.onclick = () => { shake(b); c.openForge(); }; sb.appendChild(b); }
+      if (i >= lo.slots) { const b = el('button', 'los lock', `<img src="${iconUrl(glyphIcon('skulllock', { size: 64, bg: PALETTE.lock, frame: 'dark' }))}" alt="">`); b.onclick = () => { shake(b); c.openForge(); }; sb.appendChild(b); }
       else if (t) { const b = el('button', 'los full', `<img src="${icon(t)}" alt=""><small>${nameOf(t)}</small>`); b.onclick = () => { c.sfx.play('click'); lo.sel.splice(i, 1); this.refreshLoadout(); }; sb.appendChild(b); }
       else sb.appendChild(el('div', 'los empty', '+'));
     }
@@ -405,7 +404,7 @@ export class Menus {
       const g = el('div', 'lo-cards');
       for (const t of list) {
         const isOpen = open(t), idx = lo.sel.indexOf(t), cost = D.TOWERS[t] ? D.TOWERS[t].cost : D.ECON[t].cost, prem = D.isPremium(t);
-        const b = el('button', 'loc' + (isOpen ? '' : ' locked') + (idx >= 0 ? ' on' : '') + (lo.info === t ? ' info' : ''), `<img class="ci" src="${icon(t)}" alt=""><div class="cn">${nameOf(t)}</div><div class="cc">${!isOpen && prem ? `${gemIc(14)}<span>${D.PREMIUM[t].gems}</span>` : `<img src="${bareGlyphUrl('coins', 14)}" alt=""><span>${cost}</span>`}</div>${prem ? '<i class="crn"></i>' : ''}${isOpen ? `<i class="chk${idx >= 0 ? ' on' : ''}"></i>` : ''}${isOpen ? '' : `<div class="lk"><img src="${bareGlyphUrl('lock', 48)}" alt=""></div>`}`);
+        const b = el('button', 'loc' + (isOpen ? '' : ' locked') + (idx >= 0 ? ' on' : '') + (lo.info === t ? ' info' : ''), `<img class="ci" src="${icon(t)}" alt=""><div class="cn">${nameOf(t)}</div><div class="cc">${!isOpen && prem ? `${gemIc(14)}<span>${D.PREMIUM[t].gems}</span>` : `<img src="${bareGlyphUrl('coins', 14)}" alt=""><span>${cost}</span>`}</div>${prem ? '<i class="crn"></i>' : ''}${isOpen ? `<i class="chk${idx >= 0 ? ' on' : ''}"></i>` : ''}${isOpen ? '' : `<div class="lk"><img src="${iconUrl(glyphIcon('skulllock', { size: 64, bg: PALETTE.lock, frame: 'dark' }))}" alt=""></div>`}`);
         b.onclick = () => {
           lo.info = t;
           if (!isOpen) { shake(b); this.refreshLoadout(); return; }

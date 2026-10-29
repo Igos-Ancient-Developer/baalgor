@@ -2,8 +2,7 @@
 // w — вес записи: шанс в процентах = w / сумма весов × 100 (сумма примерно 100, но это не обязательно). Как в кейсах CS2: обычного много, дорогое выпадает очень редко.
 // t: souls | gems | unlock (id — здание, которое открывается навсегда) | stars (главный приз: Telegram Stars, выплачивается вручную, строка пишется в chest_jackpots).
 // gemsOnly — запись только при оплате кристаллами (при оплате душами её заменяют души).
-// Сундуки продаются за Telegram Stars и за души (за кристаллы больше нет). Таблицы ниже — «сырые»; коэффициенты TUNE ужесточают их: кристаллы мельче, башни и особенно премиум реже.
-// Сундук за Stars бросается на сервере по полной таблице (CHEST_ROWS); сундук за души — на клиенте по таблице без премиум-башен, кристаллов и главного приза (soulRows).
+// Сундуки продаются только за души. CHEST_ROWS — прежняя «полная» таблица, нужна только серверу для сундуков, уже лежащих на складе (supabase/chests.sql); в игре бросок идёт по soulRows (ниже).
 export const POOL_OF = {
   frost: 'common', toxic: 'common', mortar: 'common', flame: 'common', banner: 'common', saw: 'common',
   harpoon: 'mid', tesla: 'mid', voidwell: 'mid', bank: 'mid', altar: 'mid', magnet: 'mid', grinder: 'mid', bell: 'mid', miner: 'mid', pendulum: 'mid',
@@ -40,10 +39,23 @@ const RAW = {
 const tune = (rows) => rows.map((r) => (r.t === 'gems' ? { ...r, min: Math.max(1, Math.round(r.min * TUNE.gems)), max: Math.max(1, Math.round(r.max * TUNE.gems)) }
   : r.t === 'unlock' ? { ...r, w: r.w * (POOL_OF[r.id] === 'prem' ? TUNE.prem : TUNE.tower) } : r));
 export const CHEST_ROWS = {}; for (const k of Object.keys(RAW)) CHEST_ROWS[k] = { ...RAW[k], rows: tune(RAW[k].rows) };
-export const SOUL_PER_GEM = 6;                                          // курс при пересчёте кристаллов в души (в сундуке за души)
-// таблица сундука за души: без премиум-башен, кристаллов (они превращаются в души по курсу) и главного приза
-export const soulRows = (kind) => CHEST_ROWS[kind].rows.filter((r) => r.t !== 'stars' && !(r.t === 'unlock' && POOL_OF[r.id] === 'prem'))
-  .map((r) => (r.t === 'gems' ? (r.gemsOnly ? { w: r.w, t: 'souls', min: 40, max: 89 } : { w: r.w, t: 'souls', min: r.min * SOUL_PER_GEM, max: r.max * SOUL_PER_GEM }) : r));
+// ───── сундуки за души (единственный способ купить сундук в игре; Stars и кристаллы для сундуков отключены) ─────
+// Только души и обычные здания: премиум-башни из сундуков не выпадают (они продаются за кристаллы). Шансы игроку нигде не показываются.
+// Здания разбиты на сегменты по цене в душах: дешёвые выпадают чаще, дорогие всё реже (вес = base × множитель сегмента).
+export const SEGMENTS = [
+  { k: 1, ids: ['frost', 'toxic', 'mortar'] },                                          // до 150 душ
+  { k: 0.8, ids: ['flame', 'banner', 'saw'] },                                          // 250–380
+  { k: 0.5, ids: ['bell', 'miner', 'harpoon', 'bank', 'tesla', 'pendulum'] },           // 420–600
+  { k: 0.25, ids: ['magnet', 'altar', 'voidwell', 'grinder'] },                         // 700–850
+];
+const seg = (base) => SEGMENTS.flatMap((g) => g.ids.map((id) => T(id, +(base * g.k).toFixed(3))));
+const SOUL_RAW = {
+  wood: { base: 1.1, souls: [[36, 25, 55], [24, 56, 100], [9, 101, 160], [2.5, 161, 250], [0.5, 251, 450], [0.05, 451, 1000]] },
+  silver: { base: 1.2, souls: [[34, 80, 140], [22, 141, 220], [10, 221, 330], [3, 331, 520], [0.8, 521, 900], [0.08, 901, 2000]] },
+  gold: { base: 0.9, souls: [[33, 250, 420], [21, 421, 650], [9, 651, 950], [3, 951, 1400], [0.6, 1401, 2600], [0.05, 2601, 6000]] },
+};
+const SOUL_ROWS = {}; for (const [k, v] of Object.entries(SOUL_RAW)) SOUL_ROWS[k] = [...v.souls.map(([w, min, max]) => ({ w, t: 'souls', min, max })), ...seg(v.base)];
+export const soulRows = (kind) => SOUL_ROWS[kind];
 // шанс записи в процентах (по умолчанию в таблице за Stars; rows — своя таблица, например soulRows)
 export const chanceOf = (kind, row, rows = CHEST_ROWS[kind].rows) => (row.w / rows.reduce((s, r) => s + r.w, 0)) * 100;
 // «красивая» запись процента: до 15 знаков после запятой, без хвоста из нулей
