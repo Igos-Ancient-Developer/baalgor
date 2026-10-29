@@ -1,7 +1,7 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261029154931';
+import { createTrack, MENU_SPEC } from './music.js?v=20261029161329';
 // группы записей (сколько файлов) и кто какой группой умирает: [группа, скорость воспроизведения]
-const MON_FILES = { slime: 6, golem: 7, brute: 7, squeal: 6, bat: 5, ghost: 5, man: 3, roar: 8, wolf: 4, dry: 6, bone: 5 };
+const MON_FILES = { slime: 6, golem: 7, brute: 7, squeal: 4, bat: 5, ghost: 5, man: 3, roar: 8, wolf: 4, dry: 6, bone: 5 };
 const MON_OF = {
   slime: ['slime', 1], slimelet: ['slime', 1.3], sandgolem: ['golem', 0.9], snowgolem: ['golem', 1], lavagolem: ['golem', 0.78], skeleton: ['bone', 1], iceskel: ['bone', 1.15],
   zombie: ['brute', 1], ogre: ['brute', 0.8], butcher: ['brute', 0.7], goblin: ['squeal', 1], imp: ['squeal', 1.25], bat: ['bat', 1], gargoyle: ['bat', 0.75],
@@ -256,6 +256,7 @@ export function attachSfx(sim, sfx) {
   sim.on('explosion', (d) => { if (d.kind === 'meteor') sfx.play('meteor'); else if (d.kind === 'pop' || d.kind === 'shatter') sfx.play('crack', 0.6); else if (d.kind === 'vial') sfx.play('splat', 0.8); else sfx.play(d.kind === 'bomblet' ? 'boomsmall' : 'boom', d.big ? 1.2 : 1); });
   sim.on('kill', (d) => sfx.death(d.e && d.e.type, 0.8));
   sim.on('upgrade', () => sfx.play('upgrade'));
+  sim.on('build', () => sfx.play('build'));                 // постановка здания
   sim.on('bag', (d) => sfx.play(d.tapped ? 'bag' : 'coin', 0.8));
   sim.on('chest', (d) => sfx.play(d.kind === 'open' ? 'chest' : 'crack', d.kind === 'open' ? 1 : 0.8));      // сундук-сюрприз на уровне: удары по крышке и открытие
 }

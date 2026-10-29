@@ -1,11 +1,11 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261029154931';
-import * as A from './art.js?v=20261029154931';
-import { uiIcon } from './env.js?v=20261029154931';
-import { SPR } from './sprites.js?v=20261029154931';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261029154931';
-import { glyphIcon, spriteIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261029154931';
-import { TARGET_MODES } from './sim.js?v=20261029154931';
+import * as D from './data.js?v=20261029161329';
+import * as A from './art.js?v=20261029161329';
+import { uiIcon } from './env.js?v=20261029161329';
+import { SPR } from './sprites.js?v=20261029161329';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261029161329';
+import { glyphIcon, spriteIcon, cutIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261029161329';
+import { TARGET_MODES } from './sim.js?v=20261029161329';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -50,11 +50,11 @@ function headCrop(type, lvl, br) {
   const w = Math.max(40, (bx[2] - bx[0]) * 1.04); return { x: (bx[0] + bx[2]) / 2 - w / 2, y: bx[1] - 3, w, h: w };
 }
 export const towerIcon = (type, lvl = 1, br = null, picks = null, o = {}) => {
-  const prem = D.isPremium(type), bt = A.artType(type);          // премиум: своя картинка, а если её нет — базовая башня; рамка золотая с короной
+  const prem = D.isPremium(type), bt = A.artType(type);          // премиум: своя картинка, а если её нет — базовая башня; золотая корона в углу
   const raster = SPR.ok && SPR.towers[bt], crop = raster && !o.noCrop ? headCrop(bt, lvl, br) : null;
-  return spriteIcon(`t:${type}:${lvl}:${br || ''}:${picks ? picks.join('') : ''}:${o.k || ''}`, composite(bt, lvl, br, picks), { bg: tintBg(type), frame: prem ? 'arcane' : 'gold', badge: prem ? 'crown' : null, badgeCol: '#ffd24a', spriteScale: 1.4, crop, ...o });
+  return cutIcon(`t:${type}:${lvl}:${br || ''}:${picks ? picks.join('') : ''}:${o.k || ''}`, composite(bt, lvl, br, picks), { size: o.size || 64, crop, badge: prem ? 'crown' : null });
 };
-export const econIcon = (type, lvl = 1, o = {}) => spriteIcon(`e:${type}:${lvl}:${o.k || ''}`, A.econBody(type, lvl), { bg: tintBg(type), spriteScale: 1.5, ...o });
+export const econIcon = (type, lvl = 1, o = {}) => cutIcon(`e:${type}:${lvl}:${o.k || ''}`, A.econBody(type, lvl), { size: o.size || 64 });
 
 const STAT_LABEL = { coin: 'Монета банка', buff: 'Прибавка соседям', dmg: 'Урон', rate: 'Скорострельность', range: 'Дальность', splash: 'Радиус взрыва', burn: 'Горение', poison: 'Яд', chains: 'Прыжков молнии', pierce: 'Пробивает целей', critMult: 'Сила крита', execute: 'Казнь раненых', slow: 'Замедление', freeze: 'Шанс заморозки', brittle: 'Уязвимость ко льду', shatter: 'Осколки льда', stacks: 'Слоёв яда', plague: 'Радиус чумы', shred: 'Снятие брони', orbit: 'Лезвий вокруг', bounce: 'Рикошетов', stun: 'Шанс оглушения', cluster: 'Бомб в кассете', fire: 'Огонь', spread: 'Заражение огнём', trail: 'Огонь за целью', pull: 'Отбрасывание', collapseMult: 'Мощь схлопывания', anchor: 'Пригвождение', heavyMult: 'Урон по тяжёлым', armorPierce: 'Пробитие брони', rateBuff: 'Скорость союзников', dmgBuff: 'Урон союзников', mark: 'Метка на врагах', income: 'Золото с монеты', cap: 'Потолок монеты', bonus: 'Золото за убийство' };
 const UNIT = { rate: ' /с', range: ' кл.', splash: ' кл.', plague: ' кл.' };
@@ -89,7 +89,7 @@ export function itemCard(type) {
     else if (type === 'bank') meds = medal('coins', '+' + l1.coin, 'Монета') + medal('arrowup', '+' + Math.round(l1.buff * 100) + '%', 'Соседям') + medal('range', f1(l1.range), 'Радиус');
     else meds = medal('coins', '+' + l1.bonus, 'Награда') + medal('range', f1(l1.range), 'Радиус');
   }
-  return `<div class="tcard${t && t.premium ? ' prem' : ''}" style="--tc:${tint}"><div class="tc-t"><span>${d.name}</span></div><div class="tc-d">${d.short}</div><div class="tc-s">${meds}</div></div>`;
+  return `<div class="tcard${t && t.premium ? ' prem' : ''}" style="--tc:${tint}"><div class="tc-t"><span>${d.name}</span></div><div class="tc-d">${d.short}</div>${D.comboText(d) ? `<div class="tc-c">${D.comboText(d)}</div>` : ''}<div class="tc-s">${meds}</div></div>`;
 }
 
 export class GameUI {
@@ -101,7 +101,7 @@ export class GameUI {
     $('#chip-time .hg').src = bareGlyphUrl('hourglass', 22);
     $('#slotbtn .sb-ic').src = bareGlyphUrl('tower', 34);
     $('#um-cards').parentNode.querySelector('.cg').src = uiIcon('coin', 32); $('#sellmodal .cg').src = uiIcon('coin', 32);
-    $('#slotbtn').onclick = () => { this.c.sfx.play('click'); if (this.cardSel) { this.disarm(); this.refreshCards(); } else this.setOpen(!this.open); };
+    $('#slotbtn').onclick = () => { if (this.cardSel) { this.disarm(); this.refreshCards(); } else this.setOpen(!this.open); };
     $('#um-cancel').onclick = () => { this.c.sfx.play('click'); this.closeUpgrade(); };
     $('#upmodal').addEventListener('pointerdown', (e) => { if (e.target.id === 'upmodal') { this.c.sfx.play('click'); this.closeUpgrade(); } });
   }

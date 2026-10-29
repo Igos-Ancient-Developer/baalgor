@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261029154931';
+import * as D from './data.js?v=20261029161329';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -147,7 +147,7 @@ export class Sim {
   canBuildAny() { for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (this.canBuild(c, r)) return true; return false; }
   countOf(kind, type) { let n = 0; for (const b of this.buildings) if (b.kind === kind && (b.type === type || b.prem === type)) n++; return n; }
   buildCost(kind, type) {
-    const k = 1 - this.mods.build;                         // дар «Зодчий»: скидка на постройки и улучшения
+    const k = 1 - this.mods.build;                         // дар «Бережливость»: скидка на постройки и улучшения
     if (kind === 'tower') return Math.round(D.TOWERS[type].cost * k);
     const d = D.ECON[type];
     return Math.round(d.cost * Math.pow(d.grow, this.countOf('econ', type)) * k);

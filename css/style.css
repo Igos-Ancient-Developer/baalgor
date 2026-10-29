@@ -1153,3 +1153,9 @@ body.hastabs #title .title-actions { margin-top: 34px; margin-bottom: auto; }
 .node.weekly.wkdone img.ni { animation: none; filter: grayscale(.75) brightness(.7) drop-shadow(0 2px 3px rgba(0,0,0,.75)); }
 .node.weekly.wkdone::after { box-shadow: none; opacity: .5; } .node.weekly.wkdone .nl { background: rgba(20,20,24,.82); color: #aeb2b8; }
 .wk-time { margin-top: 9px; padding-top: 7px; border-top: 1px solid rgba(255,120,100,.3); display: flex; flex-direction: column; align-items: center; gap: 2px; } .wk-time small { font-size: 11px; color: #f0b8b0; } .wk-time b { font-family: var(--font); font-size: 18px; color: #fff1c8; }
+
+/* сноска «Комбинируется с…» под описанием башни */
+.tc-c { margin-top: 5px; font-size: 11px; color: #d9b45a; font-style: italic; text-align: center; } small.fc { display: block; margin-top: 3px; font-size: 11px; color: #d9b45a; font-style: italic; }
+
+/* пауза: текущая сложность */
+.ps-d { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 2px 0 8px; } .ps-d img { width: 34px; height: 34px; object-fit: contain; filter: drop-shadow(0 2px 3px #000); } .ps-d b { font-family: var(--gothic); font-size: 20px; color: var(--dc, #ffd24a); text-shadow: 0 2px 0 #000, 0 0 10px color-mix(in srgb, var(--dc, #ffd24a) 60%, transparent); font-weight: 400; } .ps-d span { font-size: 11px; color: #ff8f84; border: 1px solid #a0302a; border-radius: 9px; padding: 1px 6px; }

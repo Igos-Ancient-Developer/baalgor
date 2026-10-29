@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261029154931';
+import { COLS, ROWS } from './layouts.js?v=20261029161329';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029154931';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029161329';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -217,7 +217,8 @@ TOWERS.harpoon = {
 // ───── Новые здания: Магнетто (притягивает врагов по дороге к себе), Гриндер (затягивает слабых в двери и перемалывает), Гигант (кидает валуны) ─────
 TOWERS.magnet = {
   name: 'Магнетто', cost: 130, air: true, ground: true, utility: true,
-  short: 'Не бьёт сам: мощный магнит стягивает врагов по дороге к башне, и они сбиваются в кучу. Вместе с Гриндером перемалывают и средних.',
+  combo: ['grinder'],
+  short: 'Не бьёт сам: мощный магнит стягивает врагов по дороге к башне, и они сбиваются в кучу.',
   lv: [
     { rate: 0.2, range: 2.8, pull: 70 },
     { cost: 110, rate: 0.22, range: 3.0, pull: 100 },
@@ -234,7 +235,8 @@ TOWERS.magnet = {
 };
 TOWERS.grinder = {
   name: 'Гриндер', cost: 160, air: false, ground: true, grinder: true,
-  short: 'Двери распахиваются, затягивают слабых врагов пачками и перемалывают в труху. Рядом с Магнетто берёт и средних.',
+  combo: ['magnet'],
+  short: 'Двери распахиваются, затягивают слабых врагов пачками и перемалывают в труху.',
   lv: [
     { rate: 0.33, range: 1.7, grind: 2, weak: 135, medium: 330 },
     { cost: 110, rate: 0.38, range: 1.85, grind: 3, weak: 135, medium: 330 },
@@ -321,6 +323,8 @@ export const SPELL_ORDER = ['meteor', 'stasis', 'rush'];
 // ───────────────────────── Враги ─────────────────────────
 // blood: палитра крови/кусков. speed в px/сек (клетка = 48 px).
 // pts — очки за убийство: только сильные и уникальные враги (слабая мелочь очков не даёт); у элитных +0.02
+// строка-сноска под описанием башни: с какими башнями она работает вместе
+export const comboText = (d) => (d && d.combo && d.combo.length ? 'Комбинируется с: ' + d.combo.map((t) => TOWERS[t].name).join(', ') : '');
 export const ENEMIES = {
   // обычные: быстрые и средние (speed px/с, у гончей и мыши высокая, у зомби низкая)
   skeleton: { name: 'Скелет',         hp: 70,  spd: 42, gold: 0, lives: 1, size: 0.95, atk: 6,  immune: ['poison'], blood: 'bone' },
@@ -585,7 +589,7 @@ export const PACKS = [
 ];
 export const STARTER = { stars: 25, gems: 300, souls: 300, tower: 'gold_bolt' };      // один раз на аккаунт
 export const FIRST_BONUS = 2;                                                           // первая покупка каждого пакета: кристаллов ×2
-export const DAILY = [60, 60, 90, 70, 110, 140, 300];                                            // ежедневный подарок — ДУШИ (не кристаллы), серия 7 дней
+export const DAILY = [25, 25, 40, 30, 50, 60, 120];                                            // ежедневный подарок — ДУШИ (не кристаллы), серия 7 дней
 export const BOOSTS = {
   gold:  { name: 'Золотой старт', short: '+100 золота на старте уровня', base: 3 },
   lives: { name: 'Запас жизней',  short: '+5 жизней (не действует на «Ночном кошмаре»)', base: 5 },

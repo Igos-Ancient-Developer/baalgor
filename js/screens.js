@@ -1,13 +1,13 @@
 // Экраны меню: Кузница душ и Достижения (иконки в стиле WC3).
-import * as D from './data.js?v=20261029154931';
-import { uiIcon } from './env.js?v=20261029154931';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261029154931';
-import { towerIcon, econIcon } from './ui.js?v=20261029154931';
-import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261029154931';
-import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261029154931';
-import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261029154931';
-import { url as imgUrl } from './sprites.js?v=20261029154931';
-import { Wallet } from './wallet.js?v=20261029154931';
+import * as D from './data.js?v=20261029161329';
+import { uiIcon } from './env.js?v=20261029161329';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261029161329';
+import { towerIcon, econIcon } from './ui.js?v=20261029161329';
+import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261029161329';
+import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261029161329';
+import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261029161329';
+import { url as imgUrl } from './sprites.js?v=20261029161329';
+import { Wallet } from './wallet.js?v=20261029161329';
 
 const PERK_ART = new Set(['treasury', 'fortress', 'taxes', 'temper', 'aim', 'merchant']);      // у этих даров нарисованная иконка, у остальных значок из набора
 const $ = (s) => document.querySelector(s);
@@ -57,7 +57,7 @@ export function renderForge(save, sfx, onChange, openShop) {
     const d = D.TOWERS[t] || D.ECON[t], open = itemUnlocked(save, t);
     const icon = D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 1);
     const row = el('div', 'frow' + (open ? ' max' : ''));
-    row.innerHTML = `<img class="fi" src="${iconUrl(icon)}" alt=""><div class="ft"><div class="fn">${d.name}</div><div class="fd">${d.short}</div></div>`;
+    row.innerHTML = `<img class="fi" src="${iconUrl(icon)}" alt=""><div class="ft"><div class="fn">${d.name}</div><div class="fd">${d.short}${D.comboText(d) ? `<small class="fc">${D.comboText(d)}</small>` : ''}</div></div>`;
     if (open) row.appendChild(el('div', 'fbuy', '✓'));
     else {
       const box = el('div', 'fbuys');
@@ -76,7 +76,7 @@ export function renderForge(save, sfx, onChange, openShop) {
   const pb = $('#premium'); pb.innerHTML = '';
   for (const id of D.PREMIUM_ORDER) {
     const d = D.TOWERS[id], own = !!save.unlocked[id], row = el('div', 'frow' + (own ? ' max' : ''));
-    row.innerHTML = `<img class="fi" src="${iconUrl(towerIcon(id, 1, null, null))}" alt=""><div class="ft"><div class="fn">${d.name}</div><div class="fd">${d.short}</div></div>`;
+    row.innerHTML = `<img class="fi" src="${iconUrl(towerIcon(id, 1, null, null))}" alt=""><div class="ft"><div class="fn">${d.name}</div><div class="fd">${d.short}${D.comboText(d) ? `<small class="fc">${D.comboText(d)}</small>` : ''}</div></div>`;
     if (own) row.appendChild(el('div', 'fbuy', '✓')); else { const b = el('button', 'fbuy gem' + ((save.gems || 0) < D.PREMIUM[id].gems ? ' poor' : ''), `${GEM()}${D.PREMIUM[id].gems}`); b.onclick = async () => { const r = await Wallet.spend('unlock', id, D.PREMIUM[id].gems); if (r && r.ok) { sfx.play('win'); onChange(); } else { fail(b); if (r && r.error === 'gems') openShop && setTimeout(openShop, 400); } }; row.appendChild(b); }
     pb.appendChild(row);
   }

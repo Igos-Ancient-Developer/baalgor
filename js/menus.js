@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029154931';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029154931';
-import * as D from './data.js?v=20261029154931';
-import * as M from './meta.js?v=20261029154931';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029154931';
-import { url as imgUrl } from './sprites.js?v=20261029154931';
-import { Net } from './net.js?v=20261029154931';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029154931';
-import { fillPlates, gemIc } from './res.js?v=20261029154931';
-import { gemHtml } from './gem3d.js?v=20261029154931';
-import { Wallet } from './wallet.js?v=20261029154931';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029161329';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029161329';
+import * as D from './data.js?v=20261029161329';
+import * as M from './meta.js?v=20261029161329';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029161329';
+import { url as imgUrl } from './sprites.js?v=20261029161329';
+import { Net } from './net.js?v=20261029161329';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029161329';
+import { fillPlates, gemIc } from './res.js?v=20261029161329';
+import { gemHtml } from './gem3d.js?v=20261029161329';
+import { Wallet } from './wallet.js?v=20261029161329';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
