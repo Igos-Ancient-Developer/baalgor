@@ -1,11 +1,11 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261029172153';
-import * as A from './art.js?v=20261029172153';
-import { uiIcon } from './env.js?v=20261029172153';
-import { SPR } from './sprites.js?v=20261029172153';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261029172153';
-import { glyphIcon, spriteIcon, cutIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261029172153';
-import { TARGET_MODES } from './sim.js?v=20261029172153';
+import * as D from './data.js?v=20261029181307';
+import * as A from './art.js?v=20261029181307';
+import { uiIcon } from './env.js?v=20261029181307';
+import { SPR, img } from './sprites.js?v=20261029181307';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261029181307';
+import { glyphIcon, spriteIcon, cutIcon, iconUrl, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261029181307';
+import { TARGET_MODES } from './sim.js?v=20261029181307';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -19,9 +19,10 @@ const FMT = {
   poison: (v) => Math.round(v), stacks: (v) => v, plague: f1, shred: pct, orbit: (v) => v, bounce: (v) => v, stun: pct, rateBuff: (v) => '+' + pct(v), dmgBuff: (v) => '+' + pct(v), mark: (v) => '+' + pct(v), cluster: (v) => v, fire: (v) => v, burn: (v) => Math.round(v), spread: (v) => v, trail: (v) => v, pull: (v) => Math.round(v),
   collapseMult: (v) => '×' + v, anchor: (v) => f1(v) + 'с', heavyMult: (v) => '×' + f1(v), armorPierce: pct,
   income: (v) => '+' + v, cap: (v) => v, bonus: (v) => '+' + v,
+  mines: (v) => v, airMul: (v) => '×' + f1(v), gMul: (v) => '×' + f1(v), stunT: (v) => f1(v) + 'с', push: (v) => f1(v) + ' кл.', bleed: (v) => Math.round(v), twice: () => '×2', aura: pct,
 };
 const ECON_FMT = { income: (v) => '+' + v, coin: (v) => '+' + v, buff: (v) => '+' + Math.round(v * 100) + '%', rate: pct, cap: (v) => v, bonus: (v) => '+' + v, range: f1 };
-const SHOW_ORDER = ['dmg', 'rate', 'range', 'splash', 'burn', 'poison', 'chains', 'pierce', 'critMult', 'execute', 'slow', 'freeze', 'brittle', 'shatter', 'stacks', 'plague', 'shred', 'orbit', 'bounce', 'stun', 'cluster', 'fire', 'spread', 'trail', 'pull', 'collapseMult', 'anchor', 'heavyMult', 'armorPierce', 'rateBuff', 'dmgBuff', 'mark'];
+const SHOW_ORDER = ['dmg', 'rate', 'range', 'splash', 'burn', 'poison', 'chains', 'pierce', 'critMult', 'execute', 'slow', 'freeze', 'brittle', 'shatter', 'stacks', 'plague', 'shred', 'orbit', 'bounce', 'stun', 'cluster', 'mines', 'airMul', 'gMul', 'push', 'bleed', 'aura', 'fire', 'spread', 'trail', 'pull', 'collapseMult', 'anchor', 'heavyMult', 'armorPierce', 'rateBuff', 'dmgBuff', 'mark'];
 const BRANCH_COL = { A: '#6fd0ff', B: '#ff5a6a' };
 
 const chip = (glyph, text, cls = '', title = '') => `<span class="ch ${cls}" ${title ? `title="${title}"` : ''}><img src="${bareGlyphUrl(glyph, 18)}" alt=""><b>${text}</b></span>`;
@@ -49,14 +50,17 @@ function headCrop(type, lvl, br) {
   if (rh) { const w = Math.max(44, (bx[2] - bx[0]) * 1.1), cx = A.TW_AX + rh.dx, cy = A.TW_AY + rh.dy - w * 0.3; return { x: cx - w / 2, y: cy - w / 2, w, h: w }; }
   const w = Math.max(40, (bx[2] - bx[0]) * 1.04); return { x: (bx[0] + bx[2]) / 2 - w / 2, y: bx[1] - 3, w, h: w };
 }
+// значок-плитка из img/ui/ti/<id>.webp (иллюстрации со скруглённой золотой рамкой, tools/build_tower_icons.py): есть у башен и зданий добычи; у остальных — вырезка из спрайта
+const tileIcon = (id, size) => { const im = img(`ui/ti/${id}.webp`); return im ? A.cached(`ti:${id}:${size}`, () => A.mk(size, size, (g) => { g.imageSmoothingQuality = 'high'; g.drawImage(im, 0, 0, size, size); })) : null; };
 export const towerIcon = (type, lvl = 1, br = null, picks = null, o = {}) => {
+  const tile = tileIcon(type, o.size || 64); if (tile) return tile;
   const prem = D.isPremium(type), bt = A.artType(type);          // премиум: своя картинка, а если её нет — базовая башня; золотая корона в углу
   const raster = SPR.ok && SPR.towers[bt], crop = raster && !o.noCrop ? headCrop(bt, lvl, br) : null;
   return cutIcon(`t:${type}:${lvl}:${br || ''}:${picks ? picks.join('') : ''}:${o.k || ''}`, composite(bt, lvl, br, picks), { size: o.size || 64, crop, badge: prem ? 'crown' : null });
 };
-export const econIcon = (type, lvl = 1, o = {}) => cutIcon(`e:${type}:${lvl}:${o.k || ''}`, A.econBody(type, lvl), { size: o.size || 64 });
+export const econIcon = (type, lvl = 1, o = {}) => tileIcon(type, o.size || 64) || cutIcon(`e:${type}:${lvl}:${o.k || ''}`, A.econBody(type, lvl), { size: o.size || 64 });
 
-const STAT_LABEL = { coin: 'Монета банка', buff: 'Прибавка соседям', dmg: 'Урон', rate: 'Скорострельность', range: 'Дальность', splash: 'Радиус взрыва', burn: 'Горение', poison: 'Яд', chains: 'Прыжков молнии', pierce: 'Пробивает целей', critMult: 'Сила крита', execute: 'Казнь раненых', slow: 'Замедление', freeze: 'Шанс заморозки', brittle: 'Уязвимость ко льду', shatter: 'Осколки льда', stacks: 'Слоёв яда', plague: 'Радиус чумы', shred: 'Снятие брони', orbit: 'Лезвий вокруг', bounce: 'Рикошетов', stun: 'Шанс оглушения', cluster: 'Бомб в кассете', fire: 'Огонь', spread: 'Заражение огнём', trail: 'Огонь за целью', pull: 'Отбрасывание', collapseMult: 'Мощь схлопывания', anchor: 'Пригвождение', heavyMult: 'Урон по тяжёлым', armorPierce: 'Пробитие брони', rateBuff: 'Скорость союзников', dmgBuff: 'Урон союзников', mark: 'Метка на врагах', income: 'Золото с монеты', cap: 'Потолок монеты', bonus: 'Золото за убийство' };
+const STAT_LABEL = { coin: 'Монета банка', buff: 'Прибавка соседям', dmg: 'Урон', rate: 'Скорострельность', range: 'Дальность', splash: 'Радиус взрыва', burn: 'Горение', poison: 'Яд', chains: 'Прыжков молнии', pierce: 'Пробивает целей', critMult: 'Сила крита', execute: 'Казнь раненых', slow: 'Замедление', freeze: 'Шанс заморозки', brittle: 'Уязвимость ко льду', shatter: 'Осколки льда', stacks: 'Слоёв яда', plague: 'Радиус чумы', shred: 'Снятие брони', orbit: 'Лезвий вокруг', bounce: 'Рикошетов', stun: 'Шанс оглушения', cluster: 'Бомб в кассете', fire: 'Огонь', spread: 'Заражение огнём', trail: 'Огонь за целью', pull: 'Отбрасывание', collapseMult: 'Мощь схлопывания', anchor: 'Пригвождение', heavyMult: 'Урон по тяжёлым', armorPierce: 'Пробитие брони', rateBuff: 'Скорость союзников', dmgBuff: 'Урон союзников', mark: 'Метка на врагах', mines: 'Мин на дороге', airMul: 'Урон по воздуху', gMul: 'Урон по земле', stunT: 'Оглушение воздуха', push: 'Отбрасывание', bleed: 'Кровотечение', twice: 'Ударов за взмах', aura: 'Аура замедления', income: 'Золото с монеты', cap: 'Потолок монеты', bonus: 'Золото за убийство' };
 const UNIT = { rate: ' /с', range: ' кл.', splash: ' кл.', plague: ' кл.' };
 const NO_PCT = ['critMult', 'execute', 'slow', 'freeze', 'brittle', 'shatter', 'armorPierce', 'stun', 'garmor', 'rateBuff', 'dmgBuff', 'mark'];
 const PICK_NAME = { power: 'Мощь', speed: 'Скорость', special: 'Особое' };

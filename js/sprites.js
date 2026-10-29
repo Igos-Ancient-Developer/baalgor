@@ -25,6 +25,7 @@ export const GIB_IMGS = ['gib_1', 'gib_2', 'gib_3', 'gib_4', 'heart', 'arm', 'le
 export const PORTRAITS = ['imp', 'brute', 'succubus', 'pitlord', 'archdemon', 'skull'];
 // значки-глифы без плиток: img/icons/cut/<имя>.webp, вырезаны tools/cut_glyphs.py; у home и skulllock чистой вырезки нет, они остаются в плитках
 export const CUT_FILES = new Set('arrowup attack book cancel chart close coins confirm crown dark defense expand fast fire flag gem gold heart horns hourglass ice income lightning magic map home music nature pickaxe range reload replay scales sell settings skull sound star sword trophy wave wing bag shield potion scroll crystal coin pause health speed gift'.split(' '));
+export const TILE_IDS = 'bolt frost mortar tesla toxic saw banner flame voidwell harpoon magnet grinder miner bell pendulum gold_bolt storm_tesla hell_flame thunder winter bloodstorm plague mine bank altar'.split(' ');      // плитки-значки башен и зданий (img/ui/ti)
 export const cutFile = (name) => `icons/cut/${name}.webp`;
 export const UI_ICONS = ['skull', 'star', 'settings', 'map', 'sword', 'shield', 'potion', 'book', 'crown', 'medal', 'chest', 'exit'];
 
@@ -50,6 +51,7 @@ export async function loadSprites(onProgress = () => {}) {
   for (const k of UI_ICONS) list.push(`ui/icon_${k}.webp`);
   for (const k of ICON_NAMES) list.push(`icons/${k}.webp`);
   for (const k of CUT_FILES) list.push(cutFile(k));
+  for (const k of TILE_IDS) list.push(`ui/ti/${k}.webp`);
   list.push('ui/logo.webp', 'ui/worldmap.webp', ...['plain', 'glow', 'rust', 'hands'].map((k) => `ui/plate_${k}.webp`), 'ui/stone.webp', 'ui/chain.webp');      // картинки кнопок и панелей из css: грузим заранее, чтобы кнопки не появлялись пустыми
   let done = 0;
   await Promise.all(list.map((p) => loadImg(p).then(() => onProgress(++done / list.length))));

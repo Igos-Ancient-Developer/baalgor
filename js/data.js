@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261029172153';
+import { COLS, ROWS } from './layouts.js?v=20261029181307';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029172153';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029181307';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -266,20 +266,75 @@ TOWERS.giant = {
       { cost: 490, dmg: 460, rate: 0.45, range: 4.9, splash: 1.45, fire: 70, fireT: 5.5 } ] },
   },
 };
-export const TOWER_ORDER = ['bolt', 'frost', 'mortar', 'tesla', 'toxic', 'saw', 'banner', 'flame', 'voidwell', 'harpoon', 'magnet', 'grinder'];      // Гигант пока убран из игры (данные и картинки остались: вернуть — дописать 'giant' сюда и в UNLOCKS)
+TOWERS.miner = {
+    name: 'Минёр', cost: 100, air: false, ground: true, mines: true,
+    short: 'Кладёт на дорогу мины: взрываются под первым врагом. Только земля.',
+    lv: [
+      { dmg: 70, rate: 0.18, range: 3.0, splash: 0.85, mines: 3 },
+      { cost: 90, dmg: 100, rate: 0.2, range: 3.2, splash: 0.95, mines: 3 },
+      { cost: 150, dmg: 145, rate: 0.22, range: 3.4, splash: 1.05, mines: 4 },
+    ],
+    branches: {
+      A: { name: 'Липкие мины', desc: 'Взрыв замедляет всех в зоне на 40–50% на несколько секунд.', lv: [
+        { cost: 260, dmg: 180, rate: 0.24, range: 3.6, splash: 1.15, mines: 4, slow: 0.4, slowT: 3 },
+        { cost: 400, dmg: 250, rate: 0.27, range: 3.8, splash: 1.25, mines: 5, slow: 0.5, slowT: 3.5 } ] },
+      B: { name: 'Кластер', desc: 'Мина разбрасывает вокруг мелкие бомбы, каждая взрывается отдельно.', lv: [
+        { cost: 250, dmg: 140, rate: 0.24, range: 3.6, splash: 0.9, mines: 4, cluster: 4 },
+        { cost: 390, dmg: 200, rate: 0.27, range: 3.8, splash: 0.95, mines: 6, cluster: 6 } ] },
+    },
+};
+TOWERS.bell = {
+    name: 'Колокольня', cost: 110, air: true, ground: true, pulse: true,
+    short: 'Волна звона по большой площади. Летающих бьёт сильнее и оглушает, призраков не щадит.',
+    lv: [
+      { dmg: 30, rate: 0.29, range: 3.4, airMul: 1.5, gMul: 0.5, stunT: 0.8 },
+      { cost: 100, dmg: 44, rate: 0.3, range: 3.6, airMul: 1.5, gMul: 0.5, stunT: 0.9 },
+      { cost: 160, dmg: 64, rate: 0.32, range: 3.8, airMul: 1.5, gMul: 0.5, stunT: 1.0 },
+    ],
+    branches: {
+      A: { name: 'Набат', desc: 'Враги в зоне звона получают от всех башен на 15–25% больше урона.', lv: [
+        { cost: 270, dmg: 80, rate: 0.34, range: 4.0, airMul: 1.5, gMul: 0.5, stunT: 1.0, mark: 0.15, markT: 3 },
+        { cost: 410, dmg: 110, rate: 0.36, range: 4.3, airMul: 1.5, gMul: 0.5, stunT: 1.1, mark: 0.25, markT: 3.5 } ] },
+      B: { name: 'Соборный звон', desc: 'Огромный радиус и тяжёлый удар по всем врагам, не только по воздуху.', lv: [
+        { cost: 280, dmg: 120, rate: 0.3, range: 4.4, airMul: 1.5, gMul: 0.8, stunT: 1.0 },
+        { cost: 420, dmg: 170, rate: 0.32, range: 4.9, airMul: 1.5, gMul: 1.0, stunT: 1.2 } ] },
+    },
+};
+TOWERS.pendulum = {
+    name: 'Маятник', cost: 125, air: false, ground: true, swing: true,
+    short: 'Топор-маятник бьёт всех в линии и отбрасывает назад. Только земля.',
+    lv: [
+      { dmg: 46, rate: 0.62, range: 2.6, push: 0.5 },
+      { cost: 100, dmg: 68, rate: 0.64, range: 2.8, push: 0.55 },
+      { cost: 165, dmg: 98, rate: 0.68, range: 3.0, push: 0.6 },
+    ],
+    branches: {
+      A: { name: 'Кровавый замах', desc: 'Раны кровоточат и жгут врагов ещё несколько секунд.', lv: [
+        { cost: 270, dmg: 120, rate: 0.7, range: 3.2, push: 0.6, bleed: 30, bleedT: 4 },
+        { cost: 410, dmg: 165, rate: 0.74, range: 3.4, push: 0.65, bleed: 52, bleedT: 5 } ] },
+      B: { name: 'Двойной замах', desc: 'Маятник бьёт дважды за один взмах. Длиннее линия удара.', lv: [
+        { cost: 260, dmg: 100, rate: 0.7, range: 3.4, push: 0.6, twice: 1 },
+        { cost: 400, dmg: 150, rate: 0.74, range: 3.7, push: 0.7, twice: 1 } ] },
+    },
+};
+export const TOWER_ORDER = ['bolt', 'frost', 'mortar', 'tesla', 'toxic', 'saw', 'banner', 'flame', 'voidwell', 'harpoon', 'magnet', 'grinder', 'miner', 'bell', 'pendulum'];      // Гигант пока убран из игры (данные и картинки остались: вернуть — дописать 'giant' сюда и в UNLOCKS)
 
 // ───────────────────────── Премиум-башни ─────────────────────────
 // Продаются только за донат-кристаллы. Это усиленные версии обычных башен (та же механика и дерево улучшений, сильнее характеристики,
 // свечение и значок короны). mult — множители характеристик, add — прибавки. В рейтинговом забеге премиум недоступен: условия равные.
-export const PREMIUM_ORDER = ['gold_bolt', 'storm_tesla', 'hell_flame'];
+export const PREMIUM_ORDER = ['gold_bolt', 'storm_tesla', 'hell_flame', 'thunder', 'winter', 'bloodstorm', 'plague'];
 export const PREMIUM = {
   gold_bolt:   { base: 'bolt',  name: 'Золотой арбалет', gems: 150, costMul: 1.4, mult: { dmg: 1.7, rate: 1.25, range: 1.1 }, tint: '#ffd24a', short: 'Позолоченные болты: на 70% сильнее и быстрее обычного арбалета, бьёт дальше.' },
   storm_tesla: { base: 'tesla', name: 'Грозовой шпиль',  gems: 220, costMul: 1.4, mult: { dmg: 1.6, range: 1.15 }, add: { chains: 2 }, tint: '#7ad0ff', short: 'Молния перескакивает ещё на двух врагов и бьёт на 60% сильнее.' },
+  thunder:     { base: 'mortar', name: 'Громобой', gems: 220, costMul: 1.4, mult: { dmg: 1.6, range: 1.2 }, add: { cluster: 3 }, tint: '#4ab0ff', short: 'Снаряд делится на три малые бомбы: бьёт на 60% сильнее и дальше обычной мортиры.' },
+  winter:      { base: 'frost', name: 'Вечная зима', gems: 200, costMul: 1.4, mult: { dmg: 1.6, range: 1.15 }, add: { aura: 0.3 }, tint: '#8ae4ff', short: 'Постоянная аура: все враги вокруг замедлены. Ледяной шар разбрасывает осколки.' },
+  bloodstorm:  { base: 'saw', name: 'Кровавый вихрь', gems: 240, costMul: 1.4, mult: { dmg: 1.5, rate: 1.15 }, add: { bounce: 3 }, tint: '#ff4a3a', short: 'Три окровавленные пилы: лезвие рикошетит между врагами и бьёт на 50% сильнее.' },
+  plague:      { base: 'toxic', name: 'Чумной алхимик', gems: 230, costMul: 1.4, mult: { dmg: 1.5, poison: 1.5, splash: 1.3 }, add: { plague: 1.5 }, tint: '#8aff3a', short: 'Яд переходит на соседей при гибели цели, склянки и облако намного сильнее.' },
   hell_flame:  { base: 'flame', name: 'Адское пламя',    gems: 300, costMul: 1.4, mult: { dmg: 1.8, burn: 1.8, range: 1.15 }, tint: '#ff5a2a', short: 'Огненный конус почти вдвое мощнее: жжёт всех впереди и добивает ожогом.' },
 };
 // с какими башнями каждая работает лучше всего (строка-сноска в карточке); 'all' — со всеми боевыми башнями; у премиум-башен то же, что у базовой
 const COMBO = { bolt: ['banner', 'frost'], frost: 'all', mortar: ['magnet', 'voidwell', 'frost'], tesla: ['frost', 'banner', 'toxic'], toxic: ['banner', 'magnet', 'voidwell'], saw: ['magnet', 'voidwell', 'frost'], banner: 'all',
-  flame: ['voidwell', 'magnet', 'frost'], voidwell: ['mortar', 'flame', 'saw', 'toxic'], harpoon: ['frost', 'voidwell', 'banner'], magnet: ['grinder', 'mortar', 'saw'], grinder: ['magnet', 'voidwell'] };
+  flame: ['voidwell', 'magnet', 'frost'], voidwell: ['mortar', 'flame', 'saw', 'toxic'], harpoon: ['frost', 'voidwell', 'banner'], magnet: ['grinder', 'mortar', 'saw'], grinder: ['magnet', 'voidwell'], miner: ['magnet', 'voidwell', 'frost'], bell: ['bolt', 'tesla', 'harpoon'], pendulum: ['grinder', 'magnet', 'frost'] };
 for (const [id, c] of Object.entries(COMBO)) TOWERS[id].combo = c;
 for (const id of PREMIUM_ORDER) { const p = PREMIUM[id], b = TOWERS[p.base]; TOWERS[id] = { ...b, name: p.name, short: p.short, cost: Math.round(b.cost * p.costMul), premium: true, base: p.base, tint: p.tint, mult: p.mult, add: p.add }; }
 export const isPremium = (t) => !!(TOWERS[t] && TOWERS[t].premium);
@@ -489,6 +544,18 @@ export const TIERS = {
     [P('power', 'Тяжёлый гарпун', { mul: { dmg: 1.65 } }), P('speed', 'Лебёдка', { mul: { rate: 1.35 } }), P('special', 'Оптика', { add: { range: 0.4, armorPierce: 0.1 } })],
     [P('power', 'Зазубрины', { mul: { dmg: 1.75 } }), P('speed', 'Скоростной ворот', { mul: { rate: 1.3 } }), P('special', 'Дальний прицел', { add: { range: 0.4, armorPierce: 0.1 } })],
   ],
+  miner: [
+    [P('power', 'Тяжёлый заряд', { mul: { dmg: 1.5 } }), P('speed', 'Быстрая закладка', { mul: { rate: 1.6 } }), P('special', 'Широкий взрыв', { mul: { splash: 1.3, dmg: 1.2 } })],
+    [P('power', 'Фугас', { mul: { dmg: 1.6 } }), P('speed', 'Запас мин', { mul: { rate: 1.3 }, add: { mines: 1 } }), P('special', 'Дальний бросок', { add: { range: 0.4 }, mul: { splash: 1.2, dmg: 1.2 } })],
+  ],
+  bell: [
+    [P('power', 'Тяжёлый язык', { mul: { dmg: 1.6 } }), P('speed', 'Частый звон', { mul: { rate: 1.45 } }), P('special', 'Гулкая медь', { add: { range: 0.4 }, mul: { dmg: 1.2 } })],
+    [P('power', 'Литая бронза', { mul: { dmg: 1.6 } }), P('speed', 'Двойной канат', { mul: { rate: 1.4 } }), P('special', 'Раскат', { add: { range: 0.4 }, mul: { dmg: 1.25 } })],
+  ],
+  pendulum: [
+    [P('power', 'Тяжёлое лезвие', { mul: { dmg: 1.55 } }), P('speed', 'Лёгкий ход', { mul: { rate: 1.5 } }), P('special', 'Длинная цепь', { add: { range: 0.4 }, mul: { dmg: 1.25 } })],
+    [P('power', 'Закалённая сталь', { mul: { dmg: 1.6 } }), P('speed', 'Смазанная ось', { mul: { rate: 1.45 } }), P('special', 'Удлинённый замах', { add: { range: 0.4, push: 0.15 }, mul: { dmg: 1.2 } })],
+  ],
 };
 const RATIO_KEYS = ['dmg', 'rate', 'range', 'splash', 'rateBuff', 'dmgBuff', 'poison', 'burn', 'pull'];
 const LOWER_KEYS = ['frenzyEvery', 'collapse'];
@@ -560,6 +627,7 @@ export const UNLOCKS = {
   frost: { souls: 30, gems: 5 }, toxic: { souls: 45, gems: 8 }, mortar: { souls: 60, gems: 10 },
   flame: { souls: 100, gems: 17 }, banner: { souls: 120, gems: 20 }, saw: { souls: 150, gems: 25 }, harpoon: { souls: 190, gems: 32 }, tesla: { souls: 230, gems: 38 },
   bank: { souls: 260, gems: 43 }, voidwell: { souls: 320, gems: 53 }, altar: { souls: 380, gems: 63 },
+  bell: { souls: 170, gems: 29 }, miner: { souls: 200, gems: 34 }, pendulum: { souls: 240, gems: 40 },
 };
 export const unlockOf = (type) => UNLOCKS[type] || (isPremium(type) ? { gems: PREMIUM[type].gems, premium: true } : undefined);
 

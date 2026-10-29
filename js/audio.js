@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261029172153';
+import { createTrack, MENU_SPEC } from './music.js?v=20261029181307';
 // группы записей (сколько файлов) и кто какой группой умирает: [группа, скорость воспроизведения]
 const MON_FILES = { slime: 6, golem: 7, brute: 7, squeal: 4, bat: 5, ghost: 4, man: 3, roar: 8, wolf: 4, dry: 4, bone: 5 };
 const MON_OF = {
@@ -277,7 +277,7 @@ export class Sfx {
 
 // Привязка звуков к событиям симуляции. Звуков в бою нарочно мало: выстрелы, взрывы снарядов, смерть монстров (и кишки), сбор золота, улучшение.
 export function attachSfx(sim, sfx) {
-  sim.on('shot', (d) => sfx.play({ bolt: 'bolt', mortar: 'mortar', tesla: 'tesla', frost: 'frost', toxic: 'toxic', saw: 'saw', flame: 'flame', void: 'void', harpoon: 'harpoon', magnet: 'void', grinder: 'crack', giant: 'mortar' }[d.kind]));
+  sim.on('shot', (d) => sfx.play({ bolt: 'bolt', mortar: 'mortar', tesla: 'tesla', frost: 'frost', toxic: 'toxic', saw: 'saw', flame: 'flame', void: 'void', harpoon: 'harpoon', magnet: 'void', grinder: 'crack', giant: 'mortar', bell: 'void', pendulum: 'crack' }[d.kind]));
   sim.on('explosion', (d) => { if (d.kind === 'meteor') sfx.play('meteor'); else if (d.kind === 'pop' || d.kind === 'shatter') sfx.play('crack', 0.6); else if (d.kind === 'vial') sfx.play('splat', 0.8); else sfx.play(d.kind === 'bomblet' ? 'boomsmall' : 'boom', d.big ? 1.2 : 1); });
   sim.on('kill', (d) => sfx.death(d.e && d.e.type, 0.8));
   sim.on('upgrade', () => sfx.play('upgrade'));

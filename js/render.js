@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261029172153';
-import * as A from './art.js?v=20261029172153';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261029172153';
-import { tile } from './iconmap.js?v=20261029172153';
-import { img } from './sprites.js?v=20261029172153';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261029172153';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261029181307';
+import * as A from './art.js?v=20261029181307';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261029181307';
+import { tile } from './iconmap.js?v=20261029181307';
+import { img } from './sprites.js?v=20261029181307';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261029181307';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -432,6 +432,13 @@ export class Renderer {
 
   // ───── снаряды и зоны ─────
   drawZones(ctx, t) {
+    for (const m of this.sim.mines) {                 // мины Минёра: чёрный шар с шипами и мигающим красным огоньком (взводится за 0,7 с)
+      const arm = Math.min(1, m.age / 0.7), bl = m.age > 0.7 && Math.sin(t * 7 + m.x) > 0.3;
+      ctx.save(); ctx.translate(m.x, m.y); ctx.globalAlpha = 0.5 + 0.5 * arm; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0, 4, 8, 3, 0, 0, T2); ctx.fill();
+      ctx.strokeStyle = '#15161a'; ctx.fillStyle = '#6d727c'; ctx.lineWidth = 1.5; for (let i = 0; i < 6; i++) { const a = i * 1.047 + 0.3; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 5, -3 + Math.sin(a) * 4); ctx.lineTo(Math.cos(a) * 10, -3 + Math.sin(a) * 8); ctx.stroke(); }
+      const g = ctx.createRadialGradient(-2, -6, 1, 0, -3, 8); g.addColorStop(0, '#5a5f69'); g.addColorStop(1, '#101114'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -3, 6.5, 0, T2); ctx.fill(); ctx.stroke();
+      if (bl) { ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('#ff3a2a'), -8, -11, 16, 16); } ctx.restore();
+    }
     for (const z of this.sim.zones) {
       const a = clamp(z.t / 1.0, 0, 1) * (z.kind === 'fire' ? 0.55 : 0.5);
       const col = z.kind === 'fire' ? '#ff6a1c' : z.kind === 'acid' ? '#d6ff3a' : '#6aff3a';
@@ -540,6 +547,11 @@ export class Renderer {
       if (mo) ctx.restore();
     }
     for (const f of this.sim.fx) {
+      if (f.kind === 'ring') {                         // расходящееся кольцо: звон колокольни, взмах маятника, пульс вечной зимы
+        const k = f.t / f.T, R = f.r * (0.25 + 0.75 * k);
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = f.col; ctx.lineWidth = 3 * (1 - k) + 1; ctx.globalAlpha = 0.7 * (1 - k); ctx.beginPath(); ctx.ellipse(f.x, f.y, R, R * 0.7, 0, 0, T2); ctx.stroke(); ctx.restore();
+        continue;
+      }
       if (f.kind === 'meteor') {
         const k = f.t / f.T, d = 1 - k, x = f.x + 200 * d, y = f.y - 420 * d;
         ctx.save(); ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t * 20); ctx.strokeStyle = '#ff3a3a'; ctx.lineWidth = 2; const R = SPELLS.meteor.radius * CELL * (0.5 + 0.5 * k); ctx.beginPath(); ctx.ellipse(f.x, f.y, R, R * 0.8, 0, 0, T2); ctx.stroke(); ctx.restore();

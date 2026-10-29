@@ -1,7 +1,7 @@
 // Графика башен и зданий: растровые ассеты из img/ (js/sprites.js); процедурная отрисовка — запасной вариант и для зданий без ассетов (банк, алтарь).
 // Все спрайты рисуются кодом при загрузке и кэшируются в canvas (масштаб S подбирается под экран).
-import { SPR, img } from './sprites.js?v=20261029172153';
-import { TOWERS } from './data.js?v=20261029172153';
+import { SPR, img } from './sprites.js?v=20261029181307';
+import { TOWERS } from './data.js?v=20261029181307';
 export { SPR };
 export const OUT = '#170a0f';
 export let S = 2;
@@ -581,11 +581,11 @@ function towerIdx(type, lvl, br) {
 // Масштаб один на весь ряд уровней (рост по уровням остаётся), считается по самой большой картинке ряда.
 // предельные размеры (ширина, высота) здания на карте; узкие и низкие здания разрешено делать крупнее
 const CAPS = { mortar: [56, 78], mine: [50, 58], bolt: [56, 72], frost: [56, 72], tesla: [56, 72], saw: [64, 76], banner: [56, 72], flame: [56, 78], voidwell: [56, 70], toxic: [66, 78], bank: [56, 70], altar: [56, 66], harpoon: [56, 78],
-  gold_bolt: [56, 78], storm_tesla: [56, 72], hell_flame: [56, 78], magnet: [56, 72], grinder: [66, 78], giant: [68, 74] }, CAP_DEF = [56, 64], GK = {};
+  gold_bolt: [56, 78], storm_tesla: [56, 72], hell_flame: [56, 78], thunder: [56, 72], winter: [56, 72], bloodstorm: [64, 72], plague: [66, 78], miner: [56, 64], bell: [56, 78], pendulum: [60, 76], magnet: [56, 72], grinder: [66, 78], giant: [68, 74] }, CAP_DEF = [56, 64], GK = {};
 // Размер спрайта считается по каждой картинке отдельно: ранние уровни (маленькие хижины, низкие постаменты) растягиваются до доли предельной высоты (HF), чтобы не казаться крошечными; ширина ограничена CAPS.
 const HF = [0.86, 0.93, 1, 1, 1], TS_MAX = 0.46, SK = {};
 // горизонтальная растяжка спрайта: дом алхимика, пилорама и гриндер нарисованы узкими и высокими — делаем их «потолще», чтобы стоять в одном ряду с башнями
-const XS = { toxic: 1.4, saw: 1.12, grinder: 1.3 }, xsOf = (t) => XS[t] || 1;
+const XS = { toxic: 1.4, plague: 1.1, saw: 1.12, grinder: 1.3 }, xsOf = (t) => XS[t] || 1;
 function spriteK(type, lvl, br) {
   const i = towerIdx(type, lvl, br), key = type + ':' + i + ':' + Math.min(lvl, 5); if (SK[key]) return SK[key];
   const [l, t, r, b] = SPR.towers[type].boxes[i], [cw, ch] = CAPS[type] || CAP_DEF, hf = HF[Math.min(lvl, 5) - 1];
@@ -663,8 +663,8 @@ export function rotHead(type, lvl, br) {
 export function muzzle(b) {
   const hi = rotHead(rotKey(b), b.level, b.branch);
   if (!hi || !hi.mx) {                                  // здание без головы (дом алхимика, пилорама): снаряд вылетает из окна или щели на картинке
-    const m = SPR.ok && SPR.towers[b.type]; if (!m || !m.mz || b.prem) return null;
-    const [px, py] = m.mz[towerIdx(b.type, b.level, b.branch)], q = towerPt(b.type, b.level, b.branch, px, py); return { x: b.x + q.x, y: b.y + 6 + q.y };
+    const bt = b.prem || b.type, m = SPR.ok && SPR.towers[bt]; if (!m || !m.mz) return null;
+    const [px, py] = m.mz[towerIdx(bt, b.level, b.branch)], q = towerPt(bt, b.level, b.branch, px, py); return { x: b.x + q.x, y: b.y + 6 + q.y };
   }
   const a = Math.round((b.angle || 0) / (Math.PI / 4)) * (Math.PI / 4);
   return { x: b.x + hi.dx + Math.cos(a) * hi.mx * hi.k, y: b.y + 6 + hi.dy + Math.sin(a) * hi.mx * hi.k * 0.5 - hi.my * hi.k };

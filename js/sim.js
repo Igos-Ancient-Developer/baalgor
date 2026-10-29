@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261029172153';
+import * as D from './data.js?v=20261029181307';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -97,7 +97,7 @@ export class Sim {
     this.revive = { on: false, used: 0, max: 2 };      // возрождение за кристаллы (включает main: обычная игра, не Хардкор и не рейтинговый забег)
     this.limbo = false;           // враг прошёл в ворота на последней жизни: бой замер, ждём решения игрока
     this.enemies = []; this.buildings = [];
-    this.projs = []; this.zones = []; this.bags = []; this.fx = [];
+    this.projs = []; this.zones = []; this.bags = []; this.fx = []; this.mines = [];
     this.queue = []; this.qi = 0;
     this.eid = 0; this.bid = 0;
     this.baseIncome = D.BASE_INCOME + this.mods.baseIncome;
@@ -208,6 +208,7 @@ export class Sim {
     this.gold += v;
     this.grid[b.r][b.c] = null;
     this.buildings.splice(this.buildings.indexOf(b), 1);
+    if (this.mines.length) this.mines = this.mines.filter((m) => m.owner !== b);
     this.emit('sell', { b, value: v });
     return v;
   }
@@ -554,6 +555,7 @@ export class Sim {
     this.updateAuras(dt);
     this.updateEnemies(dt);
     for (const b of this.buildings) { b.age += dt; if (b.altarFlash > 0) b.altarFlash -= dt; if (b.kind === 'tower') this.updateTower(b, dt); }
+    this.updateMines(dt);
     this.updateProjs(dt);
     this.updateZones(dt);
     this.updateFx(dt);
@@ -722,6 +724,8 @@ export class Sim {
     if (b.throwT > 0) b.throwT -= dt;
     if (b.type === 'banner') return;
     if (b.stunT > 0) { b.stunT -= dt; return; }
+    if (b.swing2 > 0) { b.swing2 -= dt; if (b.swing2 <= 0 && b.target && !b.target.dead) { this.swing(b, b.target); b.throwT = 0.45; } }      // Маятник: второй взмах
+    if (b.type === 'miner') { this.updateMiner(b, dt); return; }
     // орбитальные пилы
     if (b.type === 'saw' && st.orbit) { this.updateOrbit(b, dt); return; }
     b.retarget -= dt;
@@ -733,6 +737,7 @@ export class Sim {
         b.auraT = 0.25;
         const R = st.range * CELL;
         for (const e of this.enemies) if (!e.dead && Math.hypot(e.x - b.x, e.y - b.y) <= R) this.slow(e, st.aura, 0.5);
+        if (b.prem === 'winter') { b.ringT = (b.ringT || 0) + 0.25; if (b.ringT >= 1.7) { b.ringT = 0; this.fx.push({ kind: 'ring', x: b.x, y: b.y, t: 0, T: 1.0, r: R, col: '#8ae4ff' }); } }
       }
     }
     const tg = b.target;
@@ -751,7 +756,7 @@ export class Sim {
   }
   fire(b, tg) {
     const st = b.st, X = b.x, Y = b.y;
-    b.recoil = 1; b.throwT = b.type === 'giant' ? 0.8 : b.type === 'grinder' ? 0.7 : b.type === 'saw' ? 0.3 : 0;
+    b.recoil = 1; b.throwT = b.type === 'giant' ? 0.8 : b.type === 'grinder' ? 0.7 : b.type === 'saw' ? 0.3 : b.type === 'bell' || b.type === 'pendulum' ? 0.45 : b.prem === 'plague' ? 0.35 : 0;
     const dm = b.dmgMult;
     switch (b.type) {
       case 'bolt': {
@@ -774,6 +779,20 @@ export class Sim {
         break;
       }
       case 'tesla': this.fireTesla(b, tg); break;
+      case 'bell': {                                   // волна звона: по воздуху сильнее и оглушает, призраков бьёт полным уроном ('magic' без штрафа брони)
+        const R = st.range * CELL;
+        for (const e of this.enemies) {
+          if (e.dead) continue;
+          const dx = e.x - X, dy = e.y - Y, d = Math.hypot(dx, dy);
+          if (d > R + e.size * 8) continue;
+          this.hurt(e, st.dmg * dm * (e.air ? st.airMul : st.gMul), 'magic', { how: 'blast', dx: dx / (d || 1), dy: dy / (d || 1), tower: b });
+          if (!e.dead) { if (e.air) this.stun(e, st.stunT); if (st.mark) { e.mark = Math.max(e.mark, st.mark); e.markT = Math.max(e.markT, st.markT); } }
+        }
+        this.fx.push({ kind: 'ring', x: X, y: Y, t: 0, T: 0.7, r: R, col: '#ffd24a' });
+        this.emit('shot', { b, kind: 'bell', x: X, y: Y, a: 0 });
+        break;
+      }
+      case 'pendulum': this.swing(b, tg); if (st.twice) b.swing2 = 0.42; this.emit('shot', { b, kind: 'pendulum', x: X, y: Y, a: Math.atan2(tg.y - Y, tg.x - X) }); break;
       case 'flame': {
         const a = Math.atan2(tg.y - Y, tg.x - X); b.angle = a;
         const R = st.range * CELL;
@@ -878,6 +897,54 @@ export class Sim {
         this.emit('shot', { b, kind: 'saw', x: X, y: Y, a });
         break;
       }
+    }
+  }
+  // Маятник: удар по всей линии в обе стороны от башни вдоль направления на цель, отбрасывает назад по дороге
+  swing(b, tg) {
+    const st = b.st, X = b.x, Y = b.y, a = Math.atan2(tg.y - Y, tg.x - X), ca = Math.cos(a), sa = Math.sin(a), R = st.range * CELL;
+    b.angle = a;
+    for (const e of this.enemies) {
+      if (e.dead || e.air) continue;
+      const dx = e.x - X, dy = e.y - Y, al = dx * ca + dy * sa, pr = Math.abs(-dx * sa + dy * ca);
+      if (Math.abs(al) > R + e.size * 6 || pr > 0.6 * CELL + e.size * 6) continue;
+      const l = Math.hypot(dx, dy) || 1;
+      this.hurt(e, st.dmg * b.dmgMult, 'phys', { how: 'saw', dx: dx / l, dy: dy / l, tower: b });
+      if (!e.dead) {
+        if (st.push) e.pullLeft = (e.pullLeft || 0) + st.push * CELL * (e.def.heavy ? 0.4 : 1);
+        if (st.bleed) this.addPoison(e, st.bleed, st.bleedT, 99, b);
+      }
+    }
+    this.fx.push({ kind: 'ring', x: X, y: Y, t: 0, T: 0.4, r: R * 0.9, col: '#cfd8e8' });
+  }
+  // Минёр: кладёт мины на дорогу в радиусе башни (до st.mines одновременно); мина взрывается под первым наземным врагом
+  updateMiner(b, dt) {
+    const st = b.st; b.cd -= dt * b.rateMult * (1 + this.mods.rate);
+    if (b.cd > 0) return;
+    let have = 0; for (const m of this.mines) if (m.owner === b) have++;
+    if (have >= st.mines) { b.cd = 0.4; return; }
+    const R = st.range * CELL, pts = [];
+    for (const path of this.paths) for (let d = 30; d < path.total - 30; d += 20) {
+      const p = path.at(d); if (Math.hypot(p.x - b.x, p.y - b.y) > R) continue;
+      let free = true; for (const m of this.mines) if (Math.hypot(m.x - p.x, m.y - p.y) < 26) { free = false; break; }
+      if (free) pts.push({ x: p.x, y: p.y });
+    }
+    if (!pts.length) { b.cd = 0.5; return; }
+    const p = pts[Math.floor(this.rng() * pts.length)];
+    this.mines.push({ x: p.x, y: p.y, owner: b, age: 0 });
+    b.recoil = 1; b.throwT = 0.4; b.cd += 1 / st.rate; if (b.cd < 0) b.cd = 0;
+    this.emit('minePlace', { b, x: p.x, y: p.y });
+  }
+  updateMines(dt) {
+    for (let i = this.mines.length - 1; i >= 0; i--) {
+      const m = this.mines[i]; m.age += dt; if (m.age < 0.7) continue;
+      let hit = false;
+      for (const e of this.enemies) if (!e.dead && !e.air && Math.hypot(e.x - m.x, e.y - m.y) < 14 + e.size * 6) { hit = true; break; }
+      if (!hit) continue;
+      this.mines.splice(i, 1);
+      const b = m.owner, st = b.st, R = st.splash * CELL, dm = b.dmgMult, src = { tower: b, kind: 'mine' };
+      this.explode(m.x, m.y, R, st.dmg * dm, 'blast', src);
+      if (st.slow) for (const e of this.enemies) if (!e.dead && !e.air && Math.hypot(e.x - m.x, e.y - m.y) <= R + e.size * 8) this.slow(e, st.slow, st.slowT);
+      for (let k = 0; k < (st.cluster || 0); k++) { const a = this.rng() * 6.283, r = CELL * (0.7 + this.rng() * 0.8); this.explode(m.x + Math.cos(a) * r, m.y + Math.sin(a) * r, R * 0.55, st.dmg * dm * 0.45, 'blast', src); }
     }
   }
   fireTesla(b, tg) {
@@ -1104,6 +1171,7 @@ export class Sim {
   updateFx(dt) {
     for (let i = this.fx.length - 1; i >= 0; i--) {
       const f = this.fx[i]; f.t += dt;
+      if (f.kind === 'ring') { if (f.t >= f.T) this.fx.splice(i, 1); continue; }
       if (f.kind === 'meteor' && f.t >= f.T) {
         const dmg = D.SPELLS.meteor.dmg * (1 + 0.25 * this.wave);
         const R = D.SPELLS.meteor.radius * CELL;
