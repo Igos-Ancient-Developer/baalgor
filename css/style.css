@@ -1234,8 +1234,8 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .dcard .dname { font-size: 25px; margin-top: 4px; margin-bottom: 4px; }
 .dcol .dfoot .btn.play { min-height: 36px; height: 38px; padding-top: 0; padding-bottom: 0; font-size: 18px; }
 /* названия сложностей: шрифт Diablo (DiabloFont, fonts/diablo.ttf, с ofont.ru), мельче прежнего, с цветным свечением */
-.dcard .dname, .ps-d b { font-family: 'DiabloFont', var(--gothic); font-size: 24px; letter-spacing: .05em; -webkit-text-stroke: 0; text-shadow: 0 2px 0 #000, 0 0 3px #000, 0 0 14px var(--c, var(--dc, #ff5a3a)); }
-.ps-d b { font-size: 20px; }
+.dcard .dname, .ps-d b { font-family: 'DiabloFont', var(--gothic); font-size: 17px; letter-spacing: .05em; -webkit-text-stroke: 0; text-shadow: 0 2px 0 #000, 0 0 3px #000, 0 0 14px var(--c, var(--dc, #ff5a3a)); }
+.ps-d b { font-size: 15px; }
 
 /* ───── единый размер кнопок: у всех плит-кнопок одна высота и один шрифт (кроме плиты «Рейтинговый забег» с руками и значков) ───── */
 :root { --btn-h: 46px; }
@@ -1257,3 +1257,16 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .loc .chk { top: 3px; right: 3px; width: 19px; height: 19px; } .loc .chk.on::after { left: 6px; top: 2px; width: 5px; height: 10px; border-width: 0 2.5px 2.5px 0; }
 .loc .crn { top: 2px; left: 2px; width: 18px; height: 18px; }
 .loc .lk img { width: 22px; height: 22px; }
+
+/* выбранные здания: только иконка почти во всю плитку, без подписи */
+.lo-slots { gap: 7px; padding-left: 4px; padding-right: 4px; }
+.los { width: auto; height: auto; flex: 1 1 0; max-width: 72px; aspect-ratio: 1; padding: 0; }
+.los.full img { width: calc(100% - 8px); height: calc(100% - 8px); object-fit: contain; border-radius: 9px; }
+.los.full small { display: none; }
+.los.lock img { width: 46%; height: auto; }
+
+/* названия уровней: шрифт Diablo везде (карта, плашка уровня, заголовок подготовки) */
+.node .nl, .lvp-t b, #lo-title { font-family: 'DiabloFont', var(--gothic) !important; font-weight: 400 !important; letter-spacing: .04em; }
+.node .nl { font-size: 11px !important; padding: 0 7px; max-width: 124px; }
+.lvp-t b { font-size: 22px !important; }
+#lo-title { font-size: 19px !important; line-height: 1.05; }

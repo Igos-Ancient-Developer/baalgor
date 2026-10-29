@@ -1,5 +1,5 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261029212623';
+import { createTrack, MENU_SPEC } from './music.js?v=20261029212841';
 // группы записей (сколько файлов) и кто какой группой умирает: [группа, скорость воспроизведения]
 const MON_FILES = { slime: 6, golem: 7, brute: 7, squeal: 4, bat: 5, ghost: 4, man: 3, roar: 8, wolf: 4, dry: 4, bone: 5 };
 const MON_OF = {
