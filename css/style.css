@@ -1267,6 +1267,6 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 
 /* названия уровней: шрифт Diablo везде (карта, плашка уровня, заголовок подготовки) */
 .node .nl, .lvp-t b, #lo-title { font-family: 'DiabloFont', var(--gothic) !important; font-weight: 400 !important; letter-spacing: .04em; }
-.node .nl { font-size: 11px !important; padding: 0 7px; max-width: 124px; }
-.lvp-t b { font-size: 22px !important; }
-#lo-title { font-size: 19px !important; line-height: 1.05; }
+.node .nl { font-size: 9.5px !important; padding: 1px 7px 0; max-width: none !important; white-space: nowrap; margin-top: 5px !important; position: relative; z-index: 2; line-height: 1.35 !important; }
+.lvp-t b { font-size: 17px !important; }
+#lo-title { font-size: 14px !important; line-height: 1.05; }
