@@ -1,13 +1,13 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261029184620';
-import { Wallet } from './wallet.js?v=20261029184620';
-import { fillPlates, gemIc } from './res.js?v=20261029184620';
-import { towerIcon } from './ui.js?v=20261029184620';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261029184620';
-import { SHOP_IMG } from './iconmap.js?v=20261029184620';
-import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, oddsOf, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest, freeChestIn } from './chests.js?v=20261029184620';
+import * as D from './data.js?v=20261029185306';
+import { Wallet } from './wallet.js?v=20261029185306';
+import { fillPlates, gemIc } from './res.js?v=20261029185306';
+import { towerIcon } from './ui.js?v=20261029185306';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261029185306';
+import { SHOP_IMG } from './iconmap.js?v=20261029185306';
+import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, oddsOf, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest, freeChestIn } from './chests.js?v=20261029185306';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
 
 const $ = (s) => document.querySelector(s);
@@ -64,6 +64,12 @@ export function renderShop(save, ctrl, redraw) {
     const setQ = (q) => { q = Math.max(1, Math.min(50, q)); ctrl._chestQty[kind] = q; num.textContent = q; dec.disabled = q <= 1; inc.disabled = q >= 50; prices.forEach(([b, v, ic]) => { b.innerHTML = `${ic}${fmt(v * q)}`; }); };
     if (c.souls) { const b = el('button', 'btn chb'); b.onclick = async () => { b.disabled = true; afterBuy(await buyChests(save, kind, 'souls', ctrl._chestQty[kind]), b); b.disabled = false; }; prices.push([b, c.souls, `<img src="${bareGlyphUrl('soul', 22)}" alt="">`]); buy.appendChild(b); }
     { const b = el('button', 'btn chb gem'); b.onclick = async () => { b.disabled = true; afterBuy(await buyChests(save, kind, 'gems', ctrl._chestQty[kind]), b); b.disabled = false; }; prices.push([b, c.gems, gemIc(22)]); buy.appendChild(b); }
+    if (c.stars) { const b = el('button', 'btn chb star'); b.onclick = async () => {                    // за Telegram Stars: счёт на выбранное количество, сундуки сразу ложатся на склад
+        b.disabled = true; const q = ctrl._chestQty[kind] || 1;
+        const r = await Wallet.buyChest(kind, q, async () => { await refreshStock(save); return stockOf(save, kind); });
+        b.disabled = false;
+        if (r && r.status === 'paid') { ctrl.sfx.play('upgrade'); ctrl.note(`+${q} ${q === 1 ? 'сундук' : 'сундуков'} на складе`); ctrl.persist(); redraw(); } else if (!r || r.status !== 'cancelled') { say(r); fail(b); } };
+      prices.push([b, c.stars, '⭐ ']); buy.appendChild(b); }
     dec.onclick = () => { ctrl.sfx.play('click'); setQ((ctrl._chestQty[kind] || 1) - 1); }; inc.onclick = () => { ctrl.sfx.play('click'); setQ((ctrl._chestQty[kind] || 1) + 1); }; setQ(qty);
     const op = el('div', 'chbtns open');
     const o1 = el('button', 'btn chb go', `Открыть <b class="chstock in">${have}</b>`);

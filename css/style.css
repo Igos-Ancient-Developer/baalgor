@@ -1218,3 +1218,7 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 /* премиум-башни в магазине: последний неполный ряд по центру, а не прижат влево */
 .sh-prem { display: flex; flex-wrap: wrap; justify-content: center; }
 .sh-prem .pcard { flex: 0 0 calc((100% - 2 * var(--gap, 8px)) / 3); min-width: 0; box-sizing: border-box; }
+
+/* покупка сундуков за Stars: отдельной строкой под ценами в душах и кристаллах */
+.chcard .chbtns { flex-wrap: wrap; }
+.chcard .chb.star { flex: 1 1 100%; min-height: 36px; font-size: 15px; letter-spacing: .02em; }

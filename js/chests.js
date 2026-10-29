@@ -2,16 +2,16 @@
 // Деревянный: за души или за немного кристаллов, в основном души. Серебряный: только за кристаллы, в основном кристаллы.
 // Золотой: самый дорогой, лучшая добыча, редкие премиум-башни. Каждая башня — отдельная строка таблицы (js/chesttable.js).
 // Для кристаллов бросок делает сервер (supabase/chests.sql, функция chest_open) — по этой же таблице; здесь бросок нужен для оплаты душами (души хранятся в сохранении) и для локального режима вне Telegram.
-import { gemUrl } from './gem3d.js?v=20261029184620';
-import * as D from './data.js?v=20261029184620';
-import * as M from './meta.js?v=20261029184620';
-import { Net } from './net.js?v=20261029184620';
-import { Wallet } from './wallet.js?v=20261029184620';
-import { towerIcon, econIcon } from './ui.js?v=20261029184620';
-import { iconUrl } from './icons.js?v=20261029184620';
-import { url as imgUrl } from './sprites.js?v=20261029184620';
-import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261029184620';
-import { createChest3D } from './chest3d.js?v=20261029184620';
+import { gemUrl } from './gem3d.js?v=20261029185306';
+import * as D from './data.js?v=20261029185306';
+import * as M from './meta.js?v=20261029185306';
+import { Net } from './net.js?v=20261029185306';
+import { Wallet } from './wallet.js?v=20261029185306';
+import { towerIcon, econIcon } from './ui.js?v=20261029185306';
+import { iconUrl } from './icons.js?v=20261029185306';
+import { url as imgUrl } from './sprites.js?v=20261029185306';
+import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261029185306';
+import { createChest3D } from './chest3d.js?v=20261029185306';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -20,7 +20,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const META = { wood: { name: 'Деревянный сундук', theme: 'wood', color: '#c98a46' }, silver: { name: 'Серебряный сундук', theme: 'silver', color: '#a9cdee' }, gold: { name: 'Золотой сундук', theme: 'gold', color: '#ffd24a' } };
 export const CHESTS = {};
-for (const k of Object.keys(CHEST_ROWS)) CHESTS[k] = { ...META[k], souls: CHEST_ROWS[k].souls, gems: CHEST_ROWS[k].gems, table: CHEST_ROWS[k].rows.map((r) => (r.t === 'unlock' ? { ...r, pool: POOL_OF[r.id] } : r)) };
+for (const k of Object.keys(CHEST_ROWS)) CHESTS[k] = { ...META[k], souls: CHEST_ROWS[k].souls, gems: CHEST_ROWS[k].gems, stars: CHEST_ROWS[k].stars, table: CHEST_ROWS[k].rows.map((r) => (r.t === 'unlock' ? { ...r, pool: POOL_OF[r.id] } : r)) };
 export const CHEST_ORDER = ['wood', 'silver', 'gold'];
 
 const rint = (a, b, rnd) => a + Math.floor(rnd() * (b - a + 1));

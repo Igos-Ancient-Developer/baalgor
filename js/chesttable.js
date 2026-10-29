@@ -9,14 +9,14 @@ export const POOL_OF = {
 };
 const T = (id, w) => ({ w, t: 'unlock', id });
 export const CHEST_ROWS = {
-  wood: { souls: 250, gems: 25, rows: [
+  wood: { souls: 250, gems: 25, stars: 7, rows: [
     { w: 28, t: 'souls', min: 40, max: 89 }, { w: 22, t: 'souls', min: 90, max: 175 }, { w: 9, t: 'souls', min: 176, max: 260 }, { w: 3.5, t: 'souls', min: 261, max: 500 },
     { w: 0.8, t: 'souls', min: 501, max: 1200 }, { w: 0.08, t: 'souls', min: 3000, max: 5000 },
     { w: 6, t: 'gems', min: 2, max: 6, gemsOnly: true }, { w: 1.4, t: 'gems', min: 10, max: 25, gemsOnly: true }, { w: 0.3, t: 'gems', min: 50, max: 100 }, { w: 0.02, t: 'gems', min: 500, max: 500 },
     T('frost', 3.2), T('mortar', 3.2), T('toxic', 3.2), T('flame', 3.2), T('banner', 3), T('saw', 3),
     T('harpoon', 1.2), T('tesla', 1.2), T('voidwell', 0.9), T('magnet', 0.9), T('grinder', 0.7), T('bank', 0.4), T('altar', 0.4), T('bell', 1), T('miner', 0.9), T('pendulum', 0.8),
   ] },
-  silver: { gems: 65, rows: [
+  silver: { gems: 65, stars: 17, rows: [
     { w: 27, t: 'gems', min: 23, max: 40 }, { w: 19, t: 'gems', min: 41, max: 57 }, { w: 8, t: 'gems', min: 58, max: 89 }, { w: 2.6, t: 'gems', min: 90, max: 140 },
     { w: 0.8, t: 'gems', min: 141, max: 300 }, { w: 0.1, t: 'gems', min: 301, max: 800 }, { w: 0.005, t: 'gems', min: 2000, max: 2500 },
     { w: 8, t: 'souls', min: 300, max: 650 }, { w: 2, t: 'souls', min: 700, max: 1500 }, { w: 0.05, t: 'souls', min: 5000, max: 5000 },
@@ -24,7 +24,7 @@ export const CHEST_ROWS = {
     T('harpoon', 3), T('tesla', 3), T('voidwell', 2.5), T('magnet', 2.5), T('grinder', 2), T('bank', 1.5), T('altar', 1.5), T('bell', 2.5), T('miner', 2.2), T('pendulum', 2),
     T('gold_bolt', 0.25), T('storm_tesla', 0.15), T('hell_flame', 0.1), T('thunder', 0.12), T('winter', 0.12), T('bloodstorm', 0.1), T('plague', 0.1),
   ] },
-  gold: { gems: 180, rows: [
+  gold: { gems: 180, stars: 45, rows: [
     { w: 23, t: 'gems', min: 70, max: 110 }, { w: 17, t: 'gems', min: 111, max: 180 }, { w: 8, t: 'gems', min: 181, max: 260 }, { w: 3, t: 'gems', min: 261, max: 400 },
     { w: 0.6, t: 'gems', min: 401, max: 900 }, { w: 0.05, t: 'gems', min: 901, max: 2000 }, { w: 0.002, t: 'gems', min: 5000, max: 5000 },
     { w: 8, t: 'souls', min: 900, max: 1800 }, { w: 1.5, t: 'souls', min: 1801, max: 4000 }, { w: 0.01, t: 'souls', min: 10000, max: 10000 },

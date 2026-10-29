@@ -1,5 +1,5 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261029184620';
+import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261029185306';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
@@ -52,9 +52,9 @@ export const Net = {
   call(fn, body) { return rpc(fn, body, { timeout: 10000 }); },
   initData() { return tg && tg.initData; },
   // счёт в Telegram Stars: возвращает { link } или { error }
-  async invoice(pack) {
+  async invoice(pack, extra = {}) {
     try {
-      const r = await fetch(`${SUPABASE_URL}/functions/v1/create-invoice`, { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ init_data: tg.initData, pack }) });
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/create-invoice`, { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ init_data: tg.initData, pack, ...extra }) });
       return await r.json();
     } catch (e) { return { error: 'net' }; }
   },
