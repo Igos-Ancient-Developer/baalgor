@@ -1,6 +1,6 @@
 // Обучающий уровень: ведёт игрока по шагам сообщениями и подсветкой. Состояние берётся из симуляции и интерфейса,
 // поэтому порядок «сначала башня, потом рудник» или наоборот не важен, а лишние действия не ломают ход обучения.
-import * as D from './data.js?v=20261029163338';
+import * as D from './data.js?v=20261029170857';
 
 const $ = (s) => document.querySelector(s);
 
@@ -62,7 +62,29 @@ export class Tutorial {
     else if (!want && this.armedText) { this.armedText = false; this.show(this.steps[this.i]); }
   }
 
-  clearHints() { for (const e of document.querySelectorAll('.tuthint')) e.classList.remove('tuthint'); const v = this.c.view; if (v) v.hint = null; }
+  clearHints() { for (const e of document.querySelectorAll('.tuthint')) e.classList.remove('tuthint'); const v = this.c.view; if (v) v.hint = null; this.spot(null); }
+  // Затемнение с «окном» вокруг нужного объекта, указатель-перчатка на нём и сообщение рядом (над объектом или под ним, чтобы не закрывать его).
+  // Цель: кнопка интерфейса (селектор), клетка/монета/здание на поле (координаты считаются из камеры). Касания проходят сквозь затемнение.
+  spot(r) {
+    const sp = $('#tutspot'), hand = $('#tuthand'), box = $('#tut');
+    if (!r) { sp.classList.add('hidden'); hand.classList.add('hidden'); box.style.top = ''; this._sp = ''; return; }
+    const key = [r.x, r.y, r.w, r.h].map(Math.round).join(','); if (key === this._sp) return; this._sp = key;
+    const pad = 6; sp.classList.remove('hidden'); hand.classList.remove('hidden');
+    if (!hand.src) hand.src = new URL('../img/ui/hand.webp', import.meta.url).href;
+    Object.assign(sp.style, { left: r.x - pad + 'px', top: r.y - pad + 'px', width: r.w + pad * 2 + 'px', height: r.h + pad * 2 + 'px', borderRadius: r.round ? '50%' : '14px' });
+    const cx = r.x + r.w / 2, cy = r.y + r.h / 2, hw = 84; hand.style.width = hw + 'px'; hand.style.left = cx - hw * 0.07 + 'px'; hand.style.top = cy - hw * 0.05 + 'px';      // кончик пальца — в центре цели
+    const vh = window.innerHeight, mh = box.offsetHeight || 70;
+    box.style.top = (cy < vh * 0.42 ? Math.min(vh - mh - 130, r.y + r.h + 112) : Math.max(54, r.y - mh - 18)) + 'px';
+  }
+  target(sel) {
+    if (sel) { const e = document.querySelector(sel); if (!e) return null; const b = e.getBoundingClientRect(); return b.width ? { x: b.left, y: b.top, w: b.width, h: b.height } : null; }
+    const v = this.c.view, R = this.c.renderer, s = this.sim, h = v && v.hint; if (!R || !h) return null;
+    const cv = document.getElementById('cv').getBoundingClientRect(), at = (wx, wy, size, round) => { const p = R.toScreen(wx, wy), k = size * R.zoom; return { x: cv.left + p.x - k / 2, y: cv.top + p.y - k / 2, w: k, h: k, round }; };
+    if (h.cells && h.cells[0]) return at((h.cells[0][0] + 0.5) * D.CELL, (h.cells[0][1] + 0.5) * D.CELL, D.CELL);
+    if (h.bag) { const g = (s.bags || []).find((q) => !q.dead); return g ? at(g.x, g.y - 12, 44, true) : null; }
+    if (h.b) return at(h.b.x, h.b.y - 6, 52);
+    return null;
+  }
   show(st) {
     const box = $('#tut'); box.classList.remove('hidden');
     $('#tut .ttext').textContent = typeof st.text === 'function' ? st.text() : st.text;
@@ -86,6 +108,7 @@ export class Tutorial {
     if (sel) for (const e of document.querySelectorAll(sel)) e.classList.add('tuthint');
     if (!st.tick) v.hint = st.bag ? { bag: true } : st.b ? { b: this.tower() } : null;
     else if (st.bag) v.hint = { bag: true };
+    if (!st.btn && !st.auto) { this._st = (this._st || 0) + dt; if (this._st > 0.2) { this._st = 0; this.spot(this.target(typeof sel === 'string' ? sel : null)); } } else this.spot(null);
     if (st.auto) { this.timer -= dt; if (this.timer <= 0) { $('#tut').classList.add('hidden'); this.i = this.steps.length; this.clearHints(); return; } }
     if (st.done()) this.go(this.i + 1);
   }

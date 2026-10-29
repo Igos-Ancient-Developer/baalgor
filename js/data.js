@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261029163338';
+import { COLS, ROWS } from './layouts.js?v=20261029170857';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029163338';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261029170857';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -217,7 +217,6 @@ TOWERS.harpoon = {
 // ───── Новые здания: Магнетто (притягивает врагов по дороге к себе), Гриндер (затягивает слабых в двери и перемалывает), Гигант (кидает валуны) ─────
 TOWERS.magnet = {
   name: 'Магнетто', cost: 130, air: true, ground: true, utility: true,
-  combo: ['grinder'],
   short: 'Не бьёт сам: мощный магнит стягивает врагов по дороге к башне, и они сбиваются в кучу.',
   lv: [
     { rate: 0.2, range: 2.8, pull: 70 },
@@ -235,7 +234,6 @@ TOWERS.magnet = {
 };
 TOWERS.grinder = {
   name: 'Гриндер', cost: 160, air: false, ground: true, grinder: true,
-  combo: ['magnet'],
   short: 'Двери распахиваются, затягивают слабых врагов пачками и перемалывают в труху.',
   lv: [
     { rate: 0.33, range: 1.7, grind: 2, weak: 135, medium: 330 },
@@ -279,6 +277,10 @@ export const PREMIUM = {
   storm_tesla: { base: 'tesla', name: 'Грозовой шпиль',  gems: 220, costMul: 1.4, mult: { dmg: 1.6, range: 1.15 }, add: { chains: 2 }, tint: '#7ad0ff', short: 'Молния перескакивает ещё на двух врагов и бьёт на 60% сильнее.' },
   hell_flame:  { base: 'flame', name: 'Адское пламя',    gems: 300, costMul: 1.4, mult: { dmg: 1.8, burn: 1.8, range: 1.15 }, tint: '#ff5a2a', short: 'Огненный конус почти вдвое мощнее: жжёт всех впереди и добивает ожогом.' },
 };
+// с какими башнями каждая работает лучше всего (строка-сноска в карточке); 'all' — со всеми боевыми башнями; у премиум-башен то же, что у базовой
+const COMBO = { bolt: ['banner', 'frost'], frost: 'all', mortar: ['magnet', 'voidwell', 'frost'], tesla: ['frost', 'banner', 'toxic'], toxic: ['banner', 'magnet', 'voidwell'], saw: ['magnet', 'voidwell', 'frost'], banner: 'all',
+  flame: ['voidwell', 'magnet', 'frost'], voidwell: ['mortar', 'flame', 'saw', 'toxic'], harpoon: ['frost', 'voidwell', 'banner'], magnet: ['grinder', 'mortar', 'saw'], grinder: ['magnet', 'voidwell'] };
+for (const [id, c] of Object.entries(COMBO)) TOWERS[id].combo = c;
 for (const id of PREMIUM_ORDER) { const p = PREMIUM[id], b = TOWERS[p.base]; TOWERS[id] = { ...b, name: p.name, short: p.short, cost: Math.round(b.cost * p.costMul), premium: true, base: p.base, tint: p.tint, mult: p.mult, add: p.add }; }
 export const isPremium = (t) => !!(TOWERS[t] && TOWERS[t].premium);
 
@@ -324,7 +326,7 @@ export const SPELL_ORDER = ['meteor', 'stasis', 'rush'];
 // blood: палитра крови/кусков. speed в px/сек (клетка = 48 px).
 // pts — очки за убийство: только сильные и уникальные враги (слабая мелочь очков не даёт); у элитных +0.02
 // строка-сноска под описанием башни: с какими башнями она работает вместе
-export const comboText = (d) => (d && d.combo && d.combo.length ? 'Комбинируется с: ' + d.combo.map((t) => TOWERS[t].name).join(', ') : '');
+export const comboText = (d) => (!d || !d.combo ? '' : d.combo === 'all' ? 'Отлично комбинируется со всеми боевыми башнями' : 'Комбинируется с: ' + d.combo.map((t) => TOWERS[t].name).join(', '));
 export const ENEMIES = {
   // обычные: быстрые и средние (speed px/с, у гончей и мыши высокая, у зомби низкая)
   skeleton: { name: 'Скелет',         hp: 70,  spd: 42, gold: 0, lives: 1, size: 0.95, atk: 6,  immune: ['poison'], blood: 'bone' },

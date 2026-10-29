@@ -1,10 +1,10 @@
 // Звук: полностью синтезированный на WebAudio (никаких файлов). Эффекты + тёмный эмбиент (js/music.js: свой для каждого уровня).
-import { createTrack, MENU_SPEC } from './music.js?v=20261029163338';
+import { createTrack, MENU_SPEC } from './music.js?v=20261029170857';
 // группы записей (сколько файлов) и кто какой группой умирает: [группа, скорость воспроизведения]
-const MON_FILES = { slime: 6, golem: 7, brute: 7, squeal: 4, bat: 5, ghost: 5, man: 3, roar: 8, wolf: 4, dry: 6, bone: 5 };
+const MON_FILES = { slime: 6, golem: 7, brute: 7, squeal: 4, bat: 5, ghost: 4, man: 3, roar: 8, wolf: 4, dry: 4, bone: 5 };
 const MON_OF = {
   slime: ['slime', 1], slimelet: ['slime', 1.3], sandgolem: ['golem', 0.9], snowgolem: ['golem', 1], lavagolem: ['golem', 0.78], skeleton: ['bone', 1], iceskel: ['bone', 1.15],
-  zombie: ['brute', 1], ogre: ['brute', 0.8], butcher: ['brute', 0.7], goblin: ['squeal', 1], imp: ['squeal', 1.25], bat: ['bat', 1], gargoyle: ['bat', 0.75],
+  zombie: ['brute', 1], ogre: ['brute', 0.8], butcher: ['brute', 0.7], bat: ['bat', 1], gargoyle: ['bat', 0.75],
   reaper: ['ghost', 0.9], djinn: ['ghost', 1.05], lich: ['ghost', 0.8], anubis: ['ghost', 0.95], knight: ['man', 0.85], pinky: ['roar', 1], baron: ['roar', 0.8], berserker: ['roar', 0.9],
   yeti: ['roar', 0.85], ultrayeti: ['roar', 0.7], wolf: ['wolf', 1], hound: ['wolf', 0.85], mummy: ['dry', 1], pharaoh: ['dry', 0.8],
 };
@@ -150,25 +150,29 @@ export class Sfx {
     }
   }
 
-  // Струя огня: один непрерывный голос (шипящий шум с «рёвом» и редкими хлопками), он держится, пока башни стреляют, и затихает через ~0,3 с после последнего выстрела.
+  // Струя огня: один непрерывный голос, пока башни стреляют (затихает через ~0,35 с после последнего выстрела). Тело — шум с провалом высоких (как газовая горелка),
+  // «турбулентность» — случайное дрожание громкости 20–40 раз в секунду (шум, пропущенный через фильтр), низкий рёв и редкие хлопки горящего газа; при запуске — вспышка «вуф».
   flameJet(v = 1) {
-    const c = this.ctx, t = c.currentTime; this._jetUntil = t + 0.34; this._jetV = Math.max(this._jetV || 0, v);
-    if (this._jet) { const j = this._jet; j.g.gain.cancelScheduledValues(t); j.g.gain.setTargetAtTime(0.5 * v, t, 0.04); return; }
-    const mk = (type, f, q) => { const b = c.createBiquadFilter(); b.type = type; b.frequency.value = f; if (q) b.Q.value = q; return b; };
-    const src = c.createBufferSource(); src.buffer = this.noiseBuf; src.loop = true; src.loopStart = Math.random() * 0.5;
-    const hiss = mk('bandpass', 1500, 0.6), air = mk('highpass', 700), roar = mk('lowpass', 420), g = c.createGain(), gr = c.createGain(), flut = c.createGain(), lfo = c.createOscillator(), lfoG = c.createGain();
-    g.gain.value = 0.0001; gr.gain.value = 0.9; flut.gain.value = 1;
-    src.connect(hiss); hiss.connect(air); air.connect(g); src.connect(roar); roar.connect(gr); gr.connect(g); g.connect(this.sfxBus);
-    lfo.type = 'sine'; lfo.frequency.value = 9; lfoG.gain.value = 260; lfo.connect(lfoG); lfoG.connect(hiss.frequency);      // шипение «дышит»: частота полосы качается
-    src.start(t); lfo.start(t);
-    g.gain.setTargetAtTime(0.5 * v, t, 0.05);
-    const j = this._jet = { src, g, lfo, hiss, pops: 0 };
+    const c = this.ctx, t = c.currentTime; this._jetUntil = t + 0.36; this._jetV = Math.max(this._jetV || 0, v);
+    if (this._jet) { const j = this._jet; j.g.gain.cancelScheduledValues(t); j.g.gain.setTargetAtTime(0.62 * v, t, 0.05); return; }
+    const flt = (type, f, q) => { const b = c.createBiquadFilter(); b.type = type; b.frequency.value = f; if (q) b.Q.value = q; return b; };
+    const nz = (off) => { const s = c.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; s.start(t, off); return s; };
+    const body = nz(Math.random()), roarS = nz(Math.random()), modS = nz(Math.random());
+    const bp = flt('bandpass', 650, 0.4), lp = flt('lowpass', 2200, 0.7), am = c.createGain(), amDepth = c.createGain();
+    const lo = flt('lowpass', 230, 0.8), loG = c.createGain(), mlp = flt('lowpass', 32, 0.7), out = c.createGain();
+    am.gain.value = 0.55; amDepth.gain.value = 0.85;                                    // громкость тела = 0,55 ± случайное дрожание
+    body.connect(bp); bp.connect(lp); lp.connect(am); modS.connect(mlp); mlp.connect(amDepth); amDepth.connect(am.gain);
+    roarS.connect(lo); lo.connect(loG); loG.gain.value = 1.3;
+    am.connect(out); loG.connect(out); out.gain.value = 0.0001; out.connect(this.sfxBus);
+    out.gain.setTargetAtTime(0.62 * v, t, 0.04);
+    this.noise('bandpass', 350, 2000, 0.28, 0.35 * v, 0, 0.9);                          // вспышка при запуске
+    const j = this._jet = { g: out, srcs: [body, roarS, modS] };
     j.timer = setInterval(() => {
       const n = c.currentTime;
-      if (n > this._jetUntil) { g.gain.setTargetAtTime(0.0001, n, 0.09); if (n > this._jetUntil + 0.5) { clearInterval(j.timer); try { src.stop(); lfo.stop(); } catch (e) { /* */ } this._jet = null; this._jetV = 0; } return; }
-      hiss.frequency.setTargetAtTime(1100 + Math.random() * 1500, n, 0.06);                                                    // струя переливается по тону
-      if (Math.random() < 0.55) this.noise('highpass', 3500 + Math.random() * 2500, 2500, 0.035, 0.14 * this._jetV, 0, 2);      // треск и хлопки горящего газа
-    }, 90);
+      if (n > this._jetUntil) { out.gain.setTargetAtTime(0.0001, n, 0.1); if (n > this._jetUntil + 0.6) { clearInterval(j.timer); for (const s of j.srcs) { try { s.stop(); } catch (e) { /* */ } } this._jet = null; this._jetV = 0; } return; }
+      bp.frequency.setTargetAtTime(420 + Math.random() * 700, n, 0.08);                    // струя переливается по тону
+      if (Math.random() < 0.5) this.noise('bandpass', 1800 + Math.random() * 1600, 1200, 0.05, 0.1 * this._jetV, 0, 1.2);      // хлопки и треск
+    }, 80);
   }
 
   play(name, vol = 1) {

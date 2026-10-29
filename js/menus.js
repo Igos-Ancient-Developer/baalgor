@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029163338';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029163338';
-import * as D from './data.js?v=20261029163338';
-import * as M from './meta.js?v=20261029163338';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029163338';
-import { url as imgUrl } from './sprites.js?v=20261029163338';
-import { Net } from './net.js?v=20261029163338';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029163338';
-import { fillPlates, gemIc } from './res.js?v=20261029163338';
-import { gemHtml } from './gem3d.js?v=20261029163338';
-import { Wallet } from './wallet.js?v=20261029163338';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029170857';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029170857';
+import * as D from './data.js?v=20261029170857';
+import * as M from './meta.js?v=20261029170857';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029170857';
+import { url as imgUrl } from './sprites.js?v=20261029170857';
+import { Net } from './net.js?v=20261029170857';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029170857';
+import { fillPlates, gemIc } from './res.js?v=20261029170857';
+import { gemHtml } from './gem3d.js?v=20261029170857';
+import { Wallet } from './wallet.js?v=20261029170857';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -125,10 +125,10 @@ export class Menus {
     row('Громкость музыки', '', slider(() => st.musVol, (v) => { st.musVol = v; }));
     body.appendChild(el('div', 'sect-title', 'Бой'));
     row('Числа над врагами', 'Урон и золото при убийстве', toggle(() => st.dmg, (v) => { st.dmg = v; }));
-    { const NAMES = ['Экономия', 'Авто', 'Плавно'], b = el('button', 'btn', NAMES[st.perf ?? 1]); b.style.minWidth = '110px'; b.onclick = () => { st.perf = ((st.perf ?? 1) + 1) % 3; b.textContent = NAMES[st.perf]; c.sfx.play('click'); save(); }; row('Плавность боя', '', b); }
+    { const NAMES = ['Экономия', 'Авто', 'Плавно'], b = el('button', 'btn perf', NAMES[st.perf ?? 1]); b.onclick = () => { st.perf = ((st.perf ?? 1) + 1) % 3; b.textContent = NAMES[st.perf]; c.sfx.play('click'); save(); }; row('Плавность боя', '', b); }
     row('Подтверждать выход из боя', 'Telegram спросит перед закрытием', toggle(() => st.confirm, (v) => { st.confirm = v; }));
     body.appendChild(el('div', 'sect-title', 'Друзья'));
-    { const r = el('div', 'srow inv'); r.innerHTML = `<img class="sr-ic" src="${imgUrl('ui/ic/friend.webp')}" alt=""><div class="lb">Пригласить друга<small>Друг откроет игру по твоей ссылке, и вы появитесь в списках друг у друга</small></div>`;
+    { const r = el('div', 'srow inv'); r.innerHTML = `<img class="sr-ic" src="${imgUrl('ui/ic/friend.webp')}" alt=""><div class="lb">Пригласить друга<small>За каждого друга по твоей ссылке: +3 кристалла</small></div>`;
       const inv = el('button', 'btn', 'Позвать'); inv.onclick = () => { c.sfx.play('click'); if (!Net.invite()) c.note('Ссылка на игру ещё не задана'); };
       r.appendChild(inv); body.appendChild(r); }
     body.appendChild(el('div', 'sect-title', 'Язык'));
@@ -177,7 +177,7 @@ export class Menus {
     }
     { // недельный уровень: отдельная площадка вне дорог, с обратным отсчётом до конца недели
       const ws = weeklyState(s), wl = WEEKLY_LEVEL, lp = P(wl.pos);
-      const n = el('button', `node weekly${ws.done ? ' wkdone' : ''}`, `<img class="ni" src="${imgUrl(`ui/ic/sec_${wl.sector}_avail.webp`)}" alt=""><div class="nl wkl"></div>`);
+      const n = el('button', `node weekly${ws.done ? ' wkdone' : ''}`, `<img class="ni" src="${imgUrl(`ui/ic/wk_${wl.sector}.webp`)}" alt=""><div class="nl wkl"></div>`);
       n.dataset.id = wl.id; n.style.left = (lp[0] / MAP_W) * 100 + '%'; n.style.top = (lp[1] / MAP_H) * 100 + '%';
       n.onclick = (e) => { e.stopPropagation(); c.sfx.play('select'); this.openLevel(wl.id); };
       nodes.appendChild(n);
@@ -293,11 +293,11 @@ export class Menus {
       const rows = diffLines(d, i).map((r) => r.k === 'sep' ? `<div class="dsub">${r.t}</div>` : `<div class="mrow ${r.cls}"><img src="${bareGlyphUrl(r.icon, 24)}" alt=""><div class="mt">${r.t}<small>${r.s}</small></div><b>${r.v}</b></div>`).join('');
       const card = el('div', `dcard${unlocked ? '' : ' locked'}${i === 4 ? ' hc' : ''}`);
       card.style.setProperty('--c', d.color);
-      card.innerHTML = `<div class="dport"><div class="arch dic"><img src="${imgUrl('ui/ic/diff_' + i + '.webp')}" alt=""></div>
+      card.innerHTML = `<div class="dport"><div class="arch dic"><img src="${imgUrl('ui/ic/diffc_' + i + '.webp')}" alt=""></div>
           <div class="dname">${d.name}</div>
           ${best ? `<div class="dbest"><img src="${SC()}" alt="">${fmt(best)}</div>` : ''}
         </div>
-        ${unlocked ? '' : `<div class="dlock"><img src="${iconUrl(glyphIcon('skulllock', { size: 96, bg: PALETTE.lock, frame: 'dark' }))}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}
+        ${unlocked ? '' : `<div class="dlock"><img src="${bareGlyphUrl('lock', 72)}" alt=""><span>Откроется после победы на сложности «${D.DIFFS[Math.max(0, i - 1)].name}»</span></div>`}
         <div class="dbody"><div class="dsub">Испытания</div>${rows}<div class="dsub">Лучшие на этом рубеже</div><div class="dtop">${'<div class="skel"></div>'.repeat(3)}</div></div>
         `;
       const foot = el('div', 'dfoot', '<button class="btn big play">Играть</button>');           // кнопка стоит под плитой, а не поверх прокручиваемого текста
@@ -410,7 +410,7 @@ export class Menus {
     const sb = $('#lo-slots'); sb.innerHTML = '';
     for (let i = 0; i < D.SLOT_MAX; i++) {
       const t = lo.sel[i];
-      if (i >= lo.slots) { const b = el('button', 'los lock', `<img src="${iconUrl(glyphIcon('skulllock', { size: 64, bg: PALETTE.lock, frame: 'dark' }))}" alt="">`); b.onclick = () => { shake(b); c.openForge(); }; sb.appendChild(b); }
+      if (i >= lo.slots) { const b = el('button', 'los lock', `<img src="${bareGlyphUrl('lock', 48)}" alt="">`); b.onclick = () => { shake(b); c.openForge(); }; sb.appendChild(b); }
       else if (t) { const b = el('button', 'los full', `<img src="${icon(t)}" alt=""><small>${nameOf(t)}</small>`); b.onclick = () => { c.sfx.play('click'); lo.sel.splice(i, 1); this.refreshLoadout(); }; sb.appendChild(b); }
       else sb.appendChild(el('div', 'los empty', '+'));
     }
@@ -421,7 +421,7 @@ export class Menus {
       const g = el('div', 'lo-cards');
       for (const t of list) {
         const isOpen = open(t), idx = lo.sel.indexOf(t), cost = D.TOWERS[t] ? D.TOWERS[t].cost : D.ECON[t].cost, prem = D.isPremium(t);
-        const b = el('button', 'loc' + (isOpen ? '' : ' locked') + (idx >= 0 ? ' on' : '') + (lo.info === t ? ' info' : ''), `<img class="ci" src="${icon(t)}" alt=""><div class="cn">${nameOf(t)}</div><div class="cc">${!isOpen && prem ? `${gemIc(14)}<span>${D.PREMIUM[t].gems}</span>` : `<img src="${bareGlyphUrl('coins', 14)}" alt=""><span>${cost}</span>`}</div>${prem ? '<i class="crn"></i>' : ''}${isOpen ? `<i class="chk${idx >= 0 ? ' on' : ''}"></i>` : ''}${isOpen ? '' : `<div class="lk"><img src="${iconUrl(glyphIcon('skulllock', { size: 64, bg: PALETTE.lock, frame: 'dark' }))}" alt=""></div>`}`);
+        const b = el('button', 'loc' + (isOpen ? '' : ' locked') + (idx >= 0 ? ' on' : '') + (lo.info === t ? ' info' : ''), `<img class="ci" src="${icon(t)}" alt=""><div class="cn">${nameOf(t)}</div><div class="cc">${!isOpen && prem ? `${gemIc(14)}<span>${D.PREMIUM[t].gems}</span>` : `<img src="${bareGlyphUrl('coins', 14)}" alt=""><span>${cost}</span>`}</div>${prem ? '<i class="crn"></i>' : ''}${isOpen ? `<i class="chk${idx >= 0 ? ' on' : ''}"></i>` : ''}${isOpen ? '' : `<div class="lk"><img src="${bareGlyphUrl('lock', 48)}" alt=""></div>`}`);
         b.onclick = () => {
           lo.info = t;
           if (!isOpen) { shake(b); this.refreshLoadout(); return; }
