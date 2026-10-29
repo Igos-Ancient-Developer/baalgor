@@ -1233,6 +1233,17 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .dcard.locked .dport .arch.dic img { filter: grayscale(1) brightness(.5) drop-shadow(0 3px 4px rgba(0,0,0,.8)); }
 .dcard .dname { font-size: 25px; margin-top: 4px; margin-bottom: 4px; }
 .dcol .dfoot .btn.play { min-height: 36px; height: 38px; padding-top: 0; padding-bottom: 0; font-size: 18px; }
-/* названия сложностей: шрифт в духе Diablo 2 (Forum — ближайший свободный с кириллицей), мельче */
-.dcard .dname, .ps-d b { font-family: 'Forum', var(--gothic); font-size: 19px; letter-spacing: .08em; -webkit-text-stroke: .5px currentColor; }
-.ps-d b { font-size: 16px; }
+/* названия сложностей: шрифт Diablo (DiabloFont, fonts/diablo.ttf, с ofont.ru), мельче прежнего, с цветным свечением */
+.dcard .dname, .ps-d b { font-family: 'DiabloFont', var(--gothic); font-size: 24px; letter-spacing: .05em; -webkit-text-stroke: 0; text-shadow: 0 2px 0 #000, 0 0 3px #000, 0 0 14px var(--c, var(--dc, #ff5a3a)); }
+.ps-d b { font-size: 20px; }
+
+/* ───── единый размер кнопок: у всех плит-кнопок одна высота и один шрифт (кроме плиты «Рейтинговый забег» с руками и значков) ───── */
+:root { --btn-h: 46px; }
+.stn:not(.ranked), .btn, .fbuy {
+  box-sizing: border-box !important; height: var(--btn-h) !important; min-height: var(--btn-h) !important; max-height: var(--btn-h) !important;
+  border-width: 11px !important; border-image-width: 11px !important; padding: 0 12px !important; font-size: 17px !important; line-height: 1 !important; letter-spacing: .05em;
+  display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
+}
+.stn:not(.ranked) span, .btn span { font-size: inherit !important; }
+.stn-grid .stn, .langgrid .stn, #moremenu .stn, .title-aux .stn, .dfoot .btn, .dcol .dfoot .btn.play, .chcard .chb, .btn.tb-forge, .btn.perf, .stn.small { height: var(--btn-h) !important; min-height: var(--btn-h) !important; font-size: 17px !important; }
+.btn.tb-forge { width: auto; padding: 0 14px !important; }

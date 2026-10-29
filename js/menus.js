@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029210603';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029210603';
-import * as D from './data.js?v=20261029210603';
-import * as M from './meta.js?v=20261029210603';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029210603';
-import { url as imgUrl } from './sprites.js?v=20261029210603';
-import { Net } from './net.js?v=20261029210603';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029210603';
-import { fillPlates, gemIc } from './res.js?v=20261029210603';
-import { gemHtml } from './gem3d.js?v=20261029210603';
-import { Wallet } from './wallet.js?v=20261029210603';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029211930';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029211930';
+import * as D from './data.js?v=20261029211930';
+import * as M from './meta.js?v=20261029211930';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029211930';
+import { url as imgUrl } from './sprites.js?v=20261029211930';
+import { Net } from './net.js?v=20261029211930';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029211930';
+import { fillPlates, gemIc } from './res.js?v=20261029211930';
+import { gemHtml } from './gem3d.js?v=20261029211930';
+import { Wallet } from './wallet.js?v=20261029211930';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -260,14 +260,10 @@ export class Menus {
       if (!Net.enabled) tb.innerHTML = '<div class="trow empty">Нет связи</div>';
       else if (!data.loaded) tb.innerHTML = '<div class="skel"></div>'.repeat(3);
       else { tb.innerHTML = ''; for (let k = 0; k < 3; k++) { const r = data.top && data.top[k]; if (!r) { tb.appendChild(el('div', 'trow empty', '—')); continue; } tb.appendChild(runRow({ ...r, rank: k + 1 }, 'trow', ctx)); } }
-      // друзья
-      const fb = card.querySelector('.lvp-fr'), fr = data.friends;
-      if (!Net.enabled || !Net.canSubmit()) fb.innerHTML = '<div class="trow empty">Друзья доступны в Telegram</div>';
-      else if (!data.loaded) fb.innerHTML = '<div class="skel"></div>'.repeat(2);
-      else if (!fr || fr.length < 2) { fb.innerHTML = '<div class="lvp-hint">Здесь будут твои друзья и твоё место среди них. Пригласить друга можно в настройках.</div>'; }
-      else {
-        fr.slice(0, 6).forEach((r, k) => fb.appendChild(runRow({ ...r, rank: k + 1 }, 'trow', ctx)));
-      }
+      // друзья: раздел показывается только когда в эту игру уже играют твои контакты (в списке кроме тебя есть хотя бы один друг)
+      const fb = card.querySelector('.lvp-fr'), fh = fb.previousElementSibling, fr = data.friends, has = Net.enabled && Net.canSubmit() && data.loaded && fr && fr.length >= 2;
+      fh.style.display = fb.style.display = has ? '' : 'none';
+      if (has) { fb.innerHTML = ''; fr.slice(0, 6).forEach((r, k) => fb.appendChild(runRow({ ...r, rank: k + 1 }, 'trow', ctx))); }
       place(false);
     };
     const load = () => {

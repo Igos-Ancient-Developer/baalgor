@@ -1,11 +1,11 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261029210603';
-import * as A from './art.js?v=20261029210603';
-import { uiIcon } from './env.js?v=20261029210603';
-import { SPR, img } from './sprites.js?v=20261029210603';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261029210603';
-import { glyphIcon, spriteIcon, cutIcon, iconUrl, bareGlyph, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261029210603';
-import { TARGET_MODES } from './sim.js?v=20261029210603';
+import * as D from './data.js?v=20261029211930';
+import * as A from './art.js?v=20261029211930';
+import { uiIcon } from './env.js?v=20261029211930';
+import { SPR, img } from './sprites.js?v=20261029211930';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261029211930';
+import { glyphIcon, spriteIcon, cutIcon, iconUrl, bareGlyph, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261029211930';
+import { TARGET_MODES } from './sim.js?v=20261029211930';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
