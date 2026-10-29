@@ -1222,3 +1222,7 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 /* покупка сундуков за Stars: отдельной строкой под ценами в душах и кристаллах */
 .chcard .chbtns { flex-wrap: wrap; }
 .chcard .chb.star { flex: 1 1 100%; min-height: 36px; font-size: 15px; letter-spacing: .02em; }
+
+/* шансы сундука: переключатель «За Stars / За души» */
+.chodds .odt { display: flex; gap: 6px; margin-bottom: 6px; } .chodds .odtab { flex: 1; min-height: 30px; border-radius: 9px; border: 1.5px solid #4a4f54; background: #141617; color: #b9bdc2; font-family: var(--font); font-size: 13px; }
+.chodds .odtab.on { border-color: #e0b040; color: #ffe9a8; background: #2a2210; }

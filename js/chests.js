@@ -2,16 +2,16 @@
 // Деревянный: за души или за немного кристаллов, в основном души. Серебряный: только за кристаллы, в основном кристаллы.
 // Золотой: самый дорогой, лучшая добыча, редкие премиум-башни. Каждая башня — отдельная строка таблицы (js/chesttable.js).
 // Для кристаллов бросок делает сервер (supabase/chests.sql, функция chest_open) — по этой же таблице; здесь бросок нужен для оплаты душами (души хранятся в сохранении) и для локального режима вне Telegram.
-import { gemUrl } from './gem3d.js?v=20261029185306';
-import * as D from './data.js?v=20261029185306';
-import * as M from './meta.js?v=20261029185306';
-import { Net } from './net.js?v=20261029185306';
-import { Wallet } from './wallet.js?v=20261029185306';
-import { towerIcon, econIcon } from './ui.js?v=20261029185306';
-import { iconUrl } from './icons.js?v=20261029185306';
-import { url as imgUrl } from './sprites.js?v=20261029185306';
-import { CHEST_ROWS, POOL_OF, chanceOf, pctText } from './chesttable.js?v=20261029185306';
-import { createChest3D } from './chest3d.js?v=20261029185306';
+import { gemUrl } from './gem3d.js?v=20261029190723';
+import * as D from './data.js?v=20261029190723';
+import * as M from './meta.js?v=20261029190723';
+import { Net } from './net.js?v=20261029190723';
+import { Wallet } from './wallet.js?v=20261029190723';
+import { towerIcon, econIcon } from './ui.js?v=20261029190723';
+import { iconUrl } from './icons.js?v=20261029190723';
+import { url as imgUrl } from './sprites.js?v=20261029190723';
+import { CHEST_ROWS, POOL_OF, chanceOf, pctText, soulRows } from './chesttable.js?v=20261029190723';
+import { createChest3D } from './chest3d.js?v=20261029190723';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -20,21 +20,20 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const META = { wood: { name: 'Деревянный сундук', theme: 'wood', color: '#c98a46' }, silver: { name: 'Серебряный сундук', theme: 'silver', color: '#a9cdee' }, gold: { name: 'Золотой сундук', theme: 'gold', color: '#ffd24a' } };
 export const CHESTS = {};
-for (const k of Object.keys(CHEST_ROWS)) CHESTS[k] = { ...META[k], souls: CHEST_ROWS[k].souls, gems: CHEST_ROWS[k].gems, stars: CHEST_ROWS[k].stars, table: CHEST_ROWS[k].rows.map((r) => (r.t === 'unlock' ? { ...r, pool: POOL_OF[r.id] } : r)) };
+for (const k of Object.keys(CHEST_ROWS)) CHESTS[k] = { ...META[k], souls: CHEST_ROWS[k].souls, stars: CHEST_ROWS[k].stars, stable: soulRows(k).map((r) => (r.t === 'unlock' ? { ...r, pool: POOL_OF[r.id] } : r)), table: CHEST_ROWS[k].rows.map((r) => (r.t === 'unlock' ? { ...r, pool: POOL_OF[r.id] } : r)) };
 export const CHEST_ORDER = ['wood', 'silver', 'gold'];
 
 const rint = (a, b, rnd) => a + Math.floor(rnd() * (b - a + 1));
 const have = (save, id) => (D.isPremium(id) ? !!save.unlocked[id] : M.itemUnlocked(save, id));
 const nameOf = (id) => (D.TOWERS[id] || D.ECON[id]).name;
 
-// повтор: если такое здание уже есть, выдаётся компенсация (деревянный — души, остальные — кристаллы, 40% цены здания)
+// повтор: если такое здание уже есть, выдаётся компенсация душами: 30% цены здания в душах, не меньше 40 (сундуки за Stars: то же делает сервер, см. chest_roll в chests.sql)
 function dupLoot(kind, id, pool) {
-  if (kind === 'wood') return { t: 'souls', n: 120, dup: id, pool };
-  const u = D.unlockOf(id); return { t: 'gems', n: Math.max(5, Math.round(((u && u.gems) || 20) * 0.4)), dup: id, pool };
+  const u = D.unlockOf(id); return { t: 'souls', n: Math.max(40, Math.round(((u && u.souls) || 100) * 0.3)), dup: id, pool };
 }
-// бросок. pay: 'souls' | 'gems'. rnd — Math.random или детерминированный для тестов
+// бросок сундука за души (на клиенте): таблица без премиум-башен и кристаллов (CHESTS[k].stable). rnd — Math.random или детерминированный для тестов
 export function rollChest(kind, pay, save, rnd = Math.random) {
-  const c = CHESTS[kind], rows = c.table.map((r) => (r.gemsOnly && pay === 'souls' ? { w: r.w, t: 'souls', min: 40, max: 89 } : r));
+  const c = CHESTS[kind], rows = c.stable;
   let x = rnd() * rows.reduce((s, r) => s + r.w, 0), row = rows[rows.length - 1];
   for (const r of rows) { if ((x -= r.w) < 0) { row = r; break; } }
   if (row.t === 'unlock') return have(save, row.id) ? dupLoot(kind, row.id, row.pool) : { t: 'unlock', id: row.id, pool: row.pool };
@@ -62,8 +61,9 @@ const lootSub = (l) => (l.dup ? `У тебя уже есть «${nameOf(l.dup)}�
 const winRow = (kind, loot) => CHESTS[kind].table.findIndex((r) => (loot.dup ? r.t === 'unlock' && r.id === loot.dup : loot.t === 'unlock' ? r.t === 'unlock' && r.id === loot.id : loot.t === 'stars' ? r.t === 'stars' : r.t === loot.t && loot.n >= r.min && loot.n <= r.max));
 const rarOf = (kind, loot) => { const i = winRow(kind, loot); return i >= 0 ? rowRar(kind, CHESTS[kind].table[i]) : loot.dup ? 'c' : 'u'; };
 // шансы для показа игроку (карточка сундука в магазине)
-export function oddsOf(kind) {
-  return CHESTS[kind].table.map((r) => [r.t === 'souls' ? `${fmt(r.min)}–${fmt(r.max)} душ` : r.t === 'gems' ? `${fmt(r.min)}–${fmt(r.max)} кристаллов` : r.t === 'stars' ? `${r.min} Telegram Stars` : nameOf(r.id), pctText(chanceOf(kind, r)), rowRar(kind, r), rowPic(r)]);
+export function oddsOf(kind, mode = 'stars') {
+  const rows = mode === 'souls' ? CHESTS[kind].stable : CHESTS[kind].table;
+  return rows.map((r) => [r.t === 'souls' ? `${fmt(r.min)}–${fmt(r.max)} душ` : r.t === 'gems' ? `${fmt(r.min)}–${fmt(r.max)} кристаллов` : r.t === 'stars' ? `${r.min} Telegram Stars` : nameOf(r.id), pctText(chanceOf(kind, r, rows)), rowRar(kind, r), rowPic(r)]);
 }
 
 // три самых редких приза сундука (кроме главного приза Stars): значки для карточки в магазине
@@ -94,26 +94,15 @@ export async function refreshStock(save) {
 // купить n сундуков про запас
 export async function buyChests(save, kind, pay, n) {
   const c = CHESTS[kind]; save.stock = save.stock || {};
-  if (pay === 'souls') {
-    if (!c.souls) return { error: 'bad' };
-    if ((save.souls || 0) < c.souls * n) return { error: 'souls', price: c.souls * n };
-    save.souls -= c.souls * n; save.stock[kind] = (save.stock[kind] || 0) + n; Wallet.onChange(); return { ok: true };
-  }
-  if (Wallet.online) {
-    try {
-      const r = await Net.call('chest_buy', { init_data: Net.initData(), p: { kind, n } });
-      if (r && r.ok) { Wallet.apply(r); if (r.chests) save.chestsSrv = r.chests; Wallet.onChange(); return { ok: true }; }
-      return r || { error: 'net' };
-    } catch (e) { return { error: 'net' }; }
-  }
-  if ((save.gems || 0) < c.gems * n) return { error: 'gems', price: c.gems * n };
-  save.gems -= c.gems * n; save.stock[kind] = (save.stock[kind] || 0) + n; Wallet.onChange(); return { ok: true };
+  if (pay !== 'souls' || !c.souls) return { error: 'bad' };                          // за кристаллы сундуки больше не продаются: только души или Stars (Wallet.buyChest)
+  if ((save.souls || 0) < c.souls * n) return { error: 'souls', price: c.souls * n };
+  save.souls -= c.souls * n; save.stock[kind] = (save.stock[kind] || 0) + n; Wallet.onChange(); return { ok: true };
 }
 // открыть n сундуков со склада: сначала купленные за души (бросок на клиенте), затем кристальные (бросок на сервере)
 export async function openChests(save, kind, n) {
   save.stock = save.stock || {}; const loots = []; let left = Math.min(n, stockOf(save, kind));
   const local = Math.min(left, save.stock[kind] || 0);
-  for (let i = 0; i < local; i++) { const l = rollChest(kind, Wallet.online ? 'souls' : 'gems', save); applyLoot(save, l); loots.push(l); }
+  for (let i = 0; i < local; i++) { const l = rollChest(kind, 'souls', save); applyLoot(save, l); loots.push(l); }
   save.stock[kind] = (save.stock[kind] || 0) - local; left -= local;
   if (left > 0) {
     const owned = Object.keys(save.unlocked || {}).filter((id) => save.unlocked[id]);

@@ -1,13 +1,13 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261029185306';
-import { Wallet } from './wallet.js?v=20261029185306';
-import { fillPlates, gemIc } from './res.js?v=20261029185306';
-import { towerIcon } from './ui.js?v=20261029185306';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261029185306';
-import { SHOP_IMG } from './iconmap.js?v=20261029185306';
-import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, oddsOf, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest, freeChestIn } from './chests.js?v=20261029185306';
+import * as D from './data.js?v=20261029190723';
+import { Wallet } from './wallet.js?v=20261029190723';
+import { fillPlates, gemIc } from './res.js?v=20261029190723';
+import { towerIcon } from './ui.js?v=20261029190723';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261029190723';
+import { SHOP_IMG } from './iconmap.js?v=20261029190723';
+import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, oddsOf, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest, freeChestIn } from './chests.js?v=20261029190723';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
 
 const $ = (s) => document.querySelector(s);
@@ -63,7 +63,6 @@ export function renderShop(save, ctrl, redraw) {
     const prices = [];
     const setQ = (q) => { q = Math.max(1, Math.min(50, q)); ctrl._chestQty[kind] = q; num.textContent = q; dec.disabled = q <= 1; inc.disabled = q >= 50; prices.forEach(([b, v, ic]) => { b.innerHTML = `${ic}${fmt(v * q)}`; }); };
     if (c.souls) { const b = el('button', 'btn chb'); b.onclick = async () => { b.disabled = true; afterBuy(await buyChests(save, kind, 'souls', ctrl._chestQty[kind]), b); b.disabled = false; }; prices.push([b, c.souls, `<img src="${bareGlyphUrl('soul', 22)}" alt="">`]); buy.appendChild(b); }
-    { const b = el('button', 'btn chb gem'); b.onclick = async () => { b.disabled = true; afterBuy(await buyChests(save, kind, 'gems', ctrl._chestQty[kind]), b); b.disabled = false; }; prices.push([b, c.gems, gemIc(22)]); buy.appendChild(b); }
     if (c.stars) { const b = el('button', 'btn chb star'); b.onclick = async () => {                    // за Telegram Stars: счёт на выбранное количество, сундуки сразу ложатся на склад
         b.disabled = true; const q = ctrl._chestQty[kind] || 1;
         const r = await Wallet.buyChest(kind, q, async () => { await refreshStock(save); return stockOf(save, kind); });
@@ -76,7 +75,10 @@ export function renderShop(save, ctrl, redraw) {
     o1.onclick = () => openLoop(kind);
     if (have) op.appendChild(o1);
     card.append(buy); if (have) card.append(op);
-    const odds = el('div', 'chodds hidden'); odds.innerHTML = oddsOf(kind).map(([t, p, r, pic]) => `<div class="od r-${r}"><img src="${pic}" alt=""><span>${t}</span><b>${p}%</b></div>`).join('');
+    const odds = el('div', 'chodds hidden'), oddsList = el('div', 'odl'), tabs = el('div', 'odt');          // шансы: две таблицы, за Stars и за души (они разные)
+    const showOdds = (mode) => { oddsList.innerHTML = oddsOf(kind, mode).map(([t, p, r, pic]) => `<div class="od r-${r}"><img src="${pic}" alt=""><span>${t}</span><b>${p}%</b></div>`).join(''); [...tabs.children].forEach((x) => x.classList.toggle('on', x.dataset.m === mode)); };
+    for (const [m, t] of [['stars', '⭐ За Stars'], ['souls', 'За души']]) { const x = el('button', 'odtab', t); x.dataset.m = m; x.onclick = (e) => { e.stopPropagation(); ctrl.sfx.play('click'); showOdds(m); }; tabs.appendChild(x); }
+    odds.append(tabs, oddsList); showOdds('stars');
     card.querySelector('.chart').onclick = () => { odds.classList.toggle('hidden'); ctrl.sfx.play('click'); };       // шансы: по нажатию на сам сундук
     card.append(odds); cg.appendChild(card);
   }
