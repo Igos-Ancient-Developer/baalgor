@@ -1271,13 +1271,13 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .lvp-t b { font-size: 17px !important; }
 #lo-title { font-size: 14px !important; line-height: 1.05; }
 
-/* Кузница: карточки зданий и премиум-башен — крупная иконка слева, под ней кнопки покупки, справа название и описание */
-.frow.bld { display: grid; grid-template-columns: 104px minmax(0, 1fr); grid-template-areas: "i t" "b t"; column-gap: 14px; row-gap: 8px; align-items: start; padding: 12px; }
-.frow.bld .fi { grid-area: i; width: 104px; height: 104px; border-radius: 14px; object-fit: contain; }
+/* Кузница: карточки зданий и премиум-башен — крупная иконка слева, справа название и описание, внизу на всю ширину ряд кнопок покупки одинакового размера */
+.frow.bld { display: grid; grid-template-columns: 92px minmax(0, 1fr); grid-template-areas: "i t" "b b"; column-gap: 14px; row-gap: 12px; align-items: center; padding: 14px; }
+.frow.bld .fi { grid-area: i; width: 92px; height: 92px; border-radius: 14px; object-fit: contain; }
 .frow.bld .ft { grid-area: t; align-self: center; }
-.frow.bld .fn { font-size: 18px; line-height: 1.15; margin-bottom: 6px; }
+.frow.bld .fn { font-size: 18px; line-height: 1.15; margin-bottom: 5px; }
 .frow.bld .fd { font-size: 13px; line-height: 1.4; margin: 0; color: #c4b8b0; }
 .frow.bld > .fbuy, .frow.bld .fbuys { grid-area: b; width: 100%; }
-.frow.bld .fbuys { display: flex; flex-direction: column; gap: 6px; }
-.frow.bld .fbuy { width: 100%; min-width: 0; height: 36px; padding: 0 6px; font-size: 15px; box-sizing: border-box; }
-.frow.bld.max .fbuy { height: 32px; }
+.frow.bld .fbuys { display: flex; flex-direction: row; gap: 10px; }
+.frow.bld .fbuy { flex: 1 1 0; min-width: 0; height: 40px; padding: 0 8px; font-size: 16px; box-sizing: border-box; border-radius: 11px; }
+.frow.bld > .fbuy { height: 34px; flex: none; }

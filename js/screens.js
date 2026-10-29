@@ -1,13 +1,13 @@
 // Экраны меню: Кузница душ и Достижения (иконки в стиле WC3).
-import * as D from './data.js?v=20261029214002';
-import { uiIcon } from './env.js?v=20261029214002';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261029214002';
-import { towerIcon, econIcon } from './ui.js?v=20261029214002';
-import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261029214002';
-import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261029214002';
-import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261029214002';
-import { url as imgUrl } from './sprites.js?v=20261029214002';
-import { Wallet } from './wallet.js?v=20261029214002';
+import * as D from './data.js?v=20261029214128';
+import { uiIcon } from './env.js?v=20261029214128';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261029214128';
+import { towerIcon, econIcon } from './ui.js?v=20261029214128';
+import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261029214128';
+import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261029214128';
+import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261029214128';
+import { url as imgUrl } from './sprites.js?v=20261029214128';
+import { Wallet } from './wallet.js?v=20261029214128';
 
 const PERK_FILE = { treasury: 'treasury', fortress: 'fortress', taxes: 'taxes', temper: 'temper', aim: 'aim', merchant: 'merchant', builder: 'luck', spells: 'spells', rhythm: 'rhythm', caller: 'caller' };      // файл иконки каждого дара (img/ui/ic/perk_<файл>.webp); «Бережливость» — рука с монетой
 const $ = (s) => document.querySelector(s);
@@ -58,7 +58,7 @@ export function renderForge(save, sfx, onChange, openShop) {
     const icon = D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 1);
     const row = el('div', 'frow bld' + (open ? ' max' : ''));
     row.innerHTML = `<img class="fi" src="${iconUrl(icon)}" alt=""><div class="ft"><div class="fn">${d.name}</div><div class="fd">${d.short}</div></div>`;
-    if (open) row.appendChild(el('div', 'fbuy', '✓'));
+    if (open) row.appendChild(el('div', 'fbuy', '✓ Открыто'));
     else {
       const box = el('div', 'fbuys');
       const b1 = el('button', 'fbuy' + (save.souls < u.souls ? ' poor' : ''), `${SOUL(18)}${u.souls}`);
@@ -77,7 +77,7 @@ export function renderForge(save, sfx, onChange, openShop) {
   for (const id of D.PREMIUM_ORDER) {
     const d = D.TOWERS[id], own = !!save.unlocked[id], row = el('div', 'frow bld' + (own ? ' max' : ''));
     row.innerHTML = `<img class="fi" src="${iconUrl(towerIcon(id, 1, null, null))}" alt=""><div class="ft"><div class="fn">${d.name}</div><div class="fd">${d.short}</div></div>`;
-    if (own) row.appendChild(el('div', 'fbuy', '✓')); else { const b = el('button', 'fbuy gem' + ((save.gems || 0) < D.PREMIUM[id].gems ? ' poor' : ''), `${GEM()}${D.PREMIUM[id].gems}`); b.onclick = async () => { const r = await Wallet.spend('unlock', id, D.PREMIUM[id].gems); if (r && r.ok) { sfx.play('win'); onChange(); } else { fail(b); if (r && r.error === 'gems') openShop && setTimeout(openShop, 400); } }; row.appendChild(b); }
+    if (own) row.appendChild(el('div', 'fbuy', '✓ Куплено')); else { const b = el('button', 'fbuy gem' + ((save.gems || 0) < D.PREMIUM[id].gems ? ' poor' : ''), `${GEM()}${D.PREMIUM[id].gems}`); b.onclick = async () => { const r = await Wallet.spend('unlock', id, D.PREMIUM[id].gems); if (r && r.ok) { sfx.play('win'); onChange(); } else { fail(b); if (r && r.error === 'gems') openShop && setTimeout(openShop, 400); } }; row.appendChild(b); }
     pb.appendChild(row);
   }
 }
