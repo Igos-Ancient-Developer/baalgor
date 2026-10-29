@@ -1,8 +1,8 @@
 // Кошелёк донат-кристаллов. В Telegram баланс, покупки и цены живут на сервере (supabase/schema.sql), клиент только показывает.
 // Вне Telegram (обычный браузер) работает локальный режим для разработки: траты считаются в сохранении, пополнение только с ?debug.
-import * as D from './data.js?v=20261029213125';
-import { Net } from './net.js?v=20261029213125';
-import { TG } from './tg.js?v=20261029213125';
+import * as D from './data.js?v=20261029213640';
+import { Net } from './net.js?v=20261029213640';
+import { TG } from './tg.js?v=20261029213640';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const debug = () => location.search.includes('debug');
@@ -67,6 +67,14 @@ export const Wallet = {
     }
     s.souls = (s.souls || 0) + W.souls; s.gems = (s.gems || 0) + W.gems; this.onChange(); return { ok: true, ...W };
   },
+  // ссылки на счета создаём заранее, когда игрок открыл магазин: создание идёт через сервер (функция + база + Telegram) и занимает секунды, а ссылка многоразовая.
+  // Хранится только в памяти: после перезапуска игры создаётся заново, чтобы не попасть на старую цену.
+  prefetchInvoices() {
+    if (!this.online) return; const s = this.save, ids = D.PACKS.map((p) => p.id); if (!s.starterBought) ids.push('starter');
+    this._inv ||= {}; const todo = ids.filter((id) => !this._inv[id] && !(this._pend ||= {})[id]);
+    const run = async () => { for (let id; (id = todo.shift());) { this._pend[id] = 1; try { const r = await Net.invoice(id); if (r && r.link) this._inv[id] = r.link; } catch (e) { /* без связи */ } delete this._pend[id]; } };
+    run(); run(); run();                                                   // три потока: все семь счетов за пару секунд
+  },
   // пакет за Stars: открывает счёт Telegram, после оплаты ждёт начисления от вебхука
   async buy(pack) {
     const s = this.save, id = pack.id || pack;
@@ -77,9 +85,9 @@ export const Wallet = {
       else { const first = !(s.packs || []).includes(id); s.gems += pk.gems * (first ? D.FIRST_BONUS : 1); if (first) s.packs.push(id); }
       this.onChange(); return { status: 'paid' };
     }
-    const inv = await Net.invoice(id);
-    if (!inv || !inv.link) return { error: inv && inv.error || 'net' };
-    const status = await new Promise((res) => { try { TG.tg.openInvoice(inv.link, res); } catch (e) { res('failed'); } });
+    let link = (this._inv || {})[id];                                      // ссылка на счёт уже создана заранее (prefetchInvoices): окно оплаты открывается сразу
+    if (!link) { const inv = await Net.invoice(id); if (!inv || !inv.link) return { error: inv && inv.error || 'net' }; link = inv.link; (this._inv ||= {})[id] = link; }
+    const status = await new Promise((res) => { try { TG.tg.openInvoice(link, res); } catch (e) { res('failed'); } });
     if (status !== 'paid') return { status };
     for (let i = 0; i < 10; i++) { const before = s.gems; await new Promise((r) => setTimeout(r, 1200)); const w = await this.sync(); if (w && (w.gems > before || w.starter !== undefined && id === 'starter' && w.starter)) break; }   // вебхук может прийти с задержкой
     return { status: 'paid' };

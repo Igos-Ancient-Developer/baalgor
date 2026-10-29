@@ -1,7 +1,7 @@
 // Пакет иконок в «рисованном» стиле Warcraft 3: квадрат с бронзовой фаской, насыщенный фон, жирный контур, глянец.
 // Всё рисуется кодом; иконки кэшируются в canvas и dataURL.
-import { OUT, S as ART_S, mk, cached, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow } from './art.js?v=20261029213125';
-import { GLYPH_IMG, tile, inner } from './iconmap.js?v=20261029213125';
+import { OUT, S as ART_S, mk, cached, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow } from './art.js?v=20261029213640';
+import { GLYPH_IMG, tile, inner } from './iconmap.js?v=20261029213640';
 
 const T2 = Math.PI * 2;
 export const PALETTE = {

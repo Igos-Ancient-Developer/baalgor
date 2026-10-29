@@ -1239,7 +1239,7 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 
 /* ───── единый размер кнопок: у всех плит-кнопок одна высота и один шрифт (кроме плиты «Рейтинговый забег» с руками и значков) ───── */
 :root { --btn-h: 46px; }
-.stn:not(.ranked), .btn, .fbuy {
+.stn:not(.ranked), .btn:not(.buy), .btn.big.buy {
   box-sizing: border-box !important; height: var(--btn-h) !important; min-height: var(--btn-h) !important; max-height: var(--btn-h) !important;
   border-width: 11px !important; border-image-width: 11px !important; padding: 0 12px !important; font-size: 17px !important; line-height: 1 !important; letter-spacing: .05em;
   display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
