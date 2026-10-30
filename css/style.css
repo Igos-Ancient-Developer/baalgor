@@ -1325,3 +1325,7 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .sh-card, .chcard, .pcard, .frow, .krow, .ach, .ach-row, .arow, .brow, .trow { content-visibility: visible; contain-intrinsic-size: none; }
 .rmore .rdiff { display: flex; justify-content: flex-start; padding-bottom: 7px; }
 .rmore .rdiff .dchip { margin-left: 0; }
+
+/* сложность — просто значок и название, без плашки */
+.dchip { padding: 0; border: 0; background: none; border-radius: 0; gap: 5px; }
+.dchip img { width: 20px; height: 20px; }

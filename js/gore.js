@@ -1,9 +1,9 @@
 // Расчленёнка, кровь и частицы. Подписывается на события симуляции и рисует в постоянный «слой крови».
-import { tr } from './i18n.js?v=20261030220754';
-import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261030220754';
-import { S as ART_S } from './art.js?v=20261030220754';
-import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261030220754';
-import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261030220754';
+import { tr } from './i18n.js?v=20261030220903';
+import { WORLD_W, WORLD_H, CELL, ENEMIES } from './data.js?v=20261030220903';
+import { S as ART_S } from './art.js?v=20261030220903';
+import { BLOOD, gibSprite, gibKinds, enemyFrame, tinted, ENEMY_ART } from './enemies.js?v=20261030220903';
+import { splatSprite, poolSprite, scorchSprite, iceSprite, glowSprite, smokeSprite, shardSprite, coinSprite } from './env.js?v=20261030220903';
 
 const GRAV = 560;
 const LAYERS = 3, SPAN = 6, HOLD = 6, FADE = 5;   // секунд игрового времени
