@@ -1,13 +1,13 @@
 // Экраны меню: Кузница душ и Достижения (иконки в стиле WC3).
-import * as D from './data.js?v=20261030220903';
-import { uiIcon } from './env.js?v=20261030220903';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261030220903';
-import { towerIcon, econIcon } from './ui.js?v=20261030220903';
-import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261030220903';
-import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261030220903';
-import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261030220903';
-import { url as imgUrl } from './sprites.js?v=20261030220903';
-import { Wallet } from './wallet.js?v=20261030220903';
+import * as D from './data.js?v=20261030221758';
+import { uiIcon } from './env.js?v=20261030221758';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE, PERK_GLYPH, ACH_GLYPH } from './icons.js?v=20261030221758';
+import { towerIcon, econIcon } from './ui.js?v=20261030221758';
+import { PERKS, perkCost, buyPerk, ACH, itemUnlocked, unlockItem, slotsOf, buySlot } from './meta.js?v=20261030221758';
+import { fillPlates, trophyPlate, gemIc } from './res.js?v=20261030221758';
+import { ACH_IMG, SHOP_IMG } from './iconmap.js?v=20261030221758';
+import { url as imgUrl } from './sprites.js?v=20261030221758';
+import { Wallet } from './wallet.js?v=20261030221758';
 
 const PERK_FILE = { treasury: 'treasury', fortress: 'fortress', taxes: 'taxes', temper: 'temper', aim: 'aim', merchant: 'merchant', builder: 'luck', spells: 'spells', rhythm: 'rhythm', caller: 'caller' };      // файл иконки каждого дара (img/ui/ic/perk_<файл>.webp); «Бережливость» — рука с монетой
 const $ = (s) => document.querySelector(s);

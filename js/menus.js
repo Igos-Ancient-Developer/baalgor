@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261030220903';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261030220903';
-import * as D from './data.js?v=20261030220903';
-import * as M from './meta.js?v=20261030220903';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261030220903';
-import { url as imgUrl } from './sprites.js?v=20261030220903';
-import { Net } from './net.js?v=20261030220903';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261030220903';
-import { fillPlates, gemIc } from './res.js?v=20261030220903';
-import { gemHtml } from './gem3d.js?v=20261030220903';
-import { Wallet } from './wallet.js?v=20261030220903';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261030221758';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261030221758';
+import * as D from './data.js?v=20261030221758';
+import * as M from './meta.js?v=20261030221758';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261030221758';
+import { url as imgUrl } from './sprites.js?v=20261030221758';
+import { Net } from './net.js?v=20261030221758';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261030221758';
+import { fillPlates, gemIc } from './res.js?v=20261030221758';
+import { gemHtml } from './gem3d.js?v=20261030221758';
+import { Wallet } from './wallet.js?v=20261030221758';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -42,6 +42,7 @@ const ROADS = {
   'h2>h3': [[1060, 113], [1105, 100], [1135, 85], [1148, 74]],
 };
 const SC = () => imgUrl('ui/score.webp');
+const tileUrl = (g, n = 72) => iconUrl(glyphIcon(g, { size: n }));      // готовая плитка значка: ровные края, без вырезки
 const lvName = (lv) => (D.CAMPAIGN[lv - 1] || {}).name || '';
 // значок и название сложности (рядом с результатом и в таблицах: видно, на какой сложности он набран)
 const diffIc = (i) => new URL(`../img/ui/ic/diff_${i}.webp`, import.meta.url).href;
@@ -67,7 +68,7 @@ export function runRow(r, cls = 'brow', ctx = null) {
   const arrow = el('button', 'rarr', '<i></i>'); arrow.setAttribute('aria-label', 'Подробнее'); d.appendChild(arrow);
   const items = String(r.loadout || '').split(',').filter((t) => D.TOWERS[t] || D.ECON[t]);
   const more = el('div', 'rmore', `${D.DIFFS[dfi] ? `<div class="rdiff">${diffChip(dfi)}</div>` : ''}<div class="rslots">${items.length ? items.map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 1))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('') : '<span class="rnone">набор неизвестен</span>'}</div>
-    <div class="rinfo">${r.lv ? `<div class="rl"><b>${r.lv}</b><small>${lvName(r.lv)}</small></div>` : `<div class="rl${ctx && ctx.total && r.wave >= ctx.total ? ' full' : ''}"><b>${r.wave || '–'}${ctx && ctx.total ? `/${ctx.total}` : ''}</b><small>волн пройдено</small></div>`}<div class="rt"><img src="${bareGlyphUrl('hourglass', 18)}" alt="">${r.duration ? clock(r.duration) : '—'}<small>${r.lv ? 'время забега' : 'время'}</small></div></div>`);
+    <div class="rinfo">${r.lv ? `<div class="rl"><b>${r.lv}</b><small>${lvName(r.lv)}</small></div>` : `<div class="rl${ctx && ctx.total && r.wave >= ctx.total ? ' full' : ''}"><b>${r.wave || '–'}${ctx && ctx.total ? `/${ctx.total}` : ''}</b><small>волн пройдено</small></div>`}<div class="rt"><img src="${tileUrl('hourglass')}" alt="">${r.duration ? clock(r.duration) : '—'}<small>${r.lv ? 'время забега' : 'время'}</small></div></div>`);
   arrow.onclick = () => { box.classList.toggle('open'); };
   box.append(d, more); return box;
 }
@@ -357,14 +358,14 @@ export class Menus {
   openRanked() {
     const c = this.c, s = this.save, body = $('#rankedbody'), seq = ++this.diffSeq;
     const d = D.DIFFS[4], n = D.CAMPAIGN.length;
-    const row = (icon, t, sm, v, cls = 'neutral') => `<div class="mrow ${cls}"><img src="${bareGlyphUrl(icon, 24)}" alt=""><div class="mt">${t}${sm ? `<small>${sm}</small>` : ''}</div><b>${v}</b></div>`;
+    const row = (icon, t, sm, v, cls = 'neutral') => `<div class="mrow ${cls}"><img src="${tileUrl(icon)}" alt=""><div class="mt">${t}${sm ? `<small>${sm}</small>` : ''}</div><b>${v}</b></div>`;
     const best = s.rank && s.rank.lv ? s.rank : null;
     const slotsHtml = best && best.loadout ? best.loadout.split(',').filter((t) => D.TOWERS[t] || D.ECON[t]).map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 1))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('') : '';
     const bestHtml = best ? `<div class="rk-best"><div class="bt">Твой лучший забег</div><div class="rkb">
         <div class="lvrow"><b class="big">${best.lv}</b><span>уровень<b>${lvName(best.lv)}</b></span></div>
-        <div class="two"><div><img src="${bareGlyphUrl('hourglass', 26)}" alt=""><span>время забега<b>${clock(best.time)}</b></span></div><div><img src="${SC()}" alt=""><span>очки<b>${fmt(best.score)}</b></span></div></div>
+        <div class="two"><div><img src="${tileUrl('hourglass')}" alt=""><span>время забега<b>${clock(best.time)}</b></span></div><div><img src="${SC()}" alt=""><span>очки<b>${fmt(best.score)}</b></span></div></div>
         ${slotsHtml ? `<div class="slots">${slotsHtml}</div>` : ''}</div>
-        ${best.fast ? `<div class="bf"><img src="${bareGlyphUrl('hourglass', 20)}" alt="">Весь путь пройден за <b>${clock(best.fast)}</b></div>` : ''}<div class="br" id="rk-myrank"></div></div>` : '';
+        ${best.fast ? `<div class="bf"><img src="${tileUrl('hourglass')}" alt="">Весь путь пройден за <b>${clock(best.fast)}</b></div>` : ''}<div class="br" id="rk-myrank"></div></div>` : '';
     body.innerHTML = `<div class="slab rk-slab" style="--c:#b08ad8"><div class="arch"><img src="${imgUrl('ui/icon_skull.webp')}" alt=""></div>
       <h3 class="carve">Один забег — все рубежи</h3><p class="carvep">Весь путь от первого уровня до последнего без остановки. В таблицу попадает самый далёкий уровень, время и очки.</p>
       ${bestHtml}
@@ -373,7 +374,7 @@ export class Menus {
         ${row('skull', 'Сложность', `«${d.name}»: враги крепче ×${x(d.hp)}, быстрее на ${Math.round((d.spd - 1) * 100)}%, орды ×${x(d.horde)}, ${Math.round(d.elite * 100)}% элитных`, '', 'bad').replace('<b></b>', `<b>${d.name}</b>`)}
         ${row('heart', 'Жизнь', 'Один пропущенный враг — забег окончен', '1', 'bad')}
         ${row('coins', 'Золото', 'Из всех источников', '+' + Math.round(d.gold * 100) + '%', 'good')}
-        ${row('star', 'Очки', 'За победу над волной, за сильных врагов и за скорость прохождения уровня. Чем дальше уровень, тем больше очков. Итог каждого уровня умножается на сложность', '×' + x(d.score), 'good').replace('mrow good', 'mrow good tokrow').replace(`<img src="${bareGlyphUrl('star', 24)}" alt="">`, `<img src="${SC()}" alt="" class="scimg">`)}
+        ${row('star', 'Очки', 'За победу над волной, за сильных врагов и за скорость прохождения уровня. Чем дальше уровень, тем больше очков. Итог каждого уровня умножается на сложность', '×' + x(d.score), 'good').replace('mrow good', 'mrow good tokrow').replace(`<img src="${tileUrl('star')}" alt="">`, `<img src="${SC()}" alt="" class="scimg">`)}
         ${row('tower', 'Слоты', 'Перед каждым уровнем собираешь набор из зданий, которые у тебя открыты. Слоты, открытые башни и дары Кузницы — как в обычной игре', M.slotsOf(s), 'neutral')}
         ${row('gem', 'Редкая награда', 'За рейтинговый забег иногда можно выбить кристаллы', '✦', 'good')}
         ${row('fast', 'Ускорение', 'Скорость игры не меняется. Хочешь быстрее и получить бонус золота — вызывай следующую волну раньше срока кнопкой справа сверху', '', 'neutral').replace('<b></b>', '<b>волны</b>')}
@@ -383,7 +384,7 @@ export class Menus {
     $('#rk-go').onclick = () => { c.sfx.play('click'); c.startRun(); };
     $('#rk-board').onclick = () => { c.sfx.play('click'); this.openBoard({ ...RUN, title: 'Рейтинговый забег' }); };
     this.show('#rankedsheet'); $('#rankedsheet').scrollTop = 0;
-    if (best && Net.enabled && Net.me()) Net.levelRank(RUN.level, RUN.diff).then((r) => { const e = $('#rk-myrank'); if (r && e && seq === this.diffSeq) e.innerHTML = `<img src="${bareGlyphUrl('crown', 22)}" alt="">Место в мире: <b>#${r.rank}</b>`; }).catch(() => {});
+    if (best && Net.enabled && Net.me()) Net.levelRank(RUN.level, RUN.diff).then((r) => { const e = $('#rk-myrank'); if (r && e && seq === this.diffSeq) e.innerHTML = `<img src="${tileUrl('crown')}" alt="">Место в мире: <b>#${r.rank}</b>`; }).catch(() => {});
     const box = body.querySelector('.rk-top');
     const fill = (rows) => {
       if (seq !== this.diffSeq) return; box.innerHTML = '';

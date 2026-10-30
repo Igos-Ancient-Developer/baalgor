@@ -1329,3 +1329,22 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 /* сложность — просто значок и название, без плашки */
 .dchip { padding: 0; border: 0; background: none; border-radius: 0; gap: 5px; }
 .dchip img { width: 20px; height: 20px; }
+
+/* рейтинговый забег: значки зданий крупнее, значки правил и плашки — ровные плитки */
+.rkb .slots { display: flex; flex-wrap: nowrap; gap: 6px; justify-content: center; }
+.rkb .slots img { flex: 1 1 0; min-width: 0; max-width: 60px; width: auto; height: auto; aspect-ratio: 1; border-radius: 9px; }
+.rk-slab .rslots, #board .rslots { flex-wrap: nowrap; gap: 6px; }
+.rk-slab .rslots img, #board .rslots img { flex: 1 1 0; min-width: 0; max-width: 56px; width: auto; height: auto; aspect-ratio: 1; border-radius: 9px; }
+.rkb .two img { width: 30px; height: 30px; border-radius: 7px; }
+.rk-best .bf img, .rk-best .br img { width: 22px; height: 22px; border-radius: 5px; }
+.rk-rules .mrow img { width: 30px; height: 30px; border-radius: 7px; margin-top: 0; }
+.rk-rules .mrow img.scimg { width: 30px; height: 30px; }
+.rrow .rt img { width: 16px; height: 16px; border-radius: 4px; }
+/* значки зданий: крупные, по три в ряд — легко узнать каждое */
+.rkb .slots { flex-wrap: wrap; gap: 8px; }
+.rkb .slots img { flex: none; width: 72px; height: 72px; max-width: none; aspect-ratio: auto; border-radius: 11px; }
+.rk-slab .rslots, #board .rslots { flex-wrap: wrap; gap: 8px; }
+.rk-slab .rslots img, #board .rslots img { flex: none; width: 60px; height: 60px; max-width: none; aspect-ratio: auto; border-radius: 10px; }
+.rmore .rdiff { margin: 0; padding: 0 0 8px; background: none; border: 0; border-radius: 0; }
+.rmore .rdiff .dchip img { width: 22px; height: 22px; }
+.rmore .rdiff .dchip b { font-size: 13px; }
