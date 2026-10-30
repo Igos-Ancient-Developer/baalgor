@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261030220604';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261030220604';
-import * as D from './data.js?v=20261030220604';
-import * as M from './meta.js?v=20261030220604';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261030220604';
-import { url as imgUrl } from './sprites.js?v=20261030220604';
-import { Net } from './net.js?v=20261030220604';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261030220604';
-import { fillPlates, gemIc } from './res.js?v=20261030220604';
-import { gemHtml } from './gem3d.js?v=20261030220604';
-import { Wallet } from './wallet.js?v=20261030220604';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261030220754';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261030220754';
+import * as D from './data.js?v=20261030220754';
+import * as M from './meta.js?v=20261030220754';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261030220754';
+import { url as imgUrl } from './sprites.js?v=20261030220754';
+import { Net } from './net.js?v=20261030220754';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261030220754';
+import { fillPlates, gemIc } from './res.js?v=20261030220754';
+import { gemHtml } from './gem3d.js?v=20261030220754';
+import { Wallet } from './wallet.js?v=20261030220754';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -62,12 +62,11 @@ export function runRow(r, cls = 'brow', ctx = null) {
   const meU = Net.me(), box = el('div', 'rwrap' + (r.rank >= 1 && r.rank <= 3 ? ' top' + r.rank : '')), d = el('div', `${cls} rrow` + (meU && r.tg_id === meU.id ? ' me' : ''));
   d.appendChild(el('div', `rk${r.rank <= 3 ? ' r' + r.rank : ''}`, r.rank)); d.appendChild(avatar(r.photo_url || r.photo, r.name, r.tg_id));
   d.appendChild(el('div', 'nm', `${String(r.name).replace(/</g, '&lt;')}${r.username ? `<small>@${r.username}</small>` : ''}`));
-  const dfi = ctx && ctx.dfi != null ? ctx.dfi : r.diff;
-  if (D.DIFFS[dfi]) { const di = el('img', 'dfi'); di.src = diffIc(dfi); di.alt = ''; di.title = D.DIFFS[dfi].name; d.appendChild(di); }
+  const dfi = ctx && ctx.diff != null ? ctx.diff : r.diff;      // сложность этой записи: показывается в раскрытом меню строки
   d.appendChild(el('div', 'rs', r.score || r.wave ? `<img src="${SC()}" alt="">${fmt(r.score)}` : '—'));
   const arrow = el('button', 'rarr', '<i></i>'); arrow.setAttribute('aria-label', 'Подробнее'); d.appendChild(arrow);
   const items = String(r.loadout || '').split(',').filter((t) => D.TOWERS[t] || D.ECON[t]);
-  const more = el('div', 'rmore', `<div class="rslots">${items.length ? items.map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 1))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('') : '<span class="rnone">набор неизвестен</span>'}</div>
+  const more = el('div', 'rmore', `${D.DIFFS[dfi] ? `<div class="rdiff">${diffChip(dfi)}</div>` : ''}<div class="rslots">${items.length ? items.map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 1))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('') : '<span class="rnone">набор неизвестен</span>'}</div>
     <div class="rinfo">${r.lv ? `<div class="rl"><b>${r.lv}</b><small>${lvName(r.lv)}</small></div>` : `<div class="rl${ctx && ctx.total && r.wave >= ctx.total ? ' full' : ''}"><b>${r.wave || '–'}${ctx && ctx.total ? `/${ctx.total}` : ''}</b><small>волн пройдено</small></div>`}<div class="rt"><img src="${bareGlyphUrl('hourglass', 18)}" alt="">${r.duration ? clock(r.duration) : '—'}<small>${r.lv ? 'время забега' : 'время'}</small></div></div>`);
   arrow.onclick = () => { box.classList.toggle('open'); };
   box.append(d, more); return box;
@@ -279,7 +278,7 @@ export class Menus {
         : `<div class="lvp-none">Не пройдено на этой сложности</div>`;
       card.innerHTML = `<div class="lvp-h"><div class="lvp-t"><b>${l.name}</b><small>${SECT[l.sector] || ''} · рубеж ${l.lvl}</small></div></div>
                 <div class="lvp-st">Лучший результат</div>${mine}
-        <div class="lvp-st">Лучшие игроки${diffChip(diff)}</div><div class="lvp-top"></div>
+        <div class="lvp-st">Лучшие игроки</div><div class="lvp-top"></div>
         <div class="lvp-st">Друзья</div><div class="lvp-fr"></div>`;
       // топ-3
       const tb = card.querySelector('.lvp-top');
@@ -388,7 +387,7 @@ export class Menus {
     const box = body.querySelector('.rk-top');
     const fill = (rows) => {
       if (seq !== this.diffSeq) return; box.innerHTML = '';
-      for (let k = 0; k < 3; k++) { const r = rows && rows[k]; if (!r) { box.appendChild(el('div', 'trow empty', '—')); continue; } box.appendChild(runRow({ ...r, rank: k + 1 }, 'trow', { dfi: RUN.diff })); }
+      for (let k = 0; k < 3; k++) { const r = rows && rows[k]; if (!r) { box.appendChild(el('div', 'trow empty', '—')); continue; } box.appendChild(runRow({ ...r, rank: k + 1 }, 'trow', { diff: RUN.diff })); }
     };
     if (!Net.enabled) fill(null); else Net.levelBoard(RUN.level, RUN.diff, 0, 3).then(fill).catch(() => fill(null));
   }
@@ -488,7 +487,7 @@ export class Menus {
       d.appendChild(el('div', 'sc', fmt(r.score))); return d;
     };
     const isRun = spec.level === RUN.level && spec.diff === RUN.diff;
-    const row2 = (r) => (isRun ? runRow(r, 'brow', { dfi: RUN.diff }) : row(r));
+    const row2 = (r) => (isRun ? runRow(r, 'brow', { diff: RUN.diff }) : row(r));
     const empty = (icon) => { list.innerHTML = `<div class="empty-state"><img src="${bareGlyphUrl(icon, 64)}" alt=""></div>`; };
     if (!Net.enabled) { empty('crown'); return; }
     let offset = 0; const LIM = 50;
