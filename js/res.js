@@ -1,6 +1,6 @@
 // Плашки ресурсов: у каждого ресурса своя плашка с круглым значком (как в популярных играх Telegram).
-import { bareGlyphUrl } from './icons.js?v=20261030160142';
-import { gemHtml, startGems } from './gem3d.js?v=20261030160142';
+import { bareGlyphUrl } from './icons.js?v=20261030220604';
+import { gemHtml, startGems } from './gem3d.js?v=20261030220604';
 startGems();
 const fmt = (n) => Math.round(n || 0).toLocaleString('ru-RU');
 

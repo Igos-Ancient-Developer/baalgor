@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261030160142';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261030160142';
-import * as D from './data.js?v=20261030160142';
-import * as M from './meta.js?v=20261030160142';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261030160142';
-import { url as imgUrl } from './sprites.js?v=20261030160142';
-import { Net } from './net.js?v=20261030160142';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261030160142';
-import { fillPlates, gemIc } from './res.js?v=20261030160142';
-import { gemHtml } from './gem3d.js?v=20261030160142';
-import { Wallet } from './wallet.js?v=20261030160142';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261030220604';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261030220604';
+import * as D from './data.js?v=20261030220604';
+import * as M from './meta.js?v=20261030220604';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261030220604';
+import { url as imgUrl } from './sprites.js?v=20261030220604';
+import { Net } from './net.js?v=20261030220604';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261030220604';
+import { fillPlates, gemIc } from './res.js?v=20261030220604';
+import { gemHtml } from './gem3d.js?v=20261030220604';
+import { Wallet } from './wallet.js?v=20261030220604';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -43,6 +43,9 @@ const ROADS = {
 };
 const SC = () => imgUrl('ui/score.webp');
 const lvName = (lv) => (D.CAMPAIGN[lv - 1] || {}).name || '';
+// значок и название сложности (рядом с результатом и в таблицах: видно, на какой сложности он набран)
+const diffIc = (i) => new URL(`../img/ui/ic/diff_${i}.webp`, import.meta.url).href;
+const diffChip = (i) => { const d = D.DIFFS[i]; return d ? `<span class="dchip" style="--dc:${d.color}"><img src="${diffIc(i)}" alt=""><b>${d.name}</b></span>` : ''; };
 export const RUN = { level: 'run', diff: 4 };      // рейтинговый забег хранится в таблице как уровень «run» на сложности «Хардкор»
 // подписи секторов на карте мира (координаты в пикселях картинки)
 const SECTOR_LABELS = { grave: [330, 795], forest: [215, 350], desert: [860, 455], ice: [545, 215], hell: [1055, 238] };
@@ -59,6 +62,8 @@ export function runRow(r, cls = 'brow', ctx = null) {
   const meU = Net.me(), box = el('div', 'rwrap' + (r.rank >= 1 && r.rank <= 3 ? ' top' + r.rank : '')), d = el('div', `${cls} rrow` + (meU && r.tg_id === meU.id ? ' me' : ''));
   d.appendChild(el('div', `rk${r.rank <= 3 ? ' r' + r.rank : ''}`, r.rank)); d.appendChild(avatar(r.photo_url || r.photo, r.name, r.tg_id));
   d.appendChild(el('div', 'nm', `${String(r.name).replace(/</g, '&lt;')}${r.username ? `<small>@${r.username}</small>` : ''}`));
+  const dfi = ctx && ctx.dfi != null ? ctx.dfi : r.diff;
+  if (D.DIFFS[dfi]) { const di = el('img', 'dfi'); di.src = diffIc(dfi); di.alt = ''; di.title = D.DIFFS[dfi].name; d.appendChild(di); }
   d.appendChild(el('div', 'rs', r.score || r.wave ? `<img src="${SC()}" alt="">${fmt(r.score)}` : '—'));
   const arrow = el('button', 'rarr', '<i></i>'); arrow.setAttribute('aria-label', 'Подробнее'); d.appendChild(arrow);
   const items = String(r.loadout || '').split(',').filter((t) => D.TOWERS[t] || D.ECON[t]);
@@ -265,16 +270,16 @@ export class Menus {
         go.textContent = wkDone ? 'Пройден' : 'Начать'; go.classList.toggle('poor', wkDone);
         place(false); return;
       }
-      const d = D.DIFFS[diff], best = M.bestScore(s, l.id, diff), my = data.me, meU = Net.me(), ctx = { total: l.waves };
+      const d = D.DIFFS[diff], best = M.bestScore(s, l.id, diff), my = data.me, meU = Net.me(), ctx = { total: l.waves, diff };
       const wv = (n) => `<span class="${n >= l.waves ? 'wfull' : ''}">волна ${n}/${l.waves}</span>`;
       const items = my && my.loadout ? String(my.loadout).split(',').filter((t) => D.TOWERS[t] || D.ECON[t]) : [];
-      const mine = best || my ? `<div class="lvp-me"><div class="lvp-sc"><img src="${SC()}" alt=""><b>${fmt(Math.max(best, my ? my.score : 0))}</b>${my && my.rank ? `<span class="lvp-rk">место #${my.rank}</span>` : ''}</div>
+      const mine = best || my ? `<div class="lvp-me"><div class="lvp-sc"><img src="${SC()}" alt=""><b>${fmt(Math.max(best, my ? my.score : 0))}</b>${my && my.rank ? `<span class="lvp-rk">место #${my.rank}</span>` : ''}${diffChip(diff)}</div>
           ${my && (my.duration || my.wave) ? `<div class="lvp-meta">${my.wave ? wv(my.wave) : ''}${my.wave && my.duration ? ' · ' : ''}${my.duration ? `<img src="${bareGlyphUrl('hourglass', 14)}" alt="">${clock(my.duration)}` : ''}</div>` : ''}
           ${items.length ? `<div class="lvp-set">${items.map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 1))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('')}</div>` : ''}</div>`
         : `<div class="lvp-none">Не пройдено на этой сложности</div>`;
       card.innerHTML = `<div class="lvp-h"><div class="lvp-t"><b>${l.name}</b><small>${SECT[l.sector] || ''} · рубеж ${l.lvl}</small></div></div>
                 <div class="lvp-st">Лучший результат</div>${mine}
-        <div class="lvp-st">Лучшие игроки</div><div class="lvp-top"></div>
+        <div class="lvp-st">Лучшие игроки${diffChip(diff)}</div><div class="lvp-top"></div>
         <div class="lvp-st">Друзья</div><div class="lvp-fr"></div>`;
       // топ-3
       const tb = card.querySelector('.lvp-top');
@@ -383,7 +388,7 @@ export class Menus {
     const box = body.querySelector('.rk-top');
     const fill = (rows) => {
       if (seq !== this.diffSeq) return; box.innerHTML = '';
-      for (let k = 0; k < 3; k++) { const r = rows && rows[k]; if (!r) { box.appendChild(el('div', 'trow empty', '—')); continue; } box.appendChild(runRow({ ...r, rank: k + 1 }, 'trow')); }
+      for (let k = 0; k < 3; k++) { const r = rows && rows[k]; if (!r) { box.appendChild(el('div', 'trow empty', '—')); continue; } box.appendChild(runRow({ ...r, rank: k + 1 }, 'trow', { dfi: RUN.diff })); }
     };
     if (!Net.enabled) fill(null); else Net.levelBoard(RUN.level, RUN.diff, 0, 3).then(fill).catch(() => fill(null));
   }
@@ -483,7 +488,7 @@ export class Menus {
       d.appendChild(el('div', 'sc', fmt(r.score))); return d;
     };
     const isRun = spec.level === RUN.level && spec.diff === RUN.diff;
-    const row2 = (r) => (isRun ? runRow(r) : row(r));
+    const row2 = (r) => (isRun ? runRow(r, 'brow', { dfi: RUN.diff }) : row(r));
     const empty = (icon) => { list.innerHTML = `<div class="empty-state"><img src="${bareGlyphUrl(icon, 64)}" alt=""></div>`; };
     if (!Net.enabled) { empty('crown'); return; }
     let offset = 0; const LIM = 50;
