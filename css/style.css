@@ -1277,26 +1277,13 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .lo-cards { gap: 14px 12px; padding: 4px 4px 2px; }
 .btn.gold.poor, .btn.gold:disabled { pointer-events: none; filter: grayscale(1) brightness(.6) !important; }
 
-/* обучение: затемнение из четырёх панелей вокруг «окна» (касания в окно проходят, остальное заблокировано), рамка по контуру цели и палец */
+/* обучение: рамка-«окно» вокруг цели с тенью на весь экран (это и есть затемнение, скругление такое же, как у цели); четыре невидимые панели вокруг не пускают касания мимо */
 #tutlayer { position: fixed; inset: 0; z-index: 43; pointer-events: none; }
-#tutlayer > i { position: fixed; background: rgba(5,2,6,.74); pointer-events: auto; touch-action: none; }
-#tutring { position: fixed; pointer-events: none; box-sizing: border-box; border: 3px solid #ffd65a; box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 0 16px 2px rgba(255,200,80,.75), inset 0 0 12px rgba(255,200,80,.35); animation: tutring 1.1s ease-in-out infinite; transition: left .2s, top .2s, width .2s, height .2s; }
-@keyframes tutring { 0%, 100% { box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 0 10px 1px rgba(255,200,80,.55), inset 0 0 8px rgba(255,200,80,.25); } 50% { box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 0 22px 4px rgba(255,200,80,.95), inset 0 0 16px rgba(255,200,80,.45); } }
+#tutlayer > i { position: fixed; background: transparent; pointer-events: auto; touch-action: none; }
+#tutring { --dim: 0 0 0 200vmax rgba(5,2,6,.74); --g1: 0 0 0 1px rgba(0,0,0,.6), 0 0 10px 1px rgba(255,200,80,.55), inset 0 0 8px rgba(255,200,80,.25); --g2: 0 0 0 1px rgba(0,0,0,.6), 0 0 22px 4px rgba(255,200,80,.95), inset 0 0 16px rgba(255,200,80,.45);
+  position: fixed; pointer-events: none; box-sizing: border-box; border: 3px solid #ffd65a; animation: tutring 1.1s ease-in-out infinite; }
+#tutring.nodim { --dim: 0 0 0 0 transparent; }
+#tutring.cv { border-color: transparent; --g1: 0 0 0 0 transparent; --g2: 0 0 0 0 transparent; animation: none; box-shadow: var(--dim); }
+@keyframes tutring { 0%, 100% { box-shadow: var(--g1), var(--dim); } 50% { box-shadow: var(--g2), var(--dim); } }
+#tutcatch { position: fixed; display: none; pointer-events: auto; touch-action: none; }
 #tuthand { z-index: 44; }
-
-/* выбор языка: кнопка с текущим языком и выпадающий лист с поиском и флагами */
-.lgcur { width: 100%; display: flex; align-items: center; gap: 12px; padding: 0 14px; height: 52px; border-radius: 12px; background: linear-gradient(#2a171c, #190d11); border: 1.5px solid var(--edge); color: #f2eee0; font-family: var(--font); font-size: 17px; text-align: left; }
-.lgcur .fl, .lgrow .fl { font-size: 26px; line-height: 1; font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
-.lgcur b { flex: 1; font-weight: 700; } .lgcur i { width: 10px; height: 10px; border-right: 3px solid #bda676; border-bottom: 3px solid #bda676; transform: rotate(45deg) translateY(-3px); }
-.lgov { position: absolute; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(4,2,5,.72); animation: lgfade .15s ease-out; }
-@keyframes lgfade { from { opacity: 0; } to { opacity: 1; } }
-.lgsheet { width: min(100%, 460px); max-height: 82%; display: flex; flex-direction: column; gap: 10px; padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; background: linear-gradient(#2a1a20, #150b0f); border: 1.5px solid var(--edge); border-bottom: 0; box-shadow: 0 -10px 30px rgba(0,0,0,.6); }
-.lgsearch { display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 44px; border-radius: 10px; background: rgba(0,0,0,.45); border: 1.5px solid #4a3a30; }
-.lgsearch input { flex: 1; min-width: 0; height: 100%; background: none; border: 0; outline: 0; color: #f2eee0; font-family: var(--font); font-size: 16px; }
-.lgsearch input::placeholder { color: #7d7468; }
-.lglist { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-.lgrow { display: flex; align-items: center; gap: 12px; padding: 8px 12px; min-height: 52px; border-radius: 11px; background: rgba(255,255,255,.04); border: 1.5px solid transparent; color: #f2eee0; text-align: left; }
-.lgrow .nm { flex: 1; display: flex; flex-direction: column; min-width: 0; } .lgrow .nm b { font-family: var(--font); font-size: 16px; font-weight: 700; } .lgrow .nm small { font-size: 11.5px; color: #9a9080; }
-.lgrow.on { border-color: #e0b040; background: rgba(224,176,64,.12); }
-.lgrow .ck { width: 16px; height: 9px; border-left: 3px solid #8fe36a; border-bottom: 3px solid #8fe36a; transform: rotate(-45deg) translateY(-3px); margin-right: 4px; }
-.lgempty { text-align: center; color: #7d7468; padding: 16px; }

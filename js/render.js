@@ -1,14 +1,30 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261030153315';
-import * as A from './art.js?v=20261030153315';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261030153315';
-import { tile } from './iconmap.js?v=20261030153315';
-import { img } from './sprites.js?v=20261030153315';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261030153315';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261030154740';
+import * as A from './art.js?v=20261030154740';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261030154740';
+import { tile } from './iconmap.js?v=20261030154740';
+import { img } from './sprites.js?v=20261030154740';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261030154740';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const BUILD_K = 1.2, FIT_W = CELL * 0.98;           // здания крупнее среднего монстра и декора-статуй, но основание всегда помещается в свою клетку (не заходит на дорогу и соседей)
+// обучение: золотой контур по форме картинки (силуэт, раздутый на несколько пикселей) и границы непрозрачных пикселей
+const _outl = new WeakMap(), _bnd = new WeakMap();
+function outlineOf(img) {
+  let o = _outl.get(img); if (o) return o;
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, P = Math.max(3, Math.round(Math.max(w, h) / 40));
+  const t = document.createElement('canvas'); t.width = w; t.height = h; const tg = t.getContext('2d'); tg.drawImage(img, 0, 0, w, h); tg.globalCompositeOperation = 'source-in'; tg.fillStyle = '#ffd65a'; tg.fillRect(0, 0, w, h);
+  const c = document.createElement('canvas'); c.width = w + 2 * P; c.height = h + 2 * P; const g = c.getContext('2d');
+  for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; g.drawImage(t, P + Math.cos(a) * P, P + Math.sin(a) * P); }
+  o = { c, P, w, h }; _outl.set(img, o); return o;
+}
+function alphaBounds(img) {
+  let b = _bnd.get(img); if (b) return b;
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.drawImage(img, 0, 0, w, h);
+  let x0 = w, y0 = h, x1 = 0, y1 = 0; try { const d = g.getImageData(0, 0, w, h).data; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } } catch (e) { x0 = 0; y0 = 0; x1 = w - 1; y1 = h - 1; }
+  b = { x0, y0, x1, y1, w, h }; _bnd.set(img, b); return b;
+}
 function buildK(at, level, br) { if (!(A.SPR.ok && A.SPR.towers[at])) return 1; const g = A.towerGeo(at, level, br); return Math.min(BUILD_K, FIT_W / Math.max(1, g.right - g.left)); }
 
 // взмахов крыльев в секунду: раньше цикл из 8 кадров проходил за 0.1 с (кадры мелькали быстрее экрана и моргали); теперь у каждого свой неторопливый ритм
@@ -121,7 +137,7 @@ export class Renderer {
     this.drawProjs(ctx, t);
     this.drawParticles(ctx, gore, t);
     this.drawBolts(ctx, gore);
-    this.drawBags(ctx, t);
+    this.drawBags(ctx, t, view);
     this.drawOverlays(ctx, view, t);
     for (const f of gore.floaters) {
       const a = 1 - clamp((f.t - 0.6) / 0.5, 0, 1);
@@ -238,8 +254,22 @@ export class Renderer {
   drawBuilding(ctx, b, t, view) {
     const bk = buildK(A.artType(b.prem || b.type), b.level, b.branch);
     ctx.save(); ctx.translate(b.x, b.y + 6); ctx.scale(bk, bk); ctx.translate(-b.x, -b.y - 6);      // здания крупнее: хорошо видны и не теряются на большой карте
+    if (view.hl && view.hl.b === b) this.drawHl(ctx, b, t);
     this.drawBuilding0(ctx, b, t, view);
     ctx.restore();
+  }
+  hlSprite(b) { return b.kind === 'econ' ? A.econBody(b.type, b.level) : A.towerFull(A.artType(b.prem || b.type), b.level, b.branch); }
+  // обучение: контур здания по его форме (золотая кромка вокруг силуэта)
+  drawHl(ctx, b, t) {
+    const sp = this.hlSprite(b); if (!sp) return; const o = outlineOf(sp), kx = A.TW_W / o.w;
+    ctx.save(); ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 6); ctx.shadowColor = 'rgba(255,200,60,.95)'; ctx.shadowBlur = 10;
+    ctx.drawImage(o.c, b.x - A.TW_AX - o.P * kx, b.y + 6 - A.TW_AY - o.P * kx, (o.w + 2 * o.P) * kx, (o.h + 2 * o.P) * kx); ctx.restore();
+  }
+  // границы здания в мировых координатах (по непрозрачным пикселям картинки с учётом масштаба здания)
+  tutBox(b) {
+    const sp = this.hlSprite(b); if (!sp) return null; const bd = alphaBounds(sp), kx = A.TW_W / bd.w, bk = buildK(A.artType(b.prem || b.type), b.level, b.branch), ox = b.x - A.TW_AX, oy = b.y + 6 - A.TW_AY;
+    const wx = (px) => b.x + (ox + px * kx - b.x) * bk, wy = (py) => b.y + 6 + (oy + py * kx - b.y - 6) * bk;
+    return { x: wx(bd.x0), y: wy(bd.y0), w: (bd.x1 - bd.x0 + 1) * kx * bk, h: (bd.y1 - bd.y0 + 1) * kx * bk };
   }
   drawBuilding0(ctx, b, t, view) {
     const x = b.x, y = b.y + 6;
@@ -581,21 +611,23 @@ export class Renderer {
   }
   // Рудник выбрасывает мешок с золотом, банк — крупную объёмную монету: она вращается вокруг вертикальной оси, у неё настоящее ребро (стопка тёмных эллипсов), лицо с чеканкой и блик.
   // Обе висят заметно выше здания, чтобы не прятаться за ним.
-  drawBags(ctx, t) {
+  drawBags(ctx, t, view) {
     const bag = bagSprite(), coin = coinSprite(30);
     this.sim.bags.forEach((bg, i) => {
       const sky = bg.kind === 'sky', bank = bg.kind === 'bank', fall = sky ? Math.max(0, 1 - bg.t / 0.7) : 0, rise = !sky ? Math.min(26, bg.t * 70) : 0;
       const by = bg.y - 22 - rise - fall * fall * 90 + Math.sin(t * 4 + i) * 2.2, left = 1 - bg.t / bg.life, hurry = bg.life - bg.t < 3;
       ctx.save(); ctx.translate(bg.x, by);
-      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.2 * Math.sin(t * 6 + i); const gs = glowSprite(bank ? '#ffe9a0' : '#ffd24a'); const G = bank ? 56 : 48; ctx.drawImage(gs, -G / 2, -G / 2, G, G); ctx.globalCompositeOperation = 'source-over';
+      const tutC = view && view.hl && view.hl.bag;      // в обучении у монеты нет ни золотого ореола, ни кольца таймера: только контур по силуэту
+      if (!tutC) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.2 * Math.sin(t * 6 + i); const gs = glowSprite(bank ? '#ffe9a0' : '#ffd24a'); const G = bank ? 56 : 48; ctx.drawImage(gs, -G / 2, -G / 2, G, G); ctx.globalCompositeOperation = 'source-over'; }
       ctx.globalAlpha = hurry ? 0.45 + 0.55 * Math.abs(Math.sin(t * 14)) : 1;
       if (bank) this.drawCoin3d(ctx, t * 3.2 + i * 1.7, 15);
       else {
         const sc = (sky ? 1 : 1.15) * (1 + 0.07 * Math.sin(t * 6 + i)); ctx.scale(sc * (sky ? Math.abs(Math.cos(t * 3 + i)) * 0.55 + 0.45 : 1), sc);
-        const ic = tile('bag_gold'); if (ic) { ctx.imageSmoothingQuality = 'high'; ctx.drawImage(ic, -13, -14, 26, 26); } else { const sp = sky ? coin : bag; ctx.drawImage(sp, -sp.lw / 2, -sp.lh / 2, sp.lw, sp.lh); }
+        const ic = tile('bag_gold'); if (ic && view && view.hl && view.hl.bag) { const o = outlineOf(ic), kx = 26 / o.w; ctx.save(); ctx.globalAlpha = 0.8; ctx.shadowColor = 'rgba(255,200,60,.95)'; ctx.shadowBlur = 10; ctx.drawImage(o.c, -13 - o.P * kx, -14 - o.P * kx, (o.w + 2 * o.P) * kx, (o.h + 2 * o.P) * kx); ctx.restore(); }
+        if (ic) { ctx.imageSmoothingQuality = 'high'; ctx.drawImage(ic, -13, -14, 26, 26); } else { const sp = sky ? coin : bag; ctx.drawImage(sp, -sp.lw / 2, -sp.lh / 2, sp.lw, sp.lh); }
       }
       ctx.restore();
-      ctx.save(); ctx.strokeStyle = hurry ? 'rgba(255,120,90,.95)' : 'rgba(255,236,150,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(bg.x, by, (bank ? 20 : 17), -Math.PI / 2, -Math.PI / 2 + T2 * left); ctx.stroke(); ctx.restore();
+      if (!tutC) { ctx.save(); ctx.strokeStyle = hurry ? 'rgba(255,120,90,.95)' : 'rgba(255,236,150,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(bg.x, by, (bank ? 20 : 17), -Math.PI / 2, -Math.PI / 2 + T2 * left); ctx.stroke(); ctx.restore(); }
     });
   }
   // монета с ребром: ph — угол поворота; при повороте ребро выглядит стопкой эллипсов тёмного золота, лицо — светлым диском поверх
