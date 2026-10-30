@@ -452,13 +452,7 @@ body.ranked #bossbar { top: 64px; }
 .umc.poor .upr { color: var(--red); border-color: var(--red); } .umc.poor .uicon { filter: grayscale(.55) brightness(.85); }
 
 /* подсказки обучения */
-#tut { position: absolute; left: 8px; right: 8px; top: 54px; z-index: 8; display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: 14px; background: var(--slab); box-shadow: var(--slabline), 0 8px 22px rgba(0,0,0,.8); pointer-events: none; animation: selin2 .2s ease-out; }
 @keyframes selin2 { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
-#tut .tpic { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; flex: none; box-shadow: 0 0 0 2px #0b0c0c, 0 0 0 3.5px #8a8f94; }
-#tut .ttext { flex: 1; font-size: 14.5px; line-height: 1.3; color: #f2eee0; text-shadow: 0 1px 2px #000; }
-#tut .tok { pointer-events: auto; flex: none; padding: 8px 12px; border-radius: 10px; background: linear-gradient(#4a8a2a, #245a12); border: 1.5px solid #8fe36a; font-family: var(--gothic); font-size: 13px; color: #f2ffe4; text-transform: uppercase; }
-.tuthint { animation: tutpulse 1s ease-in-out infinite; z-index: 9 !important; }
-@keyframes tutpulse { 0%,100% { box-shadow: 0 0 0 2px #ffe27a, 0 0 8px #ffe27a; } 50% { box-shadow: 0 0 0 4px #ffe27a, 0 0 24px 4px #ffe27a; } }
 #note { opacity: 0; visibility: hidden; transition: transform .25s, opacity .2s, visibility 0s .25s; position: fixed; left: 50%; top: calc(var(--sa-top) + 14px); transform: translate(-50%, -140%); z-index: 90; max-width: 90%; padding: 9px 16px; border-radius: 12px; background: var(--slab); box-shadow: var(--slabline), 0 8px 24px rgba(0,0,0,.8); font-family: var(--gothic); font-size: 14px; color: #f0ecdc; text-align: center; pointer-events: none; }
 #note.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; transition: transform .25s, opacity .2s; }
 
@@ -526,9 +520,8 @@ body.ranked #bossbar { top: 64px; }
 .rk-best .bg b.big { font-family: var(--gothic); font-weight: 400; font-size: 30px; line-height: 1; color: #e8d6ff; }
 .dbest img, .scimg { width: 18px; height: 18px; border-radius: 4px; }
 .node.tutnode .nl { color: #ffe9a8; }
-@media (max-height: 700px) { #tut { top: 46px; } .umc { min-height: 236px; } .umc .uicon { width: 76px; height: 76px; } }
+@media (max-height: 700px) { .umc { min-height: 236px; } .umc .uicon { width: 76px; height: 76px; } }
 .umc .upr img { width: 22px; height: 22px; } .um-gold img { width: 20px; height: 20px; }
-#tut { z-index: 45; }
 /* итог уровня: помещается на низкие экраны */
 .screen.overlay .modal { margin: auto; }
 #endmenu .modal { gap: 7px; padding: 14px 14px 16px; }
@@ -596,7 +589,6 @@ body.ranked #bossbar { top: 64px; }
 /* v8: правки по скриншотам */
 .ch { display: inline-flex; flex-direction: row; align-items: center; white-space: nowrap; }
 .lo-info .lo-i > span { display: block; line-height: 1.3; margin: 2px 0 5px; }
-#tut { right: 82px; }
 .umc { min-height: 0; } .umc .upr { margin-top: 8px; }
 .rk-best .bg { display: none; }
 .rkb { display: flex; flex-direction: column; gap: 8px; }
@@ -1196,10 +1188,8 @@ body.hastabs #title .title-actions { margin-top: 34px; margin-bottom: auto; }
 small.fc { display: block; margin-top: 6px; padding: 4px 8px; font-size: 11.5px; font-style: normal; font-weight: 600; color: #f3dc90; background: rgba(90,66,14,.35); border: 1px solid rgba(220,180,80,.45); border-radius: 7px; text-shadow: 0 1px 1px #000; }
 
 /* обучение: затемнение с окном вокруг цели, указатель-перчатка и сообщение рядом с целью */
-#tutspot { position: fixed; z-index: 43; pointer-events: none; box-shadow: 0 0 0 200vmax rgba(5,2,6,.7), 0 0 0 3px rgba(255,214,90,.95), 0 0 20px rgba(255,200,80,.85); transition: left .25s, top .25s, width .25s, height .25s; }
 #tuthand { position: fixed; z-index: 44; pointer-events: none; height: auto; transform-origin: 7% 5%; animation: handtap 1.1s ease-in-out infinite; filter: drop-shadow(0 5px 6px rgba(0,0,0,.75)); }
 @keyframes handtap { 0%, 100% { transform: translate(0, 0) scale(1); } 45% { transform: translate(14px, 16px) scale(1); } 60% { transform: translate(0, 0) scale(.93); } }
-#tut { z-index: 46; transition: top .25s; }
 
 img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); background: none !important; border: 0 !important; box-shadow: none !important; }
 
@@ -1286,3 +1276,27 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .lo-slots { gap: 12px; padding-left: 8px; padding-right: 8px; }
 .lo-cards { gap: 14px 12px; padding: 4px 4px 2px; }
 .btn.gold.poor, .btn.gold:disabled { pointer-events: none; filter: grayscale(1) brightness(.6) !important; }
+
+/* обучение: затемнение из четырёх панелей вокруг «окна» (касания в окно проходят, остальное заблокировано), рамка по контуру цели и палец */
+#tutlayer { position: fixed; inset: 0; z-index: 43; pointer-events: none; }
+#tutlayer > i { position: fixed; background: rgba(5,2,6,.74); pointer-events: auto; touch-action: none; }
+#tutring { position: fixed; pointer-events: none; box-sizing: border-box; border: 3px solid #ffd65a; box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 0 16px 2px rgba(255,200,80,.75), inset 0 0 12px rgba(255,200,80,.35); animation: tutring 1.1s ease-in-out infinite; transition: left .2s, top .2s, width .2s, height .2s; }
+@keyframes tutring { 0%, 100% { box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 0 10px 1px rgba(255,200,80,.55), inset 0 0 8px rgba(255,200,80,.25); } 50% { box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 0 22px 4px rgba(255,200,80,.95), inset 0 0 16px rgba(255,200,80,.45); } }
+#tuthand { z-index: 44; }
+
+/* выбор языка: кнопка с текущим языком и выпадающий лист с поиском и флагами */
+.lgcur { width: 100%; display: flex; align-items: center; gap: 12px; padding: 0 14px; height: 52px; border-radius: 12px; background: linear-gradient(#2a171c, #190d11); border: 1.5px solid var(--edge); color: #f2eee0; font-family: var(--font); font-size: 17px; text-align: left; }
+.lgcur .fl, .lgrow .fl { font-size: 26px; line-height: 1; font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
+.lgcur b { flex: 1; font-weight: 700; } .lgcur i { width: 10px; height: 10px; border-right: 3px solid #bda676; border-bottom: 3px solid #bda676; transform: rotate(45deg) translateY(-3px); }
+.lgov { position: absolute; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(4,2,5,.72); animation: lgfade .15s ease-out; }
+@keyframes lgfade { from { opacity: 0; } to { opacity: 1; } }
+.lgsheet { width: min(100%, 460px); max-height: 82%; display: flex; flex-direction: column; gap: 10px; padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; background: linear-gradient(#2a1a20, #150b0f); border: 1.5px solid var(--edge); border-bottom: 0; box-shadow: 0 -10px 30px rgba(0,0,0,.6); }
+.lgsearch { display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 44px; border-radius: 10px; background: rgba(0,0,0,.45); border: 1.5px solid #4a3a30; }
+.lgsearch input { flex: 1; min-width: 0; height: 100%; background: none; border: 0; outline: 0; color: #f2eee0; font-family: var(--font); font-size: 16px; }
+.lgsearch input::placeholder { color: #7d7468; }
+.lglist { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.lgrow { display: flex; align-items: center; gap: 12px; padding: 8px 12px; min-height: 52px; border-radius: 11px; background: rgba(255,255,255,.04); border: 1.5px solid transparent; color: #f2eee0; text-align: left; }
+.lgrow .nm { flex: 1; display: flex; flex-direction: column; min-width: 0; } .lgrow .nm b { font-family: var(--font); font-size: 16px; font-weight: 700; } .lgrow .nm small { font-size: 11.5px; color: #9a9080; }
+.lgrow.on { border-color: #e0b040; background: rgba(224,176,64,.12); }
+.lgrow .ck { width: 16px; height: 9px; border-left: 3px solid #8fe36a; border-bottom: 3px solid #8fe36a; transform: rotate(-45deg) translateY(-3px); margin-right: 4px; }
+.lgempty { text-align: center; color: #7d7468; padding: 16px; }

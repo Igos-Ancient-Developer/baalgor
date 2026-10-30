@@ -1,10 +1,10 @@
 // Отрисовка игрового поля: фон, кровь, сущности (с сортировкой по глубине), снаряды, частицы, подсказки.
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261029215158';
-import * as A from './art.js?v=20261029215158';
-import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261029215158';
-import { tile } from './iconmap.js?v=20261029215158';
-import { img } from './sprites.js?v=20261029215158';
-import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261029215158';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, VIEW_COLS, TOWERS, ECON, SPELLS } from './data.js?v=20261030153315';
+import * as A from './art.js?v=20261030153315';
+import { ENEMY_ART, FRAMES, enemyFrame, tinted, tintCanvas, animFrame, eliteFrame, drawAnim, BLOOD } from './enemies.js?v=20261030153315';
+import { tile } from './iconmap.js?v=20261030153315';
+import { img } from './sprites.js?v=20261030153315';
+import { mapBG, glowSprite, smokeSprite, shardSprite, coinSprite, bagSprite, sawBladeSprite, scorchSprite } from './env.js?v=20261030153315';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -693,14 +693,6 @@ export class Renderer {
         const stt = kind === 'tower' ? TOWERS[type].lv[0] : ECON[type].lv[0];
         const rr = (stt.range || 0) * CELL; if (rr) range(x, y, rr, kind === 'econ' ? 'rgba(255,60,80,A)' : type === 'banner' ? 'rgba(255,200,60,A)' : 'rgba(255,255,255,A)');
       }
-    }
-    // подсказки обучения: пульсирующие клетки, монета, здание
-    if (view.hint) {
-      const h = view.hint, pulse = 0.5 + 0.5 * Math.sin(t * 5);
-      const mark = (x, y, w, hh) => { ctx.save(); ctx.strokeStyle = `rgba(255,226,120,${0.55 + 0.45 * pulse})`; ctx.fillStyle = `rgba(255,226,120,${0.08 + 0.14 * pulse})`; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.roundRect(x, y, w, hh, 6); ctx.fill(); ctx.stroke(); ctx.restore(); };
-      for (const [c, r] of h.cells || []) if (sim.canBuild(c, r)) mark(c * CELL + 2, r * CELL + 2, CELL - 4, CELL - 4);
-      if (h.bag) for (const b of sim.bags) { ctx.save(); ctx.strokeStyle = `rgba(255,226,120,${0.6 + 0.4 * pulse})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(b.x, b.y - 20, 22 + 3 * pulse, 0, T2); ctx.stroke(); ctx.restore(); }
-      if (h.b && sim.buildings.includes(h.b)) mark(h.b.c * CELL + 1, h.b.r * CELL + 1, CELL - 2, CELL - 2);
     }
     if (view.spell === 'meteor' && view.hoverPx) {
       const R = SPELLS.meteor.radius * CELL; const { x, y } = view.hoverPx;

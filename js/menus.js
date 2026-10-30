@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261029215158';
-import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261029215158';
-import * as D from './data.js?v=20261029215158';
-import * as M from './meta.js?v=20261029215158';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261029215158';
-import { url as imgUrl } from './sprites.js?v=20261029215158';
-import { Net } from './net.js?v=20261029215158';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261029215158';
-import { fillPlates, gemIc } from './res.js?v=20261029215158';
-import { gemHtml } from './gem3d.js?v=20261029215158';
-import { Wallet } from './wallet.js?v=20261029215158';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261030153315';
+import { LANGS, setLang, lang as curLang } from './i18n.js?v=20261030153315';
+import * as D from './data.js?v=20261030153315';
+import * as M from './meta.js?v=20261030153315';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261030153315';
+import { url as imgUrl } from './sprites.js?v=20261030153315';
+import { Net } from './net.js?v=20261030153315';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261030153315';
+import { fillPlates, gemIc } from './res.js?v=20261030153315';
+import { gemHtml } from './gem3d.js?v=20261030153315';
+import { Wallet } from './wallet.js?v=20261030153315';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -132,10 +132,31 @@ export class Menus {
       const inv = el('button', 'btn', 'Позвать'); inv.onclick = () => { c.sfx.play('click'); if (!Net.invite()) c.note('Ссылка на игру ещё не задана'); };
       r.appendChild(inv); body.appendChild(r); }
     body.appendChild(el('div', 'sect-title', 'Язык'));
-    const grid = el('div', 'langgrid');
-    for (const [id, name] of LANGS) { const b = el('button', 'stn' + (id === curLang ? ' on' : ''), `<span>${name}</span>`); b.onclick = () => { if (id === curLang) return; c.sfx.play('click'); setLang(id); }; grid.appendChild(b); }
-    body.appendChild(grid);
+    { const cur = LANGS.find((l) => l[0] === curLang) || LANGS[0], b = el('button', 'lgcur', `<span class="fl">${cur[2]}</span><b>${cur[1]}</b><i></i>`);
+      b.onclick = () => { c.sfx.play('click'); this.langPicker(); }; body.appendChild(b); }
     this.show('#settings'); $('#settings').scrollTop = 0;
+  }
+
+  // выбор языка: выпадающий список с поиском и флагами
+  langPicker() {
+    const c = this.c, ov = el('div', 'lgov'), sh = el('div', 'lgsheet');
+    sh.innerHTML = `<div class="lgsearch"><span>🔍</span><input type="search" placeholder="Search · Поиск" autocomplete="off" autocapitalize="off" spellcheck="false"></div><div class="lglist"></div>`;
+    ov.appendChild(sh); $('#app').appendChild(ov);
+    const list = sh.querySelector('.lglist'), inp = sh.querySelector('input'), close = () => ov.remove();
+    const draw = () => {
+      const q = inp.value.trim().toLowerCase(); list.innerHTML = '';
+      const rows = LANGS.filter(([id, name, , en]) => !q || name.toLowerCase().includes(q) || en.toLowerCase().includes(q) || id.startsWith(q));
+      for (const [id, name, flag, en] of rows) {
+        const b = el('button', 'lgrow' + (id === curLang ? ' on' : ''), `<span class="fl">${flag}</span><span class="nm"><b>${name}</b><small>${en}</small></span>${id === curLang ? '<i class="ck"></i>' : ''}`);
+        b.onclick = () => { c.sfx.play('click'); if (id === curLang) { close(); return; } setLang(id); };
+        list.appendChild(b);
+      }
+      if (!rows.length) list.appendChild(el('div', 'lgempty', '—'));
+    };
+    inp.oninput = draw; draw();
+    ov.onclick = (e) => { if (e.target === ov) close(); };
+    ov.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    setTimeout(() => inp.focus({ preventScroll: true }), 50);
   }
 
   // ───── карта кампании ─────
