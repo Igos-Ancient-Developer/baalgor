@@ -1405,3 +1405,20 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .online .ol-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: #5dff4a; box-shadow: 0 0 6px 1px rgba(93,255,74,.9); animation: olpulse 2.2s ease-in-out infinite; }
 @keyframes olpulse { 0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 8px 2px rgba(93,255,74,.9); } 50% { opacity: .3; transform: scale(.72); box-shadow: 0 0 2px 0 rgba(93,255,74,.4); } }
 @media (prefers-reduced-motion: reduce) { .online .ol-dot { animation: none; } }
+
+/* общий счётчик на других экранах: компактнее, прижат к правому краю панели; всплывающее «+2» / «−1» и мягкий «щелчок» цифры */
+.topbar .online { margin-left: auto; flex: none; height: 32px; padding: 0 10px 0 9px; font-size: 15px; gap: 5px; }
+.topbar .online svg { width: 18px; height: 18px; }
+.online { position: relative; }
+.online .ol-n { display: inline-block; min-width: 2.2ch; text-align: right; font-variant-numeric: tabular-nums; }
+.online .ol-n.tick { animation: oltick .16s ease-out; }
+@keyframes oltick { 0% { transform: translateY(2px) scale(1.12); text-shadow: 0 0 12px rgba(120,255,100,.95); } 100% { transform: none; } }
+.online .ol-d { position: absolute; right: 8px; top: -2px; font-style: normal; font-size: 12px; font-weight: 700; line-height: 1; pointer-events: none; opacity: 0; animation: oldelta 1.4s ease-out forwards; text-shadow: 0 1px 0 #000; }
+.online .ol-d.up { color: #8dff7a; } .online .ol-d.dn { color: #4fb83f; }
+@keyframes oldelta { 0% { opacity: 0; transform: translateY(4px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-16px); } }
+@media (prefers-reduced-motion: reduce) { .online .ol-n.tick, .online .ol-d { animation: none; } }
+
+/* в Telegram (своя кнопка «Назад») панель карты скрыта целиком, а счётчик «сейчас в игре» остаётся в правом верхнем углу */
+body.tgback #world .topbar { display: block; position: absolute; left: auto; right: 10px; top: calc(var(--sa-top) + 8px); width: auto; height: auto; padding: 0; background: none; border: 0; box-shadow: none; z-index: 6; pointer-events: none; }
+body.tgback #world .topbar > :not(.online) { display: none; }
+body.tgback #world .topbar .online { margin: 0; }
