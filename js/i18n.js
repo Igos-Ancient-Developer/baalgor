@@ -36,7 +36,7 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export async function initLang(code) {
   lang = code; document.documentElement.lang = code;
   if (code === 'ru') return;
-  let dict; try { dict = (await import(`./lang/${code}.js?v=20261102165222`)).default; } catch (e) { return; }
+  let dict; try { dict = (await import(`./lang/${code}.js?v=20261102193037`)).default; } catch (e) { return; }
   exact = new Map(Object.entries(dict));
   // самые длинные куски первыми; границы слова учитываем только там, где ключ начинается/кончается буквой (чтобы не задеть части других слов)
   regs = Object.keys(dict).sort((a, b) => b.length - a.length).map((k) => {

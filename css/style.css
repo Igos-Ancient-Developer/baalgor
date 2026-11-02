@@ -1319,20 +1319,20 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .lghead { flex: none; padding: 4px 4px 12px; text-align: center; color: #ffd65a; font-family: var(--font); font-size: 21px; font-weight: 700; letter-spacing: .02em; }
 
 /* сложность рядом с результатом и в таблицах */
-.dchip { display: inline-flex; align-items: center; gap: 4px; flex: none; margin-left: auto; padding: 1px 8px 1px 3px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--dc) 55%, transparent); background: color-mix(in srgb, var(--dc) 14%, rgba(0,0,0,.45)); font-family: var(--font); letter-spacing: 0; text-transform: none; }
-.dchip img { width: 18px; height: 18px; object-fit: contain; } .dchip b { font-size: 11.5px; font-weight: 700; color: var(--dc); white-space: nowrap; }
-.lvp-st .dchip { margin-left: 4px; } .lvp-st .dchip b { font-size: 10.5px; }
-.lvp-sc .dchip { margin-left: auto; }
+.dflab { display: inline-flex; align-items: center; gap: 4px; flex: none; margin-left: auto; padding: 1px 8px 1px 3px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--dc) 55%, transparent); background: color-mix(in srgb, var(--dc) 14%, rgba(0,0,0,.45)); font-family: var(--font); letter-spacing: 0; text-transform: none; }
+.dflab img { width: 18px; height: 18px; object-fit: contain; } .dflab b { font-size: 11.5px; font-weight: 700; color: var(--dc); white-space: nowrap; }
+.lvp-st .dflab { margin-left: 4px; } .lvp-st .dflab b { font-size: 10.5px; }
+.lvp-sc .dflab { margin-left: auto; }
 .rrow .dfi { flex: none; width: 22px; height: 22px; object-fit: contain; }
 
 /* карточки списков (Кузница, магазин, награды, таблицы) всегда в раскладке: content-visibility с оценкой 120px при реальных ~190px пересчитывал высоту на ходу, и прокрутка дёргалась */
 .sh-card, .chcard, .pcard, .frow, .krow, .ach, .ach-row, .arow, .brow, .trow { content-visibility: visible; contain-intrinsic-size: none; }
 .rmore .rdiff { display: flex; justify-content: flex-start; padding-bottom: 7px; }
-.rmore .rdiff .dchip { margin-left: 0; }
+.rmore .rdiff .dflab { margin-left: 0; }
 
 /* сложность — просто значок и название, без плашки */
-.dchip { padding: 0; border: 0; background: none; border-radius: 0; gap: 5px; }
-.dchip img { width: 20px; height: 20px; }
+.dflab { padding: 0; border: 0; background: none; border-radius: 0; gap: 5px; }
+.dflab img { width: 20px; height: 20px; }
 
 /* рейтинговый забег: значки зданий крупнее, значки правил и плашки — ровные плитки */
 .rkb .slots { display: flex; flex-wrap: nowrap; gap: 6px; justify-content: center; }
@@ -1350,5 +1350,14 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .rk-slab .rslots, #board .rslots { flex-wrap: wrap; gap: 8px; }
 .rk-slab .rslots img, #board .rslots img { flex: none; width: 60px; height: 60px; max-width: none; aspect-ratio: auto; border-radius: 10px; }
 .rmore .rdiff { margin: 0; padding: 0 0 8px; background: none; border: 0; border-radius: 0; }
-.rmore .rdiff .dchip img { width: 22px; height: 22px; }
-.rmore .rdiff .dchip b { font-size: 13px; }
+.rmore .rdiff .dflab img { width: 22px; height: 22px; }
+.rmore .rdiff .dflab b { font-size: 13px; }
+
+/* значок и название сложности: яркий оригинал, крупно */
+.dflab img { width: 28px; height: 28px; filter: none; opacity: 1; }
+.dflab b { font-size: 13px; }
+.lvp-st .dflab img { width: 22px; height: 22px; } .lvp-st .dflab b { font-size: 11px; }
+.rmore .rdiff .dflab { gap: 8px; }
+.rmore .rdiff .dflab img { width: 40px; height: 40px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
+.rmore .rdiff .dflab b { font-size: 15px; }
+.rmore .rdiff { padding-bottom: 10px; }

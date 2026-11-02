@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261102165222';
-import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261102165222';
-import * as D from './data.js?v=20261102165222';
-import * as M from './meta.js?v=20261102165222';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261102165222';
-import { url as imgUrl } from './sprites.js?v=20261102165222';
-import { Net } from './net.js?v=20261102165222';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261102165222';
-import { fillPlates, gemIc } from './res.js?v=20261102165222';
-import { gemHtml } from './gem3d.js?v=20261102165222';
-import { Wallet } from './wallet.js?v=20261102165222';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261102193037';
+import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261102193037';
+import * as D from './data.js?v=20261102193037';
+import * as M from './meta.js?v=20261102193037';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261102193037';
+import { url as imgUrl } from './sprites.js?v=20261102193037';
+import { Net } from './net.js?v=20261102193037';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261102193037';
+import { fillPlates, gemIc } from './res.js?v=20261102193037';
+import { gemHtml } from './gem3d.js?v=20261102193037';
+import { Wallet } from './wallet.js?v=20261102193037';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -46,7 +46,7 @@ const tileUrl = (g, n = 72) => iconUrl(glyphIcon(g, { size: n }));      // го�
 const lvName = (lv) => (D.CAMPAIGN[lv - 1] || {}).name || '';
 // значок и название сложности (рядом с результатом и в таблицах: видно, на какой сложности он набран)
 const diffIc = (i) => new URL(`../img/ui/ic/diff_${i}.webp`, import.meta.url).href;
-const diffChip = (i) => { const d = D.DIFFS[i]; return d ? `<span class="dchip" style="--dc:${d.color}"><img src="${diffIc(i)}" alt=""><b>${d.name}</b></span>` : ''; };
+const diffChip = (i) => { const d = D.DIFFS[i]; return d ? `<span class="dflab" style="--dc:${d.color}"><img src="${diffIc(i)}" alt=""><b>${d.name}</b></span>` : ''; };
 export const RUN = { level: 'run', diff: 4 };      // рейтинговый забег хранится в таблице как уровень «run» на сложности «Хардкор»
 // подписи секторов на карте мира (координаты в пикселях картинки)
 const SECTOR_LABELS = { grave: [330, 795], forest: [215, 350], desert: [860, 455], ice: [545, 215], hell: [1055, 238] };
