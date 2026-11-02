@@ -1,6 +1,6 @@
 // «Сейчас в игре»: одно общее число (145–278) на все плашки — на главном экране, на карте и в таблице лидеров.
 // У каждой плашки своя небольшая погрешность и чуть другая задержка, поэтому числа рядом, но не совпадают до цифры.
-// Когда люди «приходят» и «уходят», число бежит к новому значению по одному, а над плашкой всплывает «+2» или «−1».
+// Раз в разное время (то 8–25 секунд, то около минуты) число спокойно меняется на соседнее, без анимации.
 const MIN = 145, MAX = 278;
 let n = MIN + Math.floor(Math.random() * (MAX - MIN + 1));
 const widgets = [];
@@ -9,7 +9,7 @@ const clamp = (v) => Math.max(MIN, Math.min(MAX, v));
 
 function adopt(el, off) {
   const num = el.querySelector('.ol-n'); if (!num) return;
-  const w = { el, num, off, shown: clamp(n + off), timer: 0 };
+  const w = { el, num, off, shown: clamp(n + off) };
   num.textContent = w.shown; widgets.push(w);
 }
 // создаёт плашку в конце верхней панели (если там её ещё нет)
@@ -19,28 +19,19 @@ export function mountOnline(host) {
   el.innerHTML = '<i class="ol-dot"></i>' + PEOPLE + '<b class="ol-n"></b>';
   host.appendChild(el); adopt(el, Math.floor(Math.random() * 7) - 3);
 }
-function flash(w, d) {
-  const u = document.createElement('u'); u.className = 'ol-d ' + (d > 0 ? 'up' : 'dn'); u.textContent = (d > 0 ? '+' : '−') + Math.abs(d);
-  w.el.appendChild(u); setTimeout(() => u.remove(), 1500);
-}
-function run(w, target) {                                   // число бежит к target по одному
-  clearInterval(w.timer);
-  const d = target - w.shown; if (!d) return;
-  flash(w, d);
-  w.timer = setInterval(() => {
-    w.shown += Math.sign(target - w.shown); w.num.textContent = w.shown; w.num.classList.remove('tick'); void w.num.offsetWidth; w.num.classList.add('tick');
-    if (w.shown === target) clearInterval(w.timer);
-  }, 110);
-}
+// число просто меняется на новое, без бега и подписей
+function set(w, v) { if (v !== w.shown) { w.shown = v; w.num.textContent = v; } }
+// пауза между изменениями каждый раз разная: чаще 8–25 секунд, иногда заметно дольше
+const pause = () => (Math.random() < 0.2 ? 30000 + Math.random() * 40000 : 8000 + Math.random() * 17000);
 function step() {
   const d = (Math.floor(Math.random() * 7) - 3) || 1;        // −3 … +3
   n = clamp(n + d);
-  for (const w of widgets) setTimeout(() => run(w, clamp(n + w.off)), Math.random() * 1600);
-  setTimeout(step, 3500 + Math.random() * 5500);
+  for (const w of widgets) setTimeout(() => set(w, clamp(n + w.off)), Math.random() * 2500);
+  setTimeout(step, pause());
 }
 export function startOnline() {
   const title = document.getElementById('online'); if (title) adopt(title, 0);
   mountOnline(document.querySelector('#world .topbar'));
   mountOnline(document.querySelector('#board .topbar'));
-  setTimeout(step, 3500 + Math.random() * 3000);
+  setTimeout(step, 6000 + Math.random() * 9000);
 }
