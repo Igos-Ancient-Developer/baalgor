@@ -27,13 +27,16 @@ export function pickLang() {
   }
   return LANGS.some((l) => l[0] === c) ? c : 'en';
 }
+// выбирал ли игрок язык сам (при первом запуске игра спрашивает); без хранилища не спрашиваем, чтобы не надоедать каждый раз
+export function langChosen() { try { return !!localStorage.getItem(KEY); } catch (e) { return true; } }
+export function rememberLang(code) { try { localStorage.setItem(KEY, code); } catch (e) { /* без хранилища */ } }
 export function setLang(code) { try { localStorage.setItem(KEY, code); } catch (e) { /* */ } location.reload(); }
 
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export async function initLang(code) {
   lang = code; document.documentElement.lang = code;
   if (code === 'ru') return;
-  let dict; try { dict = (await import(`./lang/${code}.js?v=20261102164157`)).default; } catch (e) { return; }
+  let dict; try { dict = (await import(`./lang/${code}.js?v=20261102165222`)).default; } catch (e) { return; }
   exact = new Map(Object.entries(dict));
   // самые длинные куски первыми; границы слова учитываем только там, где ключ начинается/кончается буквой (чтобы не задеть части других слов)
   regs = Object.keys(dict).sort((a, b) => b.length - a.length).map((k) => {
