@@ -1,5 +1,5 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261030221758';
+import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261102164157';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
@@ -39,6 +39,14 @@ export const Net = {
     const key = 'bk_inv_' + m[1]; try { if (localStorage.getItem(key)) return null; } catch (e) { /* без хранилища */ }
     try { const r = await rpc('friend_add', { init_data: tg.initData, p_friend: Number(m[1]) }); if (r && r.ok) { try { localStorage.setItem(key, '1'); } catch (e) { /* ок */ } cache.clear(); return r; } } catch (e) { /* нет связи */ }
     return null;
+  },
+  // откуда пришёл игрок: метка из ссылки «?startapp=<метка>» (реклама: tga_de, adsg…), приглашение друга — «friend», без метки — «direct».
+  // Сервер запоминает метку первого входа и отмечает день визита (для возврата на 1-й и 7-й день); см. supabase/sources.sql
+  trackOpen() {
+    if (!this.canSubmit()) return;
+    const sp = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+    const src = /^f\d{3,15}$/.test(sp) ? 'friend' : sp.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+    rpc('track_open', { init_data: tg.initData, p_src: src || 'direct' }).catch(() => { /* нет связи или функция ещё не создана */ });
   },
   // окно «поделиться» Telegram со ссылкой-приглашением; false — ссылка на приложение ещё не задана в config.js
   invite() {
