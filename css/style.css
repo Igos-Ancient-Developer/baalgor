@@ -1398,3 +1398,10 @@ img.cutg { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); b
 .mrow.long { flex-wrap: wrap; }
 .mrow.long .mt { flex: 1 1 calc(100% - 40px); }
 .mrow.long b { flex: 0 0 100%; max-width: 100%; text-align: left; padding: 0 0 2px 32px; }
+
+/* «сейчас в игре»: зелёная точка мягко мигает, рядом значок людей и число, всё зелёное */
+.online { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px 0 10px; border-radius: 999px; background: var(--slab); box-shadow: 0 0 0 2px #0b0c0c, 0 0 0 3.5px #3fae3a, 0 4px 10px rgba(0,0,0,.7); font-family: var(--font); font-weight: 700; font-size: 17px; color: #7dff6a; text-shadow: 0 0 8px rgba(80,255,60,.45), 0 1px 0 #000; pointer-events: none; }
+.online svg { width: 20px; height: 20px; fill: #7dff6a; filter: drop-shadow(0 0 4px rgba(80,255,60,.5)); flex: none; }
+.online .ol-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: #5dff4a; box-shadow: 0 0 6px 1px rgba(93,255,74,.9); animation: olpulse 2.2s ease-in-out infinite; }
+@keyframes olpulse { 0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 8px 2px rgba(93,255,74,.9); } 50% { opacity: .3; transform: scale(.72); box-shadow: 0 0 2px 0 rgba(93,255,74,.4); } }
+@media (prefers-reduced-motion: reduce) { .online .ol-dot { animation: none; } }
