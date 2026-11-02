@@ -36,7 +36,7 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export async function initLang(code) {
   lang = code; document.documentElement.lang = code;
   if (code === 'ru') return;
-  let dict; try { dict = (await import(`./lang/${code}.js?v=20261102201848`)).default; } catch (e) { return; }
+  let dict; try { dict = (await import(`./lang/${code}.js?v=20261102204443`)).default; } catch (e) { return; }
   exact = new Map(Object.entries(dict));
   // самые длинные куски первыми; границы слова учитываем только там, где ключ начинается/кончается буквой (чтобы не задеть части других слов)
   // iOS до 16.4 не знает «(?<!…)» и падает на таком RegExp — там левую границу ловим группой и возвращаем её в замене

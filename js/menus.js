@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261102201848';
-import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261102201848';
-import * as D from './data.js?v=20261102201848';
-import * as M from './meta.js?v=20261102201848';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261102201848';
-import { url as imgUrl } from './sprites.js?v=20261102201848';
-import { Net } from './net.js?v=20261102201848';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261102201848';
-import { fillPlates, gemIc } from './res.js?v=20261102201848';
-import { gemHtml } from './gem3d.js?v=20261102201848';
-import { Wallet } from './wallet.js?v=20261102201848';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261102204443';
+import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261102204443';
+import * as D from './data.js?v=20261102204443';
+import * as M from './meta.js?v=20261102204443';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261102204443';
+import { url as imgUrl } from './sprites.js?v=20261102204443';
+import { Net } from './net.js?v=20261102204443';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261102204443';
+import { fillPlates, gemIc } from './res.js?v=20261102204443';
+import { gemHtml } from './gem3d.js?v=20261102204443';
+import { Wallet } from './wallet.js?v=20261102204443';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -63,7 +63,7 @@ export function runRow(r, cls = 'brow', ctx = null) {
   const meU = Net.me(), box = el('div', 'rwrap' + (r.rank >= 1 && r.rank <= 3 ? ' top' + r.rank : '')), d = el('div', `${cls} rrow` + (meU && r.tg_id === meU.id ? ' me' : ''));
   d.appendChild(el('div', `rk${r.rank <= 3 ? ' r' + r.rank : ''}`, r.rank)); d.appendChild(avatar(r.photo_url || r.photo, r.name, r.tg_id));
   d.appendChild(el('div', 'nm', `${String(r.name).replace(/</g, '&lt;')}${r.username ? `<small>@${r.username}</small>` : ''}`));
-  const dfi = ctx && ctx.diff != null ? ctx.diff : r.diff;      // сложность этой записи: показывается в раскрытом меню строки
+  const dfi = r.diff != null ? r.diff : ctx && ctx.diff != null ? ctx.diff : null;      // сложность этой записи: показывается в раскрытом меню строки
   d.appendChild(el('div', 'rs', r.score || r.wave ? `<img src="${SC()}" alt="">${fmt(r.score)}` : '—'));
   const arrow = el('button', 'rarr', '<i></i>'); arrow.setAttribute('aria-label', 'Подробнее'); d.appendChild(arrow);
   const items = String(r.loadout || '').split(',').filter((t) => D.TOWERS[t] || D.ECON[t]);
@@ -274,13 +274,15 @@ export class Menus {
         go.textContent = wkDone ? 'Пройден' : 'Начать'; go.classList.toggle('poor', wkDone);
         place(false); return;
       }
-      const d = D.DIFFS[diff], best = M.bestScore(s, l.id, diff), my = data.me, meU = Net.me(), ctx = { total: l.waves, diff };
+      const d = D.DIFFS[diff], my = data.me, meU = Net.me(), ctx = { total: l.waves };
+      let best = 0, bestDiff = diff; D.DIFFS.forEach((_, i) => { const v = M.bestScore(s, l.id, i); if (v > best) { best = v; bestDiff = i; } });      // мой лучший результат на уровне: по любой сложности
+      const shownDiff = my && my.score >= best && my.diff != null ? my.diff : bestDiff;
       const wv = (n) => `<span class="${n >= l.waves ? 'wfull' : ''}">волна ${n}/${l.waves}</span>`;
       const items = my && my.loadout ? String(my.loadout).split(',').filter((t) => D.TOWERS[t] || D.ECON[t]) : [];
-      const mine = best || my ? `<div class="lvp-me"><div class="lvp-sc"><img src="${SC()}" alt=""><b>${fmt(Math.max(best, my ? my.score : 0))}</b>${my && my.rank ? `<span class="lvp-rk">место #${my.rank}</span>` : ''}${diffChip(diff)}</div>
+      const mine = best || my ? `<div class="lvp-me"><div class="lvp-sc"><img src="${SC()}" alt=""><b>${fmt(Math.max(best, my ? my.score : 0))}</b>${my && my.rank ? `<span class="lvp-rk">место #${my.rank}</span>` : ''}${diffChip(shownDiff)}</div>
           ${my && (my.duration || my.wave) ? `<div class="lvp-meta">${my.wave ? wv(my.wave) : ''}${my.wave && my.duration ? ' · ' : ''}${my.duration ? `<img src="${bareGlyphUrl('hourglass', 14)}" alt="">${clock(my.duration)}` : ''}</div>` : ''}
           ${items.length ? `<div class="lvp-set">${items.map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 1))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('')}</div>` : ''}</div>`
-        : `<div class="lvp-none">Не пройдено на этой сложности</div>`;
+        : `<div class="lvp-none">Не пройдено</div>`;
       card.innerHTML = `<div class="lvp-h"><div class="lvp-t"><b>${l.name}</b><small>${SECT[l.sector] || ''} · рубеж ${l.lvl}</small></div></div>
                 <div class="lvp-st">Лучший результат</div>${mine}
         <div class="lvp-st">Лучшие игроки</div><div class="lvp-top"></div>
@@ -302,9 +304,9 @@ export class Menus {
       const done = () => { if (!ok()) return; data.loaded = true; render(); };
       if (!Net.enabled) { data.loaded = true; return; }
       let left = 3; const fin = () => { if (--left === 0) done(); };
-      Net.levelBoard(l.id, diff, 0, 3).then((r) => { if (ok()) data.top = r; }).catch(() => {}).then(fin);
-      (Net.me() ? Net.levelRank(l.id, diff) : Promise.resolve(null)).then((r) => { if (ok() && r) data.me = r; }).catch(() => {}).then(fin);
-      Net.levelFriends(l.id, diff).then((r) => { if (ok()) data.friends = r; }).catch(() => {}).then(fin);
+      Net.levelBoardAll(l.id, diff, 3).then((r) => { if (ok()) data.top = r; }).catch(() => {}).then(fin);
+      (Net.me() ? Net.levelRankAll(l.id, diff) : Promise.resolve(null)).then((r) => { if (ok() && r) data.me = r; }).catch(() => {}).then(fin);
+      Net.levelFriendsAll(l.id, diff).then((r) => { if (ok()) data.friends = r; }).catch(() => {}).then(fin);
     };
     render(); place(true); if (!wk) load();
   }

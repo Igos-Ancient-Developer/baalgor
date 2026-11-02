@@ -1,5 +1,5 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261102201848';
+import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261102204443';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
@@ -27,6 +27,23 @@ export const Net = {
   levelTops(levelId) { return cached('tops:' + levelId, 15000, () => rpc('level_tops', { p_level: levelId })); },
   levelBoard(levelId, diff, offset = 0, limit = 50) { return rpc('level_board', { p_level: levelId, p_diff: diff, p_limit: limit, p_offset: offset }); },
   async levelRank(levelId, diff) { const me = this.me(); if (!me) return null; const r = await rpc('level_rank', { p_level: levelId, p_diff: diff, p_tg: me.id }); return r[0] || null; },
+  // лучшие игроки уровня по ВСЕМ сложностям (у каждого его лучшая запись, в строке поле diff); пока функции level_*_all не созданы на сервере — таблица выбранной сложности
+  async levelBoardAll(levelId, diff, limit = 3) {
+    try { return await rpc('level_board_all', { p_level: levelId, p_limit: limit, p_offset: 0 }); }
+    catch (e) { const r = await rpc('level_board', { p_level: levelId, p_diff: diff, p_limit: limit, p_offset: 0 }); return r.map((x) => ({ ...x, diff })); }
+  },
+  async levelRankAll(levelId, diff) {
+    const me = this.me(); if (!me) return null;
+    try { const r = await rpc('level_rank_all', { p_level: levelId, p_tg: me.id }); return r[0] || null; }
+    catch (e) { const r = await rpc('level_rank', { p_level: levelId, p_diff: diff, p_tg: me.id }); return r[0] ? { ...r[0], diff } : null; }
+  },
+  async levelFriendsAll(levelId, diff) {
+    if (!this.canSubmit()) return null;
+    return cached(`fr:${levelId}:all`, 15000, async () => {
+      try { return await rpc('level_friends_all', { init_data: tg.initData, p_level: levelId }); }
+      catch (e) { const r = await rpc('level_friends', { init_data: tg.initData, p_level: levelId, p_diff: diff }); return r.map((x) => ({ ...x, diff })); }
+    });
+  },
   globalBoard(offset = 0, limit = 50) { return rpc('global_board', { p_limit: limit, p_offset: offset }); },
   async globalRank() { const me = this.me(); if (!me) return null; const r = await rpc('global_rank', { p_tg: me.id }); return r[0] || null; },
   invalidate(levelId) { cache.delete('tops:' + levelId); cache.forEach((_, k) => { if (k.startsWith('fr:' + levelId + ':')) cache.delete(k); }); },
