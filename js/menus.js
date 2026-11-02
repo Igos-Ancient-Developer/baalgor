@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261102204859';
-import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261102204859';
-import * as D from './data.js?v=20261102204859';
-import * as M from './meta.js?v=20261102204859';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261102204859';
-import { url as imgUrl } from './sprites.js?v=20261102204859';
-import { Net } from './net.js?v=20261102204859';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261102204859';
-import { fillPlates, gemIc } from './res.js?v=20261102204859';
-import { gemHtml } from './gem3d.js?v=20261102204859';
-import { Wallet } from './wallet.js?v=20261102204859';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261102205708';
+import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261102205708';
+import * as D from './data.js?v=20261102205708';
+import * as M from './meta.js?v=20261102205708';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261102205708';
+import { url as imgUrl } from './sprites.js?v=20261102205708';
+import { Net } from './net.js?v=20261102205708';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261102205708';
+import { fillPlates, gemIc } from './res.js?v=20261102205708';
+import { gemHtml } from './gem3d.js?v=20261102205708';
+import { Wallet } from './wallet.js?v=20261102205708';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -276,11 +276,12 @@ export class Menus {
       }
       const d = D.DIFFS[diff], my = data.me, meU = Net.me(), ctx = { total: l.waves };
       let best = 0, bestDiff = diff; D.DIFFS.forEach((_, i) => { const v = M.bestScore(s, l.id, i); if (v > best) { best = v; bestDiff = i; } });      // мой лучший результат на уровне: по любой сложности
-      const shownDiff = my && my.score >= best && my.diff != null ? my.diff : bestDiff;
+      // запись с сервера (волна, время, набор, место) относится к своей сложности: показываем её, только если она и есть лучшая; иначе — локальный рекорд без чужих подробностей
+      const srv = my && my.score >= best ? my : null, shownDiff = srv && srv.diff != null ? srv.diff : bestDiff;
       const wv = (n) => `<span class="${n >= l.waves ? 'wfull' : ''}">волна ${n}/${l.waves}</span>`;
-      const items = my && my.loadout ? String(my.loadout).split(',').filter((t) => D.TOWERS[t] || D.ECON[t]) : [];
-      const mine = best || my ? `<div class="lvp-me"><div class="lvp-sc"><img src="${SC()}" alt=""><b>${fmt(Math.max(best, my ? my.score : 0))}</b>${my && my.rank ? `<span class="lvp-rk">место #${my.rank}</span>` : ''}${diffChip(shownDiff)}</div>
-          ${my && (my.duration || my.wave) ? `<div class="lvp-meta">${my.wave ? wv(my.wave) : ''}${my.wave && my.duration ? ' · ' : ''}${my.duration ? `<img src="${bareGlyphUrl('hourglass', 14)}" alt="">${clock(my.duration)}` : ''}</div>` : ''}
+      const items = srv && srv.loadout ? String(srv.loadout).split(',').filter((t) => D.TOWERS[t] || D.ECON[t]) : [];
+      const mine = best || my ? `<div class="lvp-me"><div class="lvp-sc"><img src="${SC()}" alt=""><b>${fmt(Math.max(best, my ? my.score : 0))}</b>${srv && srv.rank ? `<span class="lvp-rk">место #${srv.rank}</span>` : ''}${diffChip(shownDiff)}</div>
+          ${srv && (srv.duration || srv.wave) ? `<div class="lvp-meta">${srv.wave ? wv(srv.wave) : ''}${srv.wave && srv.duration ? ' · ' : ''}${srv.duration ? `<img src="${bareGlyphUrl('hourglass', 14)}" alt="">${clock(srv.duration)}` : ''}</div>` : ''}
           ${items.length ? `<div class="lvp-set">${items.map((t) => `<img src="${iconUrl(D.TOWERS[t] ? towerIcon(t, 1, null, null) : econIcon(t, 1))}" alt="" title="${(D.TOWERS[t] || D.ECON[t]).name}">`).join('')}</div>` : ''}</div>`
         : `<div class="lvp-none">Не пройдено</div>`;
       card.innerHTML = `<div class="lvp-h"><div class="lvp-t"><b>${l.name}</b><small>${SECT[l.sector] || ''} · рубеж ${l.lvl}</small></div></div>
@@ -301,7 +302,17 @@ export class Menus {
     const load = () => {
       const mySeq = seq, myDiff = diff;
       const ok = () => mySeq === this.diffSeq && myDiff === diff;
-      const done = () => { if (!ok()) return; data.loaded = true; render(); };
+      // рекорд есть в сохранении, а на сервере его нет (не дошла отправка): досылаем один раз, чтобы таблица и карточка совпали
+      const heal = () => {
+        if (!Net.canSubmit()) return;
+        let b = 0, bd = 0; D.DIFFS.forEach((_, i) => { const v = M.bestScore(s, l.id, i); if (v > b) { b = v; bd = i; } });
+        if (!b || b <= (data.me ? data.me.score : 0)) return;
+        const key = `bk_sync_${l.id}_${bd}_${b}`;
+        try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) { return; }
+        const won = M.diffCleared(s, l.id, bd);
+        Net.submit({ level: l.id, diff: bd, score: b, wave: won ? l.waves : 1, kills: 0, won }).then((r) => { if (r && r.ok) { if (ok()) { data.loaded = false; load(); } } else { try { localStorage.removeItem(key); } catch (e) { /* */ } } });
+      };
+      const done = () => { if (!ok()) return; const first = !data.loaded; data.loaded = true; render(); if (first) heal(); };
       if (!Net.enabled) { data.loaded = true; return; }
       let left = 3; const fin = () => { if (--left === 0) done(); };
       Net.levelBoardAll(l.id, diff, 3).then((r) => { if (ok()) data.top = r; }).catch(() => {}).then(fin);

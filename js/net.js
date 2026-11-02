@@ -1,5 +1,5 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261102204859';
+import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261102205708';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
@@ -88,7 +88,7 @@ export const Net = {
   async submit({ level, diff, score, wave, kills, won, duration, lv = 0, loadout = '' }, { keepalive = false } = {}) {
     if (!this.canSubmit()) return { error: 'noauth' };
     try {
-      const r = await rpc('submit_run', { init_data: tg.initData, p: { level, diff, score: Math.round(score), wave, kills, won: !!won, duration: Math.round(duration || 0), lv, loadout } }, { timeout: 10000, keepalive });
+      const r = await rpc('submit_run', { init_data: tg.initData, p: { level, diff, score: Math.round(score), wave, kills, won: !!won, duration: Math.round(duration || 0) || null, lv, loadout } }, { timeout: 10000, keepalive });
       this.invalidate(level);
       return r;
     } catch (e) { return { error: 'net' }; }
