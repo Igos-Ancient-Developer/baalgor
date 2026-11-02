@@ -1,4 +1,4 @@
-// «Сейчас в игре»: одно общее число (145–278) на все плашки — на главном экране, на карте и в таблице лидеров.
+// «Сейчас в игре»: одно общее число (145–278) на все плашки — на карте и в таблице лидеров.
 // У каждой плашки своя небольшая погрешность и чуть другая задержка, поэтому числа рядом, но не совпадают до цифры.
 // Раз в разное время (то 8–25 секунд, то около минуты) число спокойно меняется на соседнее, без анимации.
 const MIN = 145, MAX = 278;
@@ -30,7 +30,6 @@ function step() {
   setTimeout(step, pause());
 }
 export function startOnline() {
-  const title = document.getElementById('online'); if (title) adopt(title, 0);
   mountOnline(document.querySelector('#world .topbar'));
   mountOnline(document.querySelector('#board .topbar'));
   setTimeout(step, 6000 + Math.random() * 9000);
