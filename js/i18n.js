@@ -36,12 +36,16 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export async function initLang(code) {
   lang = code; document.documentElement.lang = code;
   if (code === 'ru') return;
-  let dict; try { dict = (await import(`./lang/${code}.js?v=20261102194603`)).default; } catch (e) { return; }
+  let dict; try { dict = (await import(`./lang/${code}.js?v=20261102201610`)).default; } catch (e) { return; }
   exact = new Map(Object.entries(dict));
   // самые длинные куски первыми; границы слова учитываем только там, где ключ начинается/кончается буквой (чтобы не задеть части других слов)
+  // iOS до 16.4 не знает «(?<!…)» и падает на таком RegExp — там левую границу ловим группой и возвращаем её в замене
+  let behind = true; try { new RegExp('(?<!a)b'); } catch (e) { behind = false; }
   regs = Object.keys(dict).sort((a, b) => b.length - a.length).map((k) => {
-    const a = /^\p{L}/u.test(k) ? '(?<!\\p{L})' : '', b = /\p{L}$/u.test(k) ? '(?!\\p{L})' : '';
-    return [new RegExp(a + esc(k) + b, 'gu'), dict[k]];
+    const lead = /^\p{L}/u.test(k), b = /\p{L}$/u.test(k) ? '(?!\\p{L})' : '';
+    if (!lead) return [new RegExp(esc(k) + b, 'gu'), dict[k]];
+    if (behind) return [new RegExp('(?<!\\p{L})' + esc(k) + b, 'gu'), dict[k]];
+    return [new RegExp('(^|[^\\p{L}])' + esc(k) + b, 'gu'), '$1' + dict[k].replace(/\$/g, '$$$$')];
   });
   [grp, decSep] = NUMFMT[code] || [',', '.'];
   translateTree(document.body); document.title = tr(document.title);
