@@ -1,6 +1,6 @@
 // Процедурные спрайты врагов (кадры ходьбы) и кусков тел для расчленёнки.
-import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261102193450';
-import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261102193450';
+import { SPR, img, dropImg, enemyFile } from './sprites.js?v=20261102194603';
+import { OUT, S, mk, cached, dropCache, shade, rgba, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261102194603';
 
 export const FRAMES = 8;
 const T2 = Math.PI * 2;
