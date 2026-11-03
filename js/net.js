@@ -1,5 +1,5 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261103105206';
+import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261103111043';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
@@ -70,7 +70,8 @@ export const Net = {
   step(name) {
     if (!this.canSubmit()) return;
     const key = 'bk_st_' + name; try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) { /* без хранилища шлём каждый раз — сервер не задвоит */ }
-    rpc('track_step', { init_data: tg.initData, p_step: name }, { keepalive: true }).catch(() => { try { localStorage.removeItem(key); } catch (e) { /* */ } });
+    const undo = () => { try { localStorage.removeItem(key); } catch (e) { /* */ } };             // не записалось — попробуем при следующем запуске
+    rpc('track_step', { init_data: tg.initData, p_step: name }, { keepalive: true }).then((r) => { if (!r || r.error) undo(); }).catch(undo);
   },
   // окно «поделиться» Telegram со ссылкой-приглашением; false — ссылка на приложение ещё не задана в config.js
   invite() {
