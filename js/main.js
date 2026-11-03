@@ -1,30 +1,30 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261103104759';
-import * as A from './art.js?v=20261103104759';
-import { Sim } from './sim.js?v=20261103104759';
-import { Gore } from './gore.js?v=20261103104759';
-import { Renderer } from './render.js?v=20261103104759';
-import { GameUI } from './ui.js?v=20261103104759';
-import { Tutorial } from './tutorial.js?v=20261103104759';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261103104759';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261103104759';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261103104759';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261103104759';
-import { mapBG, releaseBG } from './env.js?v=20261103104759';
-import { MENU_SPEC } from './music.js?v=20261103104759';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261103104759';
-import { renderForge, renderAchs } from './screens.js?v=20261103104759';
-import { renderShop } from './shop.js?v=20261103104759';
-import { freeChestReady } from './chests.js?v=20261103104759';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261103104759';
-import { Wallet } from './wallet.js?v=20261103104759';
-import { initLang, pickLang, langChosen } from './i18n.js?v=20261103104759';
-import { startFit } from './fit.js?v=20261103104759';
-import { startOnline } from './online.js?v=20261103104759';
-import { Menus, RUN, clock } from './menus.js?v=20261103104759';
-import { Net } from './net.js?v=20261103104759';
-import { gemIc } from './res.js?v=20261103104759';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261103104759';
+import * as D from './data.js?v=20261103105206';
+import * as A from './art.js?v=20261103105206';
+import { Sim } from './sim.js?v=20261103105206';
+import { Gore } from './gore.js?v=20261103105206';
+import { Renderer } from './render.js?v=20261103105206';
+import { GameUI } from './ui.js?v=20261103105206';
+import { Tutorial } from './tutorial.js?v=20261103105206';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261103105206';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261103105206';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261103105206';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261103105206';
+import { mapBG, releaseBG } from './env.js?v=20261103105206';
+import { MENU_SPEC } from './music.js?v=20261103105206';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261103105206';
+import { renderForge, renderAchs } from './screens.js?v=20261103105206';
+import { renderShop } from './shop.js?v=20261103105206';
+import { freeChestReady } from './chests.js?v=20261103105206';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261103105206';
+import { Wallet } from './wallet.js?v=20261103105206';
+import { initLang, pickLang, langChosen } from './i18n.js?v=20261103105206';
+import { startFit } from './fit.js?v=20261103105206';
+import { startOnline } from './online.js?v=20261103105206';
+import { Menus, RUN, clock } from './menus.js?v=20261103105206';
+import { Net } from './net.js?v=20261103105206';
+import { gemIc } from './res.js?v=20261103105206';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261103105206';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -59,8 +59,8 @@ async function boot() {
   startOnline();
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261103104759').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261103104759').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261103105206').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261103105206').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
@@ -105,7 +105,7 @@ function releaseLevel() {
 function busy(on) { $('#busy').classList.toggle('hidden', !on); }
 
 // ───────── навигация ─────────
-const SCREENS = ['#title', '#world', '#game'], OVERLAYS = ['#shop', '#settings', '#diffsheet', '#rankedsheet', '#board', '#forge', '#achs', '#loadout', '#pausemenu', '#endmenu'];
+const SCREENS = ['#title', '#world', '#game'], OVERLAYS = ['#tutask', '#shop', '#settings', '#diffsheet', '#rankedsheet', '#board', '#forge', '#achs', '#loadout', '#pausemenu', '#endmenu'];
 function hideAll() { for (const id of [...SCREENS, ...OVERLAYS]) hide(id); }
 function goTitle() { hideAll(); stopPlay(); releaseLevel(); menus.buildTitle(); show('#title'); sfx.startMusic(MENU_SPEC); updateBack(); }
 function goWorld(focus) { Net.step('world'); hideAll(); stopPlay(); releaseLevel(); menus.buildWorld(focus); show('#world'); sfx.startMusic(MENU_SPEC); updateBack(); }
@@ -147,15 +147,19 @@ function setupTabs() {
   };
   document.querySelectorAll('#tabbar .tab').forEach((b) => { b.onclick = () => go(b.dataset.tab); });
 }
+// выбор в самом начале: пройти обучение (или продолжить, если уже начинали) либо сразу на глобальную карту
+function askTutorial() {
+  $('#ta-go').textContent = save.tutSeen ? 'Продолжить обучение' : 'Начать обучение';
+  show('#tutask');
+  $('#ta-go').onclick = () => { sfx.play('click'); hide('#tutask'); save.tutSeen = 1; persist(); prepareLevel('tut', 1); };
+  $('#ta-skip').onclick = () => { sfx.play('click'); hide('#tutask'); save.tutDone = 1; persist(); Net.step('tut_skip'); goWorld(); };
+}
 function setupNav() {
   let ubT = 0; new MutationObserver((recs) => { if (ubT || !recs.some((r) => r.target.classList && r.target.classList.contains('screen'))) return; ubT = setTimeout(() => { ubT = 0; updateBack(); }, 0); }).observe($('#app'), { subtree: true, attributes: true, attributeFilter: ['class'] });      // любое окно открылось или закрылось
   for (const [id, fn] of [['#st-back', back], ['#rk-back', back], ['#world-back', back], ['#ds-back', back], ['#bd-back', back], ['#forge-back', back], ['#achs-back', back], ['#lo-back', back], ['#shop-back', back]]) $(id).onclick = fn;
-  $('#tut-skip').onclick = () => {                                            // обучение можно пропустить: считаем пройденным (без подарка за победу) и идём на карту
-    sfx.play('click'); if (meta) meta.abandon(); save.tutDone = 1; persist(); Net.step('tut_skip'); goWorld();
-  };
   $('#b-start').onclick = () => {
     sfx.unlock(); sfx.play('click'); sfx.startMusic(MENU_SPEC); Net.step('start');
-    if (!tutorialDone(save)) { prepareLevel('tut', 1); return; }               // новичка сразу ведём в обучение
+    if (!tutorialDone(save)) { askTutorial(); return; }                         // новичку сначала предлагаем обучение или пропуск
     goWorld();
   };
   for (const id of ['#world-forge', '#lo-forge', '#e-forge']) $(id).onclick = () => ctrl.openForge();      // Кузница доступна при выборе уровня, подготовке и после победы

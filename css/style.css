@@ -1417,5 +1417,3 @@ body.tgback #world .topbar { display: block; position: absolute; left: auto; rig
 body.tgback #world .topbar > :not(.online) { display: none; }
 body.tgback #world .topbar .online { margin: 0; }
 
-#tut-skip { position: absolute; z-index: 45; right: 8px; top: 58px; padding: 7px 12px; font-family: var(--font); font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: #e8d6b0; background: rgba(14,8,10,.78); border: 1.5px solid var(--edge2); border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.6); cursor: pointer; pointer-events: auto; }
-#tut-skip:active { transform: translateY(1px); filter: brightness(1.2); }

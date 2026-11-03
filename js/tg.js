@@ -1,5 +1,5 @@
 // Обёртка над Telegram Mini App SDK. Вне Telegram (обычный браузер) всё работает без него.
-import { newLife } from './meta.js?v=20261103104759';
+import { newLife } from './meta.js?v=20261103105206';
 const tg = window.Telegram && window.Telegram.WebApp;
 const KEY = 'bloodkeep_save_v1';
 
@@ -86,7 +86,7 @@ export const TG = {
 // лучший забег: выше достигнутый уровень, затем очки, затем меньшее время
 export const betterRun = (a, b) => !b || !(b.lv || b.score) || (a.lv || 0) > (b.lv || 0) || ((a.lv || 0) === (b.lv || 0) && ((a.score || 0) > (b.score || 0) || ((a.score || 0) === (b.score || 0) && a.time && (!b.time || a.time < b.time))));
 export const defaultSettings = () => ({ sfxVol: 1, musVol: 0.8, gore: 1, perf: 1, dmg: true, confirm: true });
-export function defaultSave() { return { best: {}, sfx: true, mus: true, set: defaultSettings(), rank: null, plays: 0, kills: 0, souls: 0, gems: 0, slots: 2, loadout: ['bolt', 'mine'], tutDone: 0, packs: [], starterBought: false, daily: { last: '', streak: 0 }, perks: {}, unlocked: {}, ach: {}, life: newLife(), prog: { cleared: {}, scores: {} } }; }
+export function defaultSave() { return { best: {}, sfx: true, mus: true, set: defaultSettings(), rank: null, plays: 0, kills: 0, souls: 0, gems: 0, slots: 2, loadout: ['bolt', 'mine'], tutDone: 0, tutSeen: 0, packs: [], starterBought: false, daily: { last: '', streak: 0 }, perks: {}, unlocked: {}, ach: {}, life: newLife(), prog: { cleared: {}, scores: {} } }; }
 function mergeSave(a, b) {
   const out = defaultSave();
   for (const src of [a, b]) {
@@ -97,7 +97,7 @@ function mergeSave(a, b) {
       if (betterRun(sr, r)) { r.lv = sr.lv || 0; r.score = sr.score || 0; r.time = sr.time || 0; r.loadout = sr.loadout || ''; }
       if (sr.fast && (!r.fast || sr.fast < r.fast)) r.fast = sr.fast;
     }
-    out.plays = Math.max(out.plays, src.plays || 0); out.kills = Math.max(out.kills, src.kills || 0); out.souls = Math.max(out.souls, src.souls || 0); out.gems = Math.max(out.gems || 0, src.gems || 0); out.slots = Math.max(out.slots || 2, src.slots || 2); for (const k of src.packs || []) if (!out.packs.includes(k)) out.packs.push(k); out.starterBought = out.starterBought || !!src.starterBought; if (src.daily && src.daily.last > out.daily.last) out.daily = { ...src.daily }; out.tutDone = out.tutDone || src.tutDone || 0;
+    out.plays = Math.max(out.plays, src.plays || 0); out.kills = Math.max(out.kills, src.kills || 0); out.souls = Math.max(out.souls, src.souls || 0); out.gems = Math.max(out.gems || 0, src.gems || 0); out.slots = Math.max(out.slots || 2, src.slots || 2); for (const k of src.packs || []) if (!out.packs.includes(k)) out.packs.push(k); out.starterBought = out.starterBought || !!src.starterBought; if (src.daily && src.daily.last > out.daily.last) out.daily = { ...src.daily }; out.tutDone = out.tutDone || src.tutDone || 0; out.tutSeen = out.tutSeen || src.tutSeen || 0;
     if (Array.isArray(src.loadout) && src.loadout.length) out.loadout = src.loadout.slice(0, 5);
     if (src.last) out.last = src.last; if (src.lastDiff) out.lastDiff = { ...(out.lastDiff || {}), ...src.lastDiff };      // последний сыгранный уровень и сложность на каждом уровне
     for (const k of Object.keys(src.best || {})) out.best[k] = Math.max(out.best[k] || 0, src.best[k]);
