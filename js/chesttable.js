@@ -18,7 +18,7 @@ const RAW = {
     T('frost', 3.2), T('mortar', 3.2), T('toxic', 3.2), T('flame', 3.2), T('banner', 3), T('saw', 3),
     T('harpoon', 1.2), T('tesla', 1.2), T('voidwell', 0.9), T('magnet', 0.9), T('grinder', 0.7), T('bank', 0.4), T('altar', 0.4), T('bell', 1), T('miner', 0.9), T('pendulum', 0.8),
   ] },
-  silver: { souls: 540, gems: 65, stars: 17, rows: [
+  silver: { souls: 0, gems: 65, stars: 17, rows: [
     { w: 27, t: 'gems', min: 23, max: 40 }, { w: 19, t: 'gems', min: 41, max: 57 }, { w: 8, t: 'gems', min: 58, max: 89 }, { w: 2.6, t: 'gems', min: 90, max: 140 },
     { w: 0.8, t: 'gems', min: 141, max: 300 }, { w: 0.1, t: 'gems', min: 301, max: 800 },
     { w: 8, t: 'souls', min: 300, max: 650 }, { w: 2, t: 'souls', min: 700, max: 1500 }, { w: 0.05, t: 'souls', min: 5000, max: 5000 },
@@ -26,7 +26,7 @@ const RAW = {
     T('harpoon', 3), T('tesla', 3), T('voidwell', 2.5), T('magnet', 2.5), T('grinder', 2), T('bank', 1.5), T('altar', 1.5), T('bell', 2.5), T('miner', 2.2), T('pendulum', 2),
     T('gold_bolt', 0.25), T('storm_tesla', 0.15), T('hell_flame', 0.1), T('thunder', 0.12), T('winter', 0.12), T('bloodstorm', 0.1), T('plague', 0.1),
   ] },
-  gold: { souls: 1250, gems: 180, stars: 45, rows: [
+  gold: { souls: 0, gems: 180, stars: 45, rows: [
     { w: 23, t: 'gems', min: 70, max: 110 }, { w: 17, t: 'gems', min: 111, max: 180 }, { w: 8, t: 'gems', min: 181, max: 260 }, { w: 3, t: 'gems', min: 261, max: 400 },
     { w: 0.6, t: 'gems', min: 275, max: 575 }, { w: 0.05, t: 'gems', min: 901, max: 2000 },
     { w: 8, t: 'souls', min: 900, max: 1800 }, { w: 1.5, t: 'souls', min: 1801, max: 4000 }, { w: 0.01, t: 'souls', min: 10000, max: 10000 },

@@ -1,15 +1,15 @@
 // Сундуки (лутбоксы): три вида, продаются за кристаллы и за души. За кристаллы бросок делает сервер (supabase/chests.sql, chest_open), за души — клиент (rollChest).
 // Таблицы — js/chesttable.js; игроку шансы не показываются, только цвет редкости.
-import { gemUrl } from './gem3d.js?v=20261103090216';
-import * as D from './data.js?v=20261103090216';
-import * as M from './meta.js?v=20261103090216';
-import { Net } from './net.js?v=20261103090216';
-import { Wallet } from './wallet.js?v=20261103090216';
-import { towerIcon, econIcon } from './ui.js?v=20261103090216';
-import { iconUrl } from './icons.js?v=20261103090216';
-import { url as imgUrl } from './sprites.js?v=20261103090216';
-import { CHEST_ROWS, POOL_OF, chanceOf, soulRows } from './chesttable.js?v=20261103090216';
-import { createChest3D } from './chest3d.js?v=20261103090216';
+import { gemUrl } from './gem3d.js?v=20261103104607';
+import * as D from './data.js?v=20261103104607';
+import * as M from './meta.js?v=20261103104607';
+import { Net } from './net.js?v=20261103104607';
+import { Wallet } from './wallet.js?v=20261103104607';
+import { towerIcon, econIcon } from './ui.js?v=20261103104607';
+import { iconUrl } from './icons.js?v=20261103104607';
+import { url as imgUrl } from './sprites.js?v=20261103104607';
+import { CHEST_ROWS, POOL_OF, chanceOf, soulRows } from './chesttable.js?v=20261103104607';
+import { createChest3D } from './chest3d.js?v=20261103104607';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -89,7 +89,7 @@ export async function refreshStock(save) {
 export async function buyChests(save, kind, pay, n) {
   const c = CHESTS[kind]; save.stock = save.stock || {};
   if (pay === 'souls') {
-    if (!c.souls) return { error: 'bad' };
+    if (kind !== 'wood' || !c.souls) return { error: 'bad' };         // за души продаётся только деревянный сундук
     if ((save.souls || 0) < c.souls * n) return { error: 'souls', price: c.souls * n };
     save.souls -= c.souls * n; save.stock[kind] = (save.stock[kind] || 0) + n; Wallet.onChange(); return { ok: true };
   }
