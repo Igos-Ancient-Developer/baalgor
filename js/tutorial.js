@@ -2,8 +2,8 @@
 // по силуэту картинки, это рисует render.js по view.hl), рядом палец с анимацией касания, остальной экран затемнён и не нажимается (касания проходят
 // только через «окно» вокруг цели). Когда игрок выбрал здание и ставит его, подсветки нет совсем: куда ставить, решает сам. Состояние берётся из симуляции
 // и интерфейса, поэтому порядок шагов не жёсткий.
-import * as D from './data.js?v=20261103104607';
-import { Net } from './net.js?v=20261103104607';
+import * as D from './data.js?v=20261103104759';
+import { Net } from './net.js?v=20261103104759';
 
 const $ = (s) => document.querySelector(s);
 
@@ -13,9 +13,9 @@ export class Tutorial {
   attach(sim, ui) {
     this.sim = sim; this.ui = ui; this.i = -1; this.timer = 0; this.done = false; this._sp = '';
     const hand = $('#tuthand'); if (!hand.src) hand.src = new URL('../img/ui/hand.webp', import.meta.url).href;
-    this.go(0);
+    this.go(0); $('#tut-skip').classList.remove('hidden');
   }
-  detach() { this.done = true; this.spot(null); const v = this.c.view; if (v) v.hl = null; }
+  detach() { this.done = true; $('#tut-skip').classList.add('hidden'); this.spot(null); const v = this.c.view; if (v) v.hl = null; }
 
   // подходящие клетки: для башни — рядом с дорогой, для рудника — подальше от неё
   cells(kind) {
@@ -88,6 +88,7 @@ export class Tutorial {
   }
   update(dt) {
     if (this.done || this.i < 0 || this.i >= this.steps.length) return;
+    if (this.sim.state !== 'play') $('#tut-skip').classList.add('hidden');
     const st = this.steps[this.i], v = this.c.view;
     // после постройки рудника монета падает почти сразу, только в обучении
     if (this.has('mine') && !this._coinSped && this.sim.stats.bags === 0) { this._coinSped = true; const m = this.sim.buildings.find((b) => b.type === 'mine'); if (m && (m.coinT ?? 99) > 1.2) m.coinT = 1.2; }
