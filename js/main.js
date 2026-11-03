@@ -1,30 +1,30 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261102210856';
-import * as A from './art.js?v=20261102210856';
-import { Sim } from './sim.js?v=20261102210856';
-import { Gore } from './gore.js?v=20261102210856';
-import { Renderer } from './render.js?v=20261102210856';
-import { GameUI } from './ui.js?v=20261102210856';
-import { Tutorial } from './tutorial.js?v=20261102210856';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261102210856';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261102210856';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261102210856';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261102210856';
-import { mapBG, releaseBG } from './env.js?v=20261102210856';
-import { MENU_SPEC } from './music.js?v=20261102210856';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261102210856';
-import { renderForge, renderAchs } from './screens.js?v=20261102210856';
-import { renderShop } from './shop.js?v=20261102210856';
-import { freeChestReady } from './chests.js?v=20261102210856';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261102210856';
-import { Wallet } from './wallet.js?v=20261102210856';
-import { initLang, pickLang, langChosen } from './i18n.js?v=20261102210856';
-import { startFit } from './fit.js?v=20261102210856';
-import { startOnline } from './online.js?v=20261102210856';
-import { Menus, RUN, clock } from './menus.js?v=20261102210856';
-import { Net } from './net.js?v=20261102210856';
-import { gemIc } from './res.js?v=20261102210856';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261102210856';
+import * as D from './data.js?v=20261103090216';
+import * as A from './art.js?v=20261103090216';
+import { Sim } from './sim.js?v=20261103090216';
+import { Gore } from './gore.js?v=20261103090216';
+import { Renderer } from './render.js?v=20261103090216';
+import { GameUI } from './ui.js?v=20261103090216';
+import { Tutorial } from './tutorial.js?v=20261103090216';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261103090216';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261103090216';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261103090216';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261103090216';
+import { mapBG, releaseBG } from './env.js?v=20261103090216';
+import { MENU_SPEC } from './music.js?v=20261103090216';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261103090216';
+import { renderForge, renderAchs } from './screens.js?v=20261103090216';
+import { renderShop } from './shop.js?v=20261103090216';
+import { freeChestReady } from './chests.js?v=20261103090216';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261103090216';
+import { Wallet } from './wallet.js?v=20261103090216';
+import { initLang, pickLang, langChosen } from './i18n.js?v=20261103090216';
+import { startFit } from './fit.js?v=20261103090216';
+import { startOnline } from './online.js?v=20261103090216';
+import { Menus, RUN, clock } from './menus.js?v=20261103090216';
+import { Net } from './net.js?v=20261103090216';
+import { gemIc } from './res.js?v=20261103090216';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261103090216';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -59,8 +59,8 @@ async function boot() {
   startOnline();
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261102210856').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261102210856').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261103090216').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261103090216').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
@@ -75,7 +75,7 @@ async function boot() {
   $('#loadfill').style.width = '100%';
   setupGameUi(); setupInput(); setupOverlays(); setupRevive(); setupNav(); setupTabs();
   Wallet.init(save, () => { persist(); }); Wallet.sync().then(() => { if (!$('#title').classList.contains('hidden')) menus.buildTitle(); });
-  hide('#loading'); goTitle();
+  hide('#loading'); goTitle(); Net.step('loaded');
   if (!langChosen()) menus.langPicker(true);                         // первый запуск: игрок сам выбирает язык (угаданный по Telegram стоит первым)
   last = performance.now();
 }
@@ -108,7 +108,7 @@ function busy(on) { $('#busy').classList.toggle('hidden', !on); }
 const SCREENS = ['#title', '#world', '#game'], OVERLAYS = ['#shop', '#settings', '#diffsheet', '#rankedsheet', '#board', '#forge', '#achs', '#loadout', '#pausemenu', '#endmenu'];
 function hideAll() { for (const id of [...SCREENS, ...OVERLAYS]) hide(id); }
 function goTitle() { hideAll(); stopPlay(); releaseLevel(); menus.buildTitle(); show('#title'); sfx.startMusic(MENU_SPEC); updateBack(); }
-function goWorld(focus) { hideAll(); stopPlay(); releaseLevel(); menus.buildWorld(focus); show('#world'); sfx.startMusic(MENU_SPEC); updateBack(); }
+function goWorld(focus) { Net.step('world'); hideAll(); stopPlay(); releaseLevel(); menus.buildWorld(focus); show('#world'); sfx.startMusic(MENU_SPEC); updateBack(); }
 function stopPlay() { running = false; paused = false; held = false; reviveOpen = false; hide('#revive'); run = null; ctrl.run = null; document.body.classList.remove('ranked'); TG.closingConfirm(false); if (tutorial) tutorial.detach(); if (ui) ui.closeUpgrade(true); tally++; }
 function top() { for (const id of ['#shop', '#settings', '#board', '#forge', '#achs', '#loadout', '#rankedsheet', '#diffsheet']) if (!$(id).classList.contains('hidden')) return id; return null; }
 function back() {
@@ -151,7 +151,7 @@ function setupNav() {
   let ubT = 0; new MutationObserver((recs) => { if (ubT || !recs.some((r) => r.target.classList && r.target.classList.contains('screen'))) return; ubT = setTimeout(() => { ubT = 0; updateBack(); }, 0); }).observe($('#app'), { subtree: true, attributes: true, attributeFilter: ['class'] });      // любое окно открылось или закрылось
   for (const [id, fn] of [['#st-back', back], ['#rk-back', back], ['#world-back', back], ['#ds-back', back], ['#bd-back', back], ['#forge-back', back], ['#achs-back', back], ['#lo-back', back], ['#shop-back', back]]) $(id).onclick = fn;
   $('#b-start').onclick = () => {
-    sfx.unlock(); sfx.play('click'); sfx.startMusic(MENU_SPEC);
+    sfx.unlock(); sfx.play('click'); sfx.startMusic(MENU_SPEC); Net.step('start');
     if (!tutorialDone(save)) { prepareLevel('tut', 1); return; }               // новичка сразу ведём в обучение
     goWorld();
   };
@@ -163,7 +163,7 @@ function setupNav() {
   $('#b-gems').onclick = () => { sfx.unlock(); sfx.play('select'); ctrl.openShop(); };
   ctrl.applySettings = applySettings; ctrl.persist = persist;
   window.addEventListener('resize', () => { if (!$('#world').classList.contains('hidden')) menus.fitWorld(); });
-  ctrl.openShop = () => { sfx.unlock(); sfx.play('click'); const draw = () => { persist(); renderShop(save, ctrl, draw); menus.buildTitle(); updateTabbar(); }; draw(); show('#shop'); updateBack(); Wallet.sync().then((w) => { if (w && !$('#shop').classList.contains('hidden')) renderShop(save, ctrl, draw); }); };
+  ctrl.openShop = () => { Net.step('shop'); sfx.unlock(); sfx.play('click'); const draw = () => { persist(); renderShop(save, ctrl, draw); menus.buildTitle(); updateTabbar(); }; draw(); show('#shop'); updateBack(); Wallet.sync().then((w) => { if (w && !$('#shop').classList.contains('hidden')) renderShop(save, ctrl, draw); }); };
   ctrl.openForge = () => { sfx.unlock(); sfx.play('click'); const draw = () => renderForge(save, sfx, () => { persist(); draw(); menus.buildTitle(); if (!$('#world').classList.contains('hidden')) menus.buildWorld(); }, ctrl.openShop); ctrl.forgeDraw = draw; draw(); show('#forge'); updateBack(); };
   ctrl.openAchs = () => { sfx.unlock(); sfx.play('click'); renderAchs(save); show('#achs'); updateBack(); };
   ctrl.toggleSnd = () => { sfx.unlock(); sfx.setSfx(!sfx.sfxOn); save.sfx = sfx.sfxOn; persist(); sfx.play('click'); };
@@ -323,6 +323,7 @@ async function startLevel(levelId, diffIdx, ranked, loadout, boosts = [], weekly
   TG.closingConfirm(true); updateBack();
   sfx.unlock(); sfx.stopMusic();                       // на уровнях музыки нет — только звуки боя; меню снова включит свою тему
   if (tut) tutorial.attach(sim, ui); else tutorial.detach();
+  if (tut) Net.step('tut_start'); else if (!ranked) Net.step('lvl_start');             // воронка новичка
 }
 // усилители за кристаллы: золото на старте и жизни (на Хардкоре жизнь одна, усилитель жизней там не действует)
 function boostMods(m, boosts, diffIdx) { const o = { ...m }; if (boosts.includes('gold')) o.startGold = (o.startGold || 0) + 100; if (boosts.includes('lives') && diffIdx !== 4) o.lives = (o.lives || 0) + 5; return o; }
@@ -339,7 +340,8 @@ function showAchToast(a) {
 function onOver({ won }) {
   save.kills += sim.stats.kills; persist();
   ending = { t: won ? 2.2 : 1.8, won, shown: false };
-  if (D.MAPS[levelIdx].tutorial) return;                  // обучение в таблицу не уходит
+  if (D.MAPS[levelIdx].tutorial) { Net.step(won ? 'tut_done' : 'tut_fail'); return; }   // обучение в таблицу не уходит
+  if (!run) { Net.step('lvl_end'); if (won) Net.step('lvl_win'); }
   if (run) {                                              // копим результат забега; в таблицу уходит один итог
     run.score += sim.score; run.time += sim.time; run.kills += sim.stats.kills; run.waves += sim.wave;
     run.done = !won || run.i >= run.levels.length - 1;

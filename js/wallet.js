@@ -1,8 +1,8 @@
 // Кошелёк донат-кристаллов. В Telegram баланс, покупки и цены живут на сервере (supabase/schema.sql), клиент только показывает.
 // Вне Telegram (обычный браузер) работает локальный режим для разработки: траты считаются в сохранении, пополнение только с ?debug.
-import * as D from './data.js?v=20261102210856';
-import { Net } from './net.js?v=20261102210856';
-import { TG } from './tg.js?v=20261102210856';
+import * as D from './data.js?v=20261103090216';
+import { Net } from './net.js?v=20261103090216';
+import { TG } from './tg.js?v=20261103090216';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const debug = () => location.search.includes('debug');
@@ -87,8 +87,9 @@ export const Wallet = {
     }
     let link = (this._inv || {})[id];                                      // ссылка на счёт уже создана заранее (prefetchInvoices): окно оплаты открывается сразу
     if (!link) { const inv = await Net.invoice(id); if (!inv || !inv.link) return { error: inv && inv.error || 'net' }; link = inv.link; (this._inv ||= {})[id] = link; }
+    Net.step('pay_open');
     const status = await new Promise((res) => { try { TG.tg.openInvoice(link, res); } catch (e) { res('failed'); } });
-    if (status !== 'paid') return { status };
+    if (status !== 'paid') { if (status === 'cancelled') Net.step('pay_cancel'); return { status }; }
     for (let i = 0; i < 10; i++) { const before = s.gems; await new Promise((r) => setTimeout(r, 1200)); const w = await this.sync(); if (w && (w.gems > before || w.starter !== undefined && id === 'starter' && w.starter)) break; }   // вебхук может прийти с задержкой
     return { status: 'paid' };
   },

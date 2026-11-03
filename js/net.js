@@ -1,5 +1,5 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261102210856';
+import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261103090216';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
@@ -64,6 +64,13 @@ export const Net = {
     const sp = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
     const src = /^f\d{3,15}$/.test(sp) ? 'friend' : sp.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
     rpc('track_open', { init_data: tg.initData, p_src: src || 'direct' }).catch(() => { /* нет связи или функция ещё не создана */ });
+  },
+  // воронка новичка: до какого шага дошёл игрок (загрузка, язык, обучение, первый уровень, магазин…). Каждый шаг — один раз на устройство,
+  // сервер тоже хранит только первое касание; список допустимых шагов и отчёт — supabase/funnel.sql
+  step(name) {
+    if (!this.canSubmit()) return;
+    const key = 'bk_st_' + name; try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) { /* без хранилища шлём каждый раз — сервер не задвоит */ }
+    rpc('track_step', { init_data: tg.initData, p_step: name }, { keepalive: true }).catch(() => { try { localStorage.removeItem(key); } catch (e) { /* */ } });
   },
   // окно «поделиться» Telegram со ссылкой-приглашением; false — ссылка на приложение ещё не задана в config.js
   invite() {

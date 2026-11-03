@@ -2,7 +2,8 @@
 // по силуэту картинки, это рисует render.js по view.hl), рядом палец с анимацией касания, остальной экран затемнён и не нажимается (касания проходят
 // только через «окно» вокруг цели). Когда игрок выбрал здание и ставит его, подсветки нет совсем: куда ставить, решает сам. Состояние берётся из симуляции
 // и интерфейса, поэтому порядок шагов не жёсткий.
-import * as D from './data.js?v=20261102210856';
+import * as D from './data.js?v=20261103090216';
+import { Net } from './net.js?v=20261103090216';
 
 const $ = (s) => document.querySelector(s);
 
@@ -82,6 +83,7 @@ export class Tutorial {
     this.spot(null); this.placing = false; const v = this.c.view; if (v) v.hl = null;
     while (i < this.steps.length && this.steps[i].skip && this.steps[i].skip()) i++;
     this.i = i; if (i >= this.steps.length) return;
+    Net.step('tut' + i);                                     // воронка новичка: до какого шага обучения дошёл
     const st = this.steps[i]; if (st.enter) st.enter(); this.c.sfx.play('select');
   }
   update(dt) {

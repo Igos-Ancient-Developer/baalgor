@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261102210856';
-import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261102210856';
-import * as D from './data.js?v=20261102210856';
-import * as M from './meta.js?v=20261102210856';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261102210856';
-import { url as imgUrl } from './sprites.js?v=20261102210856';
-import { Net } from './net.js?v=20261102210856';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261102210856';
-import { fillPlates, gemIc } from './res.js?v=20261102210856';
-import { gemHtml } from './gem3d.js?v=20261102210856';
-import { Wallet } from './wallet.js?v=20261102210856';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261103090216';
+import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261103090216';
+import * as D from './data.js?v=20261103090216';
+import * as M from './meta.js?v=20261103090216';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261103090216';
+import { url as imgUrl } from './sprites.js?v=20261103090216';
+import { Net } from './net.js?v=20261103090216';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261103090216';
+import { fillPlates, gemIc } from './res.js?v=20261103090216';
+import { gemHtml } from './gem3d.js?v=20261103090216';
+import { Wallet } from './wallet.js?v=20261103090216';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -150,14 +150,14 @@ export class Menus {
       `<div class="lgsearch"><span>🔍</span><input type="search" placeholder="Search · Поиск" autocomplete="off" autocapitalize="off" spellcheck="false"></div><div class="lglist"></div>`;
     ov.appendChild(sh); $('#app').appendChild(ov);
     const list = sh.querySelector('.lglist'), inp = sh.querySelector('input');
-    const close = () => { if (first) rememberLang(curLang); ov.remove(); };
+    const close = () => { if (first) { rememberLang(curLang); Net.step('lang'); } ov.remove(); };
     const order = first ? [...LANGS.filter((l) => l[0] === curLang), ...LANGS.filter((l) => l[0] !== curLang)] : LANGS;
     const draw = () => {
       const q = inp.value.trim().toLowerCase(); list.innerHTML = '';
       const rows = order.filter(([id, name, , en]) => !q || name.toLowerCase().includes(q) || en.toLowerCase().includes(q) || id.startsWith(q));
       for (const [id, name, flag, en] of rows) {
         const b = el('button', 'lgrow' + (id === curLang ? ' on' : ''), `<span class="fl">${flag}</span><span class="nm"><b>${name}</b><small>${en}</small></span>${id === curLang ? '<i class="ck"></i>' : ''}`);
-        b.onclick = () => { c.sfx.play('click'); if (id === curLang) { close(); return; } setLang(id); };
+        b.onclick = () => { c.sfx.play('click'); if (id === curLang) { close(); return; } if (first) Net.step('lang'); setLang(id); };
         list.appendChild(b);
       }
       if (!rows.length) list.appendChild(el('div', 'lgempty', '—'));
