@@ -1,30 +1,30 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261103111043';
-import * as A from './art.js?v=20261103111043';
-import { Sim } from './sim.js?v=20261103111043';
-import { Gore } from './gore.js?v=20261103111043';
-import { Renderer } from './render.js?v=20261103111043';
-import { GameUI } from './ui.js?v=20261103111043';
-import { Tutorial } from './tutorial.js?v=20261103111043';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261103111043';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261103111043';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261103111043';
-import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261103111043';
-import { mapBG, releaseBG } from './env.js?v=20261103111043';
-import { MENU_SPEC } from './music.js?v=20261103111043';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261103111043';
-import { renderForge, renderAchs } from './screens.js?v=20261103111043';
-import { renderShop } from './shop.js?v=20261103111043';
-import { freeChestReady } from './chests.js?v=20261103111043';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261103111043';
-import { Wallet } from './wallet.js?v=20261103111043';
-import { initLang, pickLang } from './i18n.js?v=20261103111043';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
-import { startFit } from './fit.js?v=20261103111043';
-import { startOnline } from './online.js?v=20261103111043';
-import { Menus, RUN, clock } from './menus.js?v=20261103111043';
-import { Net } from './net.js?v=20261103111043';
-import { gemIc } from './res.js?v=20261103111043';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261103111043';
+import * as D from './data.js?v=20261104085643';
+import * as A from './art.js?v=20261104085643';
+import { Sim } from './sim.js?v=20261104085643';
+import { Gore } from './gore.js?v=20261104085643';
+import { Renderer } from './render.js?v=20261104085643';
+import { GameUI } from './ui.js?v=20261104085643';
+import { Tutorial } from './tutorial.js?v=20261104085643';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261104085643';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261104085643';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261104085643';
+import { loadSprites, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261104085643';
+import { mapBG, releaseBG } from './env.js?v=20261104085643';
+import { MENU_SPEC } from './music.js?v=20261104085643';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261104085643';
+import { renderForge, renderAchs } from './screens.js?v=20261104085643';
+import { renderShop } from './shop.js?v=20261104085643';
+import { freeChestReady } from './chests.js?v=20261104085643';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261104085643';
+import { Wallet } from './wallet.js?v=20261104085643';
+import { initLang, pickLang } from './i18n.js?v=20261104085643';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
+import { startFit } from './fit.js?v=20261104085643';
+import { startOnline } from './online.js?v=20261104085643';
+import { Menus, RUN, clock } from './menus.js?v=20261104085643';
+import { Net } from './net.js?v=20261104085643';
+import { gemIc } from './res.js?v=20261104085643';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261104085643';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -59,8 +59,8 @@ async function boot() {
   startOnline();
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261103111043').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261103111043').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261104085643').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261104085643').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
@@ -76,6 +76,7 @@ async function boot() {
   setupGameUi(); setupInput(); setupOverlays(); setupRevive(); setupNav(); setupTabs();
   Wallet.init(save, () => { persist(); }); Wallet.sync().then(() => { if (!$('#title').classList.contains('hidden')) menus.buildTitle(); });
   hide('#loading'); goTitle(); Net.step('loaded');
+  if (!tutorialDone(save)) askTutorial();                    // новичок сразу видит выбор «обучение / пропустить»: на главном меню уходило 85% новичков с рекламы
   last = performance.now();
 }
 
@@ -150,8 +151,8 @@ function setupTabs() {
 function askTutorial() {
   $('#ta-go').textContent = save.tutSeen ? 'Продолжить обучение' : 'Начать обучение';
   show('#tutask');
-  $('#ta-go').onclick = () => { sfx.play('click'); hide('#tutask'); save.tutSeen = 1; persist(); prepareLevel('tut', 1); };
-  $('#ta-skip').onclick = () => { sfx.play('click'); hide('#tutask'); save.tutDone = 1; persist(); Net.step('tut_skip'); goWorld(); };
+  $('#ta-go').onclick = () => { sfx.unlock(); sfx.play('click'); hide('#tutask'); save.tutSeen = 1; persist(); prepareLevel('tut', 1); };
+  $('#ta-skip').onclick = () => { sfx.unlock(); sfx.play('click'); hide('#tutask'); save.tutDone = 1; persist(); Net.step('tut_skip'); goWorld(); };
 }
 function setupNav() {
   let ubT = 0; new MutationObserver((recs) => { if (ubT || !recs.some((r) => r.target.classList && r.target.classList.contains('screen'))) return; ubT = setTimeout(() => { ubT = 0; updateBack(); }, 0); }).observe($('#app'), { subtree: true, attributes: true, attributeFilter: ['class'] });      // любое окно открылось или закрылось
