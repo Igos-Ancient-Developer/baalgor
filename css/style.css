@@ -1417,3 +1417,27 @@ body.tgback #world .topbar { display: block; position: absolute; left: auto; rig
 body.tgback #world .topbar > :not(.online) { display: none; }
 body.tgback #world .topbar .online { margin: 0; }
 
+
+/* ───── реклама за награду, предложение стартового набора (05.11.2026) ───── */
+.btn.adbtn { border-image-source: url(../img/ui/plate_glow.webp); color: #d2fff4; text-shadow: 0 2px 0 #000, 0 0 10px rgba(40,230,210,.55); white-space: nowrap; }
+.sh-card.adcard { flex-direction: row; align-items: center; gap: 10px; background: linear-gradient(135deg, rgba(30,110,60,.5), rgba(0,0,0,.6)), var(--slab); box-shadow: 0 0 0 2px #0b0c0c, 0 0 0 3.5px #4fc070 !important; }
+.adcard .ad-ic { width: 46px; height: 46px; flex: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.6)); }
+.adcard .ad-t { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.adcard .ad-t b { font-family: var(--gothic); font-weight: 400; font-size: 17px; color: #f0e2b4; text-shadow: 0 2px 0 #000; }
+.adcard .ad-t small { font-size: 12px; color: #cfe8cf; } .adcard .ad-t .ad-left { color: #ffd98a; }
+.adcard .btn.adbtn { flex: none; width: 136px; min-height: 48px; padding: 2px 4px; font-size: 14px; letter-spacing: .02em; }
+.btn.adbtn { overflow-wrap: normal; word-break: keep-all; hyphens: none; }
+.freech .btn.adbtn { width: 128px; padding: 2px 6px; font-size: 13px; }
+.freech.off:has(.adbtn) { opacity: 1; }
+.rv-box .btn.adbtn, .rv-box .btn.buy { width: 100%; }
+#endmenu .btn.adbtn { min-height: 44px; font-size: 16px; }
+.of-box { position: relative; align-items: center; text-align: center; padding-top: 22px; overflow: visible; }
+.of-box .rib { left: 50%; transform: translateX(-50%); }
+.of-box h2 { margin: 0; }
+.of-ic { width: 84px; height: 84px; filter: drop-shadow(0 4px 8px rgba(245,192,74,.45)); }
+.of-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 16px; }
+.of-list li { display: flex; align-items: center; justify-content: center; gap: 6px; } .of-list img { width: 18px; height: 18px; }
+.of-box .btn { width: 100%; }
+#offer { z-index: 32; }                                                   /* поверх экрана итогов (#endmenu — 31) */
+.btn.adbtn { white-space: nowrap !important; }
+.adcard .btn.adbtn { width: 150px; font-size: 13px; letter-spacing: 0; }

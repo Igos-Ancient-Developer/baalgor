@@ -1,30 +1,31 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261105202109';
-import * as A from './art.js?v=20261105202109';
-import { Sim } from './sim.js?v=20261105202109';
-import { Gore } from './gore.js?v=20261105202109';
-import { Renderer } from './render.js?v=20261105202109';
-import { GameUI } from './ui.js?v=20261105202109';
-import { Tutorial } from './tutorial.js?v=20261105202109';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261105202109';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261105202109';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261105202109';
-import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261105202109';
-import { mapBG, releaseBG } from './env.js?v=20261105202109';
-import { MENU_SPEC } from './music.js?v=20261105202109';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261105202109';
-import { renderForge, renderAchs } from './screens.js?v=20261105202109';
-import { renderShop } from './shop.js?v=20261105202109';
-import { freeChestReady } from './chests.js?v=20261105202109';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261105202109';
-import { Wallet } from './wallet.js?v=20261105202109';
-import { initLang, pickLang } from './i18n.js?v=20261105202109';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
-import { startFit } from './fit.js?v=20261105202109';
-import { startOnline } from './online.js?v=20261105202109';
-import { Menus, RUN, clock } from './menus.js?v=20261105202109';
-import { Net } from './net.js?v=20261105202109';
-import { gemIc } from './res.js?v=20261105202109';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261105202109';
+import * as D from './data.js?v=20261105215229';
+import * as A from './art.js?v=20261105215229';
+import { Sim } from './sim.js?v=20261105215229';
+import { Gore } from './gore.js?v=20261105215229';
+import { Renderer } from './render.js?v=20261105215229';
+import { GameUI } from './ui.js?v=20261105215229';
+import { Tutorial } from './tutorial.js?v=20261105215229';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261105215229';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261105215229';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261105215229';
+import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261105215229';
+import { mapBG, releaseBG } from './env.js?v=20261105215229';
+import { MENU_SPEC } from './music.js?v=20261105215229';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261105215229';
+import { renderForge, renderAchs } from './screens.js?v=20261105215229';
+import { renderShop } from './shop.js?v=20261105215229';
+import { freeChestReady } from './chests.js?v=20261105215229';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261105215229';
+import { Wallet } from './wallet.js?v=20261105215229';
+import { initLang, pickLang } from './i18n.js?v=20261105215229';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
+import { startFit } from './fit.js?v=20261105215229';
+import { startOnline } from './online.js?v=20261105215229';
+import { Menus, RUN, clock } from './menus.js?v=20261105215229';
+import { Net } from './net.js?v=20261105215229';
+import { Ads } from './ads.js?v=20261105215229';
+import { gemIc } from './res.js?v=20261105215229';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261105215229';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -59,8 +60,8 @@ async function boot() {
   startOnline();
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261105202109').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261105202109').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261105215229').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261105215229').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
@@ -77,6 +78,7 @@ async function boot() {
   Wallet.init(save, () => { persist(); }); Wallet.sync().then(() => { if (!$('#title').classList.contains('hidden')) menus.buildTitle(); });
   hide('#loading'); goTitle(); Net.step('loaded');
   if (!tutorialDone(save)) askTutorial();                    // новичок сразу видит выбор «обучение / пропустить»: на главном меню уходило 85% новичков с рекламы
+  notifySync();
   last = performance.now();
 }
 
@@ -106,12 +108,12 @@ function releaseLevel() {
 function busy(on) { $('#busy').classList.toggle('hidden', !on); }
 
 // ───────── навигация ─────────
-const SCREENS = ['#title', '#world', '#game'], OVERLAYS = ['#tutask', '#shop', '#settings', '#diffsheet', '#rankedsheet', '#board', '#forge', '#achs', '#loadout', '#pausemenu', '#endmenu'];
+const SCREENS = ['#title', '#world', '#game'], OVERLAYS = ['#tutask', '#shop', '#settings', '#diffsheet', '#rankedsheet', '#board', '#forge', '#achs', '#loadout', '#pausemenu', '#endmenu', '#offer'];
 function hideAll() { for (const id of [...SCREENS, ...OVERLAYS]) hide(id); }
 function goTitle() { hideAll(); stopPlay(); releaseLevel(); menus.buildTitle(); show('#title'); sfx.startMusic(MENU_SPEC); updateBack(); }
 function goWorld(focus) { Net.step('world'); hideAll(); stopPlay(); releaseLevel(); menus.buildWorld(focus); show('#world'); sfx.startMusic(MENU_SPEC); updateBack(); }
 function stopPlay() { running = false; paused = false; held = false; reviveOpen = false; hide('#revive'); run = null; ctrl.run = null; document.body.classList.remove('ranked'); TG.closingConfirm(false); if (tutorial) tutorial.detach(); if (ui) ui.closeUpgrade(true); tally++; }
-function top() { for (const id of ['#shop', '#settings', '#board', '#forge', '#achs', '#loadout', '#rankedsheet', '#diffsheet']) if (!$(id).classList.contains('hidden')) return id; return null; }
+function top() { for (const id of ['#offer', '#shop', '#settings', '#board', '#forge', '#achs', '#loadout', '#rankedsheet', '#diffsheet']) if (!$(id).classList.contains('hidden')) return id; return null; }
 function back() {
   const t = top();
   if (!t && reviveOpen) { sfx.play('error'); return; }              // у ворот назад пути нет: либо вернуть жизни, либо сдаться
@@ -194,13 +196,61 @@ function setupOverlays() {
   $('#p-quit').onclick = () => { if (meta) meta.abandon(); if (run) { abandonRun(); return; } if (D.MAPS[levelIdx].tutorial) { goTitle(); return; } goWorld(D.MAPS[levelIdx].id); };
   $('#p-settings').onclick = () => { sfx.play('click'); menus.openSettings(); updateBack(); };
   $('#e-again').onclick = () => { hide('#endmenu'); if (run) { startRunFlow(); return; } prepareLevel(D.MAPS[levelIdx].id, diffI, true, weeklyRun); };
-  $('#e-menu').onclick = () => { hide('#endmenu'); if (run) { goTitle(); return; } goWorld(D.MAPS[levelIdx].id); };
+  $('#e-menu').onclick = () => { hide('#endmenu'); askNotify(); if (run) { goTitle(); return; } goWorld(D.MAPS[levelIdx].id); };
   $('#e-next').onclick = () => {
-    hide('#endmenu');
+    hide('#endmenu'); askNotify();
     if (run) { run.i++; openLoadoutFor(run.levels[run.i], RUN.diff); return; }
     const n = nextAfter(save, D.MAPS[levelIdx].id); goWorld(n ? n.id : D.MAPS[levelIdx].id);
   };
   $('#end-verdict').onclick = () => { tally++; };       // касание пропускает анимацию подсчёта
+  // двойные души за победу — за просмотр рекламы, один раз на бой
+  $('#e-ad').onclick = async () => {
+    const b = $('#e-ad'), r = meta && meta.run; if (!r || b.disabled || r.adDouble) return;
+    b.disabled = true; const res = await Ads.show('souls', sfx); b.disabled = false;
+    if (res !== 'done') { ctrl.note(Ads.say(res)); return; }
+    if (r.adDouble) return; r.adDouble = 1;
+    save.souls += r.souls; persist(); b.classList.add('hidden'); sfx.play('upgrade');
+    $('#end-souls').innerHTML = `<img src="${bareGlyphUrl('soul', 24)}" alt=""> +${r.souls * 2}`;
+  };
+  // стартовый набор после победы
+  $('#of-buy').onclick = async () => {
+    const b = $('#of-buy'), t0 = b.innerHTML; if (b.disabled) return; b.disabled = true; b.textContent = 'Открываю счёт…';
+    const r = await Wallet.buy('starter'); b.disabled = false; b.innerHTML = t0;
+    if (r && r.status === 'paid') { Net.step('offer_buy'); hide('#offer'); persist(); sfx.play('win'); ctrl.note('Стартовый набор получен'); menus.buildTitle(); updateBack(); }
+    else if (r && r.status !== 'cancelled') { sfx.play('error'); ctrl.note(r.error === 'notg' ? 'Покупка доступна внутри Telegram' : 'Не получилось, попробуй ещё раз'); }
+  };
+  $('#of-later').onclick = () => { sfx.play('click'); hide('#offer'); updateBack(); };
+}
+// Предложение стартового набора: после победы в кампании, пока набор не куплен; первый раз — после первой победы, потом не чаще раза в 3 дня
+function maybeOffer(won) {
+  if (!won || run || weeklyRun || D.MAPS[levelIdx].tutorial || save.starterBought || !Wallet.online) return;
+  if (save.offerAt && Date.now() - save.offerAt < 3 * 864e5) return;
+  const T = D.STARTER, worth = Math.round((T.gems + D.PREMIUM[T.tower].gems) / (D.PACKS[0].gems / D.PACKS[0].stars));
+  $('#of-ic').src = bareGlyphUrl('premium', 96);
+  $('#of-list').innerHTML = `<li>${gemIc(18)} ${T.gems} кристаллов</li><li><img src="${bareGlyphUrl('premium', 18)}" alt=""> ${D.PREMIUM[T.tower].name}, навсегда</li><li><img src="${bareGlyphUrl('soul', 18)}" alt=""> ${T.souls} душ</li>`;
+  $('#of-worth').textContent = `Выгода: на ${worth} ⭐ товаров за ${T.stars} ⭐`;
+  $('#of-buy').innerHTML = `⭐ ${T.stars}`;
+  setTimeout(() => {                                                    // поверх итогов, когда игрок их увидел
+    if ($('#endmenu').classList.contains('hidden') || save.starterBought) return;
+    save.offerAt = Date.now(); persist(); show('#offer'); Net.step('offer_show'); updateBack();
+  }, 1600);
+}
+// Сообщения от бота (напоминания): спрашиваем один раз, после первой победы в кампании, когда игрок уходит с экрана итогов.
+// Telegram показывает своё окно «разрешить боту писать»; кто уже разрешил (или писал боту) — не спрашиваем, только сообщаем серверу.
+function askNotify() {
+  const tg = TG.tg, u = TG.user();
+  if (!tg || !tg.initData || save.notifyAsked || !(save.life && save.life.wins >= 1)) return;
+  save.notifyAsked = 1; persist();
+  if (u && u.allows_write_to_pm) { Net.notifySet(true); return; }
+  if (!tg.requestWriteAccess || !tg.isVersionAtLeast || !tg.isVersionAtLeast('6.9')) return;
+  Net.step('notify_ask');
+  try { tg.requestWriteAccess((ok) => { if (ok) { Net.step('notify_ok'); Net.notifySet(true); } }); } catch (e) { /* старый клиент */ }
+}
+// при запуске: кто уже разрешил боту писать — сообщаем серверу (раз в сутки, заодно обновляется язык)
+function notifySync() {
+  const u = TG.user(), day = new Date().toISOString().slice(0, 10);
+  if (!u || !u.allows_write_to_pm || save.notifyDay === day) return;
+  save.notifyDay = day; persist(); Net.notifySet(true);
 }
 // ───────── возрождение у ворот ─────
 // Враг прошёл в ворота на последней жизни: бой замирает, экран темнеет, игроку предлагают вернуть жизни за кристаллы.
@@ -214,6 +264,17 @@ function renderRevive() {
   $('#rv-bal').innerHTML = `У тебя: ${gemIc(18)} ${fmt(have)}` + (left > 0 ? ` · ещё возрождений: ${left}` : '');
   $('#rv-buy').innerHTML = `+${D.REVIVE.lives} жизней · ${gemIc(18)} ${price}`;
   $('#rv-buy').classList.toggle('hidden', !enough); $('#rv-shop').classList.toggle('hidden', enough);
+  // не хватает кристаллов: самая дешёвая покупка прямо здесь (стартовый набор, пока не куплен, иначе маленький пакет), после оплаты жизни возвращаются сами
+  const q = quickPack(), qb = $('#rv-quick');
+  qb.classList.toggle('hidden', enough || !q || !Wallet.online);
+  if (q) qb.innerHTML = `⭐ ${q.stars} · ${gemIc(18)} +${fmt(q.gems)}`;
+  $('#rv-shop').textContent = q && Wallet.online ? 'Другие пакеты' : 'Пополнить кристаллы';
+  $('#rv-ad').classList.toggle('hidden', !Ads.on('revive') || sim.revive.ad);       // жизни за рекламу — один раз за бой
+}
+// самая дешёвая покупка кристаллов: стартовый набор (один раз) или самый маленький пакет (×2 при первой покупке)
+function quickPack() {
+  if (!save.starterBought) return { id: 'starter', stars: D.STARTER.stars, gems: D.STARTER.gems };
+  const p = D.PACKS[0]; return { id: p.id, stars: p.stars, gems: p.gems * ((save.packs || []).includes(p.id) ? 1 : D.FIRST_BONUS) };
 }
 function openRevive() { reviveOpen = true; held = true; sfx.play('error'); renderRevive(); show('#revive'); }
 function closeRevive() { reviveOpen = false; held = false; hide('#revive'); }
@@ -224,6 +285,22 @@ function setupRevive() {
     if (!reviveOpen || !sim) return;
     if (r && r.ok) { persist(); closeRevive(); sim.reviveWith(D.REVIVE.lives); sfx.play('win'); ctrl.note(`+${D.REVIVE.lives} жизней`); }
     else { sfx.play('error'); if (r && r.error === 'gems') renderRevive(); else ctrl.note('Не получилось, попробуй ещё раз'); }
+  };
+  $('#rv-quick').onclick = async () => {
+    const q = quickPack(); if (reviveBusy || !reviveOpen || !q) return; reviveBusy = true;
+    const b = $('#rv-quick'), t0 = b.innerHTML; b.disabled = true; b.textContent = 'Открываю счёт…';
+    const r = await Wallet.buy(q.id); reviveBusy = false; b.disabled = false; b.innerHTML = t0;
+    if (!reviveOpen || !sim) return;
+    persist(); renderRevive();
+    if (r && r.status === 'paid') { if ((save.gems || 0) >= revivePrice()) $('#rv-buy').click(); else ctrl.note('Кристаллы придут через минуту'); }
+    else if (r && r.status !== 'cancelled') { sfx.play('error'); ctrl.note(r.error === 'notg' ? 'Покупка доступна внутри Telegram' : 'Не получилось, попробуй ещё раз'); }
+  };
+  $('#rv-ad').onclick = async () => {
+    if (reviveBusy || !reviveOpen || !sim || sim.revive.ad) return; reviveBusy = true;
+    const res = await Ads.show('revive', sfx); reviveBusy = false;
+    if (!reviveOpen || !sim) return;
+    if (res !== 'done') { ctrl.note(Ads.say(res)); return; }
+    sim.revive.ad = 1; closeRevive(); sim.reviveWith(3); sfx.play('win'); ctrl.note('+3 жизни');
   };
   $('#rv-shop').onclick = () => { hide('#revive'); ctrl.openShop(); };            // окно возрождения прячется под магазин и возвращается, когда его закроют
   $('#rv-no').onclick = () => { if (!reviveOpen || !sim) return; closeRevive(); sim.giveUp(); };
@@ -435,7 +512,8 @@ function showEnd(won) {
   $('#e-again').textContent = run ? 'Новый забег' : 'Ещё раз'; $('#e-again').classList.toggle('hidden', more || (tut && won));
   $('#e-menu').textContent = run ? 'В меню' : tut ? 'В меню' : 'На карту';
   if (tut && won) { $('#e-next').classList.remove('hidden'); $('#e-next').textContent = 'К карте'; }
-  show('#endmenu'); fitEnd();
+  $('#e-ad').classList.toggle('hidden', !(won && !tut && !run && r.souls > 0 && Ads.on('souls')));       // ×2 души за рекламу
+  show('#endmenu'); fitEnd(); maybeOffer(won);
   if (!tut) { $('#endmenu .modal').classList.add('tally'); const token = ++tally; playVerdict(v, token); }
   else $('#endmenu .modal').classList.remove('tally');
   if (ending && ending.submit) ending.submit.then((res) => { if (res && res.ok && !run && !$('#endmenu').classList.contains('hidden')) { const e = $('#end-rank'); e.innerHTML = `<img src="${L('crown', 28)}" alt="">#${res.level_rank}`; e.classList.remove('hidden'); } });

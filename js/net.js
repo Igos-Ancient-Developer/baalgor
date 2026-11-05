@@ -1,5 +1,5 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261105202109';
+import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261105215229';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
@@ -72,6 +72,23 @@ export const Net = {
     const key = 'bk_st_' + name; try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) { /* без хранилища шлём каждый раз — сервер не задвоит */ }
     const undo = () => { try { localStorage.removeItem(key); } catch (e) { /* */ } };             // не записалось — попробуем при следующем запуске
     rpc('track_step', { init_data: tg.initData, p_step: name }, { keepalive: true }).then((r) => { if (!r || r.error) undo(); }).catch(undo);
+  },
+  // кристаллы за просмотр рекламы: просмотр подтверждает AdsGram на сервер (иногда на пару секунд позже, чем закончился ролик), поэтому несколько попыток.
+  // Ответ: кошелёк + gain (сколько кристаллов) + left (сколько ещё сегодня) или { error: 'pending' | 'limit' | 'net' }
+  async adClaim(tries = 6) {
+    if (!this.canSubmit()) return { error: 'noauth' };
+    let r = null;
+    for (let i = 0; i < tries; i++) {
+      try { r = await rpc('ad_claim', { init_data: tg.initData }); } catch (e) { r = { error: 'net' }; }
+      if (!r || r.error !== 'pending' || i === tries - 1) return r || { error: 'net' };
+      await new Promise((ok) => setTimeout(ok, 1500));
+    }
+    return r;
+  },
+  // сообщения от бота (напоминания): согласие игрока писать ему и язык; сервер шлёт только тем, кто разрешил (supabase/notify.sql)
+  notifySet(on) {
+    if (!this.canSubmit()) return;
+    rpc('notify_set', { init_data: tg.initData, p_on: !!on }).catch(() => { /* без связи — пришлём при следующем запуске */ });
   },
   // окно «поделиться» Telegram со ссылкой-приглашением; false — ссылка на приложение ещё не задана в config.js
   invite() {

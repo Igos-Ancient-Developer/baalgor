@@ -1,5 +1,5 @@
 // Обёртка над Telegram Mini App SDK. Вне Telegram (обычный браузер) всё работает без него.
-import { newLife } from './meta.js?v=20261105202109';
+import { newLife } from './meta.js?v=20261105215229';
 const tg = window.Telegram && window.Telegram.WebApp;
 const KEY = 'bloodkeep_save_v1';
 
@@ -107,6 +107,10 @@ function mergeSave(a, b) {
     // сундуки на складе, бесплатный сундук и недельный уровень: без этого при каждом запуске они сбрасывались
     for (const k of Object.keys(src.stock || {})) (out.stock ||= {})[k] = Math.max(out.stock[k] || 0, src.stock[k] || 0);
     if (src.freeChest && src.freeChest > (out.freeChest || 0)) out.freeChest = src.freeChest;
+    // реклама за награду, предложение стартового набора, напоминания бота; души из стартового набора выдаются один раз (иначе — при каждом запуске)
+    for (const k of ['adChestDay', 'notifyDay']) if (src[k] && src[k] > (out[k] || '')) out[k] = src[k];
+    for (const k of ['adPending', 'offerAt']) if (src[k] && src[k] > (out[k] || 0)) out[k] = src[k];
+    for (const k of ['notifyAsked', 'starterSouls']) if (src[k]) out[k] = 1;
     if (src.weekly && src.weekly.wk) { const w = out.weekly; if (!w || src.weekly.wk > w.wk) out.weekly = { ...src.weekly }; else if (src.weekly.wk === w.wk) { w.done = w.done || !!src.weekly.done; w.won = w.won || !!src.weekly.won; } }
     for (const id of Object.keys((src.prog && src.prog.cleared) || {})) { out.prog.cleared[id] ||= {}; Object.assign(out.prog.cleared[id], src.prog.cleared[id]); }
     for (const k of Object.keys((src.prog && src.prog.scores) || {})) out.prog.scores[k] = Math.max(out.prog.scores[k] || 0, src.prog.scores[k]);
