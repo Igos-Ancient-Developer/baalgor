@@ -1,11 +1,11 @@
 // Интерфейс боя: HUD, выдвижная панель слотов, блок выбранного здания (иконки) и окно выбора улучшения. Без поясняющих текстов — только иконки и цифры.
-import * as D from './data.js?v=20261104085643';
-import * as A from './art.js?v=20261104085643';
-import { uiIcon } from './env.js?v=20261104085643';
-import { SPR, img } from './sprites.js?v=20261104085643';
-import { enemyFrame, gibSprite } from './enemies.js?v=20261104085643';
-import { glyphIcon, spriteIcon, cutIcon, iconUrl, bareGlyph, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261104085643';
-import { TARGET_MODES } from './sim.js?v=20261104085643';
+import * as D from './data.js?v=20261105201336';
+import * as A from './art.js?v=20261105201336';
+import { uiIcon } from './env.js?v=20261105201336';
+import { SPR, img } from './sprites.js?v=20261105201336';
+import { enemyFrame, gibSprite } from './enemies.js?v=20261105201336';
+import { glyphIcon, spriteIcon, cutIcon, iconUrl, bareGlyph, bareGlyphUrl, PALETTE, STAT_GLYPH, SPELL_GLYPH } from './icons.js?v=20261105201336';
+import { TARGET_MODES } from './sim.js?v=20261105201336';
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -56,7 +56,7 @@ export const towerIcon = (type, lvl = 1, br = null, picks = null, o = {}) => {
   const tile = tileIcon(type, o.size || 64); if (tile) return tile;
   const prem = D.isPremium(type), bt = A.artType(type);          // премиум: своя картинка, а если её нет — базовая башня; золотая корона в углу
   const raster = SPR.ok && SPR.towers[bt], crop = raster && !o.noCrop ? headCrop(bt, lvl, br) : null;
-  return cutIcon(`t:${type}:${lvl}:${br || ''}:${picks ? picks.join('') : ''}:${o.k || ''}`, composite(bt, lvl, br, picks), { size: o.size || 64, crop, badge: prem ? 'crown' : null });
+  return cutIcon(`t:${type}:${lvl}:${br || ''}:${picks ? picks.join('') : ''}:${o.k || ''}:${raster ? 'r' : ''}`, composite(bt, lvl, br, picks), { size: o.size || 64, crop, badge: prem ? 'crown' : null });      // значок без растра (башни ещё догружаются) не застревает в кэше
 };
 // у башни с готовой плиткой значок не зависит от выбора улучшения: в нижнем углу ставим кружок цвета точки улучшения с глифом, чтобы варианты различались
 const badged = (base, glyph, col, key, size) => A.cached(`ub:${key}:${size}`, () => A.mk(size, size, (g) => {

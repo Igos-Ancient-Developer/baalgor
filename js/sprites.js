@@ -2,7 +2,7 @@
 // Папка img/ собирается скриптами tools/build_*.py из листов в assets/.
 const ROOT = new URL('../img/', import.meta.url).href;
 
-export const SPR = { ok: false, towers: {}, enemies: {}, land: {}, imgs: new Map() };
+export const SPR = { ok: false, rest: null, towers: {}, enemies: {}, land: {}, imgs: new Map() };
 
 const loadJson = (p) => fetch(ROOT + p).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 // загрузка с повтором: в мобильной сети отдельные картинки могут не дойти с первого раза
@@ -43,8 +43,8 @@ export async function loadSprites(onProgress = () => {}) {
   const [tw, en, ld] = await Promise.all([loadJson('towers/meta.json'), loadJson('enemies/meta.json'), loadJson('land/meta.json')]);
   if (!tw || !en) return false;
   SPR.towers = tw; SPR.enemies = en; SPR.land = ld || {};
-  const list = [];
-  for (const [t, m] of Object.entries(tw)) { for (let i = 0; i < m.n; i++) { list.push(`towers/${t}_${i}.webp`); if (m.fire) list.push(`towers/${t}_f${i}.webp`); if (m.anim) list.push(`towers/${t}_a${i}.webp`); } if (m.head) list.push(`towers/${t}_head.webp`); }
+  const list = [], later = [];
+  for (const [t, m] of Object.entries(tw)) { for (let i = 0; i < m.n; i++) { later.push(`towers/${t}_${i}.webp`); if (m.fire) later.push(`towers/${t}_f${i}.webp`); if (m.anim) later.push(`towers/${t}_a${i}.webp`); } if (m.head) later.push(`towers/${t}_head.webp`); }
   for (const k of DECOR_IMGS) list.push(`decor/${k}.webp`);
   for (const k of GIB_IMGS) list.push(`gibs/${k}.webp`);
   for (const k of PORTRAITS) list.push(`ui/portrait_${k}.webp`);
@@ -55,9 +55,11 @@ export async function loadSprites(onProgress = () => {}) {
   list.push('ui/logo.webp', 'ui/worldmap.webp', ...['plain', 'glow', 'rust', 'hands'].map((k) => `ui/plate_${k}.webp`), 'ui/stone.webp', 'ui/chain.webp');      // картинки кнопок и панелей из css: грузим заранее, чтобы кнопки не появлялись пустыми
   let done = 0;
   await Promise.all(list.map((p) => loadImg(p).then(() => onProgress(++done / list.length))));
-  SPR.ok = true;
+  // башни (~3 МБ из ~5) нужны только в бою: меню показываем сразу, их догружаем в фоне; startLevel ждёт spritesReady()
+  SPR.rest = Promise.all(later.map((p) => loadImg(p))).then(() => { SPR.ok = true; });
   return true;
 }
+export const spritesReady = () => SPR.rest || Promise.resolve();
 
 // ландшафт темы грузим по требованию: земля, дорога, кромки, декор, панорама и портал нужны только на время запекания фона карты, потом их выбрасываем
 export const landFiles = (theme) => [`ground_${theme}`, `road_${theme}`, `edge_${theme}`, `decor_${theme}`, `border_${theme}`, 'portal'].map((n) => `land/${n}.webp`);

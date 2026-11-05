@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261104085643';
-import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261104085643';
-import * as D from './data.js?v=20261104085643';
-import * as M from './meta.js?v=20261104085643';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261104085643';
-import { url as imgUrl } from './sprites.js?v=20261104085643';
-import { Net } from './net.js?v=20261104085643';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261104085643';
-import { fillPlates, gemIc } from './res.js?v=20261104085643';
-import { gemHtml } from './gem3d.js?v=20261104085643';
-import { Wallet } from './wallet.js?v=20261104085643';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261105201336';
+import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261105201336';
+import * as D from './data.js?v=20261105201336';
+import * as M from './meta.js?v=20261105201336';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261105201336';
+import { url as imgUrl } from './sprites.js?v=20261105201336';
+import { Net } from './net.js?v=20261105201336';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261105201336';
+import { fillPlates, gemIc } from './res.js?v=20261105201336';
+import { gemHtml } from './gem3d.js?v=20261105201336';
+import { Wallet } from './wallet.js?v=20261105201336';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -218,8 +218,11 @@ export class Menus {
     map.onclick = (e) => { if (!e.target.closest('#lvp')) this.closeLevel(); };            // тап по пустому месту карты закрывает плашку
     // прокрутка к текущему рубежу
     const target = D.MAPS.find((l) => l.id === focus) || D.CAMPAIGN.find((l) => M.levelUnlocked(s, l) && !M.levelCleared(s, l.id)) || D.CAMPAIGN[D.CAMPAIGN.length - 1];
-    requestAnimationFrame(() => { const tp = P(target.pos); sc.scrollLeft = Math.max(0, tp[0] * f - sc.clientWidth / 2); sc.scrollTop = Math.max(0, tp[1] * f - sc.clientHeight / 2); });
+    const fresh = !target.tutorial && !target.weekly && this.newcomer();
+    requestAnimationFrame(() => { const tp = P(target.pos); sc.scrollLeft = Math.max(0, tp[0] * f - sc.clientWidth / 2); sc.scrollTop = Math.max(0, tp[1] * f - sc.clientHeight / 2); if (fresh) this.openLevel(target.id); });      // новичку плашка первого уровня открыта сразу
   }
+  // ещё не прошёл ни одного уровня кампании: с карты в бой ведём кратчайшим путём (с карты в уровень шли 2 новичка из 9)
+  newcomer() { return !D.CAMPAIGN.some((l) => M.levelCleared(this.save, l.id)); }
   fitWorld() { /* размер карты считается в buildWorld */ }
 
   // ───── плашка уровня рядом с рубежом ─────
@@ -242,7 +245,7 @@ export class Menus {
     const card = el('div', 'lvp-card'), go = el('button', 'btn big lvp-go', 'Начать');
     wrap.append(card, go); map.appendChild(wrap);
     wrap.onclick = (e) => { e.stopPropagation(); if (e.target.closest('.rarr')) setTimeout(() => place(false), 0); };      // раскрыли строку — плашка могла вырасти, подвинем, чтобы не вылезала за экран
-    go.onclick = () => { c.sfx.play('click'); if (wkDone) { c.sfx.play('error'); return; } this.closeLevel(); if (wk) c.startLevel(l.id, WEEKLY.diff, true); else this.openDiff(l.id); };      // дальше — экран выбора сложности
+    go.onclick = () => { c.sfx.play('click'); if (wkDone) { c.sfx.play('error'); return; } this.closeLevel(); if (wk) c.startLevel(l.id, WEEKLY.diff, true); else if (this.newcomer() && c.quickStart) c.quickStart(l.id); else this.openDiff(l.id); };      // дальше — экран выбора сложности; новичок сразу в бой на «Страхе» с набором по умолчанию
     const SECT = { grave: 'Погост', forest: 'Лес', desert: 'Пустыня', ice: 'Лёд', hell: 'Ад' };
     const nameEsc = (t) => String(t).replace(/</g, '&lt;');
     const lp = P(l.pos), nx = lp[0] * f, ny = lp[1] * f;

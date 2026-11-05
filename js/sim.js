@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261104085643';
+import * as D from './data.js?v=20261105201336';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -499,7 +499,7 @@ export class Sim {
     e.dead = true; this.waveDone(e);
     this.stats.leaks++;
     if (this.D.lives !== 1) { this.parts.leaks += D.LEAK_FRAC * this.potential() * Math.min(this.lives, e.def.lives); this.rescore(); }
-    this.lives = Math.max(0, this.lives - e.def.lives);
+    this.lives = Math.max(this.map.tutorial ? 1 : 0, this.lives - e.def.lives);      // обучение проиграть нельзя: новички уходили после поражения в нём
     this.emit('leak', { e, x: e.x, y: e.y });
     if (this.lives <= 0 && this.state === 'play' && !this.limbo) {
       if (this.revive.on && this.revive.used < this.revive.max) { this.limbo = true; this.emit('limbo', { used: this.revive.used }); }
