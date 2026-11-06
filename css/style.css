@@ -1420,15 +1420,7 @@ body.tgback #world .topbar .online { margin: 0; }
 
 /* ───── реклама за награду, предложение стартового набора (05.11.2026) ───── */
 .btn.adbtn { border-image-source: url(../img/ui/plate_glow.webp); color: #d2fff4; text-shadow: 0 2px 0 #000, 0 0 10px rgba(40,230,210,.55); white-space: nowrap; }
-.sh-card.adcard { flex-direction: row; align-items: center; gap: 10px; background: linear-gradient(135deg, rgba(30,110,60,.5), rgba(0,0,0,.6)), var(--slab); box-shadow: 0 0 0 2px #0b0c0c, 0 0 0 3.5px #4fc070 !important; }
-.adcard .ad-ic { width: 46px; height: 46px; flex: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.6)); }
-.adcard .ad-t { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.adcard .ad-t b { font-family: var(--gothic); font-weight: 400; font-size: 17px; color: #f0e2b4; text-shadow: 0 2px 0 #000; }
-.adcard .ad-t small { font-size: 12px; color: #cfe8cf; } .adcard .ad-t .ad-left { color: #ffd98a; }
-.adcard .btn.adbtn { flex: none; width: 136px; min-height: 48px; padding: 2px 4px; font-size: 14px; letter-spacing: .02em; }
 .btn.adbtn { overflow-wrap: normal; word-break: keep-all; hyphens: none; }
-.freech .btn.adbtn { width: 128px; padding: 2px 6px; font-size: 13px; }
-.freech.off:has(.adbtn) { opacity: 1; }
 .rv-box .btn.adbtn, .rv-box .btn.buy { width: 100%; }
 #endmenu .btn.adbtn { min-height: 44px; font-size: 16px; }
 .of-box { position: relative; align-items: center; text-align: center; padding-top: 22px; overflow: visible; }
@@ -1438,9 +1430,14 @@ body.tgback #world .topbar .online { margin: 0; }
 .of-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 16px; }
 .of-list li { display: flex; align-items: center; justify-content: center; gap: 6px; } .of-list img { width: 18px; height: 18px; }
 .of-box .btn { width: 100%; }
-#offer { z-index: 32; }                                                   /* поверх экрана итогов (#endmenu — 31) */
+#offer, #adask { z-index: 32; }                                           /* поверх экрана итогов (#endmenu — 31) */
+.aa-box { gap: 10px; }
+.aa-box .rib { white-space: nowrap; }
+.aa-box .of-ic { width: 96px; height: 96px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(80,230,200,.45)); }
+.aa-prize { display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--gothic); font-size: 24px; color: #ffe39a; text-shadow: 0 2px 0 #000, 0 0 12px rgba(255,200,80,.45); }
+.aa-prize img { width: 26px; height: 26px; }
+.aa-sub { margin: 0; font-size: 14px; color: #cfd8c8; }
 .btn.adbtn { white-space: nowrap !important; }
-.adcard .btn.adbtn { width: 150px; font-size: 13px; letter-spacing: 0; }
 /* обучение: «Пропустить» поверх затемнения подсказок (#tutlayer — 43, палец — 44); слева — справа вверху кнопка вызова волны .wcall */
 #tutskip { position: absolute; top: 8px; left: 8px; z-index: 45; width: auto; min-height: 38px; padding: 0 12px; font-size: 13px; letter-spacing: .03em; opacity: .9; }
 #world.lvopen #world-forge.float { display: none; }                  /* открыта плашка уровня: «Кузница» закрывала её кнопку «Начать» */

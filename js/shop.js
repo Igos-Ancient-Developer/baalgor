@@ -1,33 +1,28 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261106092259';
-import { Wallet } from './wallet.js?v=20261106092259';
-import { fillPlates, gemIc } from './res.js?v=20261106092259';
-import { towerIcon } from './ui.js?v=20261106092259';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261106092259';
-import { SHOP_IMG } from './iconmap.js?v=20261106092259';
-import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest, freeChestIn } from './chests.js?v=20261106092259';
-import { Ads } from './ads.js?v=20261106092259';
-import { Net } from './net.js?v=20261106092259';
+import * as D from './data.js?v=20261106143449';
+import { Wallet } from './wallet.js?v=20261106143449';
+import { fillPlates, gemIc } from './res.js?v=20261106143449';
+import { towerIcon } from './ui.js?v=20261106143449';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261106143449';
+import { SHOP_IMG } from './iconmap.js?v=20261106143449';
+import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest, freeChestIn } from './chests.js?v=20261106143449';
+import { Net } from './net.js?v=20261106143449';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
-const dayKey = () => new Date().toISOString().slice(0, 10);          // сутки по UTC — как и лимит на сервере
 
-// сколько наград кристаллами осталось сегодня; заодно забирает награду, которую не успели получить в прошлый раз (закрыли игру сразу после ролика)
-async function refreshAdLeft(save, ctrl) {
-  if (save.adPending && Date.now() - save.adPending > 40 * 60e3) save.adPending = 0;         // подтверждение на сервере живёт 30 минут
-  if (save.adPending) { await claimAdGems(save, ctrl, 2); return; }
-  try { const r = await Net.call('ad_status', { init_data: Net.initData() }); if (r && r.ok) ctrl._adLeft = r.left; } catch (e) { /* без связи */ }
-}
-// забрать кристаллы за досмотренный ролик (сервер ждёт подтверждения от AdsGram, обычно оно приходит за секунды)
-async function claimAdGems(save, ctrl, tries) {
+// забрать кристаллы за досмотренный ролик (сервер ждёт подтверждения от AdsGram, обычно оно приходит за секунды);
+// ответ: 'ok' | 'limit' (кристаллы на сегодня кончились — награду другим выдаёт вызывающий) | 'pending' | 'error'
+export async function claimAdGems(save, ctrl, tries) {
+  if (save.adPending && Date.now() - save.adPending > 40 * 60e3) { save.adPending = 0; ctrl.persist(); return 'error'; }      // подтверждение на сервере живёт 30 минут
   const r = await Net.adClaim(tries);
   if (r && r.gain) {
     save.adPending = 0; Wallet.apply(r); ctrl._adLeft = r.left; ctrl.persist();
-    ctrl.sfx.play('win'); ctrl.note(`+${r.gain} ${r.gain === 1 ? 'кристалл' : 'кристалла'}`);
-  } else if (r && r.error === 'limit') { save.adPending = 0; ctrl._adLeft = 0; ctrl.persist(); ctrl.note('На сегодня всё — приходи завтра'); }
-  else if (r && r.error === 'pending') { if (r.left != null) ctrl._adLeft = r.left; ctrl.note('Кристаллы придут через минуту — загляни в магазин'); }
-  else ctrl.note('Не получилось, попробуй ещё раз');
+    ctrl.sfx.play('win'); ctrl.note(`+${r.gain} ${r.gain === 1 ? 'кристалл' : 'кристалла'}`); return 'ok';
+  }
+  if (r && r.error === 'limit') { save.adPending = 0; ctrl._adLeft = 0; ctrl.persist(); return 'limit'; }
+  if (r && r.error === 'pending') { if (r.left != null) ctrl._adLeft = r.left; ctrl.note('Кристаллы придут через минуту — загляни в магазин'); return 'pending'; }
+  ctrl.note('Не получилось, попробуй ещё раз'); return 'error';
 }
 
 const $ = (s) => document.querySelector(s);
@@ -55,21 +50,8 @@ export function renderShop(save, ctrl, redraw) {
     card.appendChild(b); body.appendChild(card);
   }
 
-  // ── кристаллы за рекламу: 1–3 за ролик, до 5 раз в сутки; бросок и лимит — на сервере (supabase/ads.sql) ──
-  if (Ads.on('gems')) {
-    const left = ctrl._adLeft, card = el('div', 'sh-card adcard');
-    card.innerHTML = `<img class="ad-ic" src="${bareGlyphUrl('gem', 56)}" alt=""><div class="ad-t"><b>Кристаллы за рекламу</b><small>Посмотри ролик — получи 1–3 кристалла</small>${left != null ? `<small class="ad-left">Осталось сегодня: ${left}</small>` : ''}</div>`;
-    const b = el('button', 'btn adbtn' + (left === 0 ? ' poor' : ''), left === 0 ? 'Завтра' : '▶ Смотреть');
-    b.onclick = async () => {
-      if (left === 0) { ctrl.note('На сегодня всё — приходи завтра'); fail(b); return; }
-      b.disabled = true; const res = await Ads.show('gems', ctrl.sfx);
-      if (res !== 'done') { b.disabled = false; ctrl.note(Ads.say(res)); return; }
-      b.textContent = 'Начисляю…'; save.adPending = Date.now(); ctrl.persist();
-      await claimAdGems(save, ctrl); b.disabled = false; redraw();
-    };
-    card.appendChild(b); body.appendChild(card);
-  }
-  if (ctrl._adLeft === undefined && Ads.on('gems')) { ctrl._adLeft = null; refreshAdLeft(save, ctrl).then(() => { if (!$('#shop').classList.contains('hidden')) redraw(); }); }
+  // кристаллы за рекламу (окно после уровня), которые не успели забрать: закрыли игру сразу после ролика
+  if (save.adPending && !ctrl._adClaiming) { ctrl._adClaiming = true; claimAdGems(save, ctrl, 2).then(() => { ctrl._adClaiming = false; if (!$('#shop').classList.contains('hidden')) redraw(); }); }
 
   // ── сундуки: покупка про запас (1 / 5 / 10 за раз), склад, открытие одного или всех разом ──
   body.appendChild(el('div', 'sect-title', 'Сундуки'));
@@ -90,18 +72,6 @@ export function renderShop(save, ctrl, redraw) {
     const b = el('button', 'btn chb go' + (ready ? '' : ' poor'), ready ? 'Забрать' : freeChestIn(save) > 1 ? `Через ${freeChestIn(save)} дн.` : 'Завтра');
     b.onclick = async () => { if (!ready) { fail(b); return; } if (claimFreeChest(save)) { ctrl.persist(); await openLoop('wood'); } };
     fr.appendChild(b);
-    // бесплатный уже забран: ещё один деревянный сундук за просмотр рекламы, раз в сутки
-    if (!ready && Ads.on('chest') && save.adChestDay !== dayKey()) {
-      const a = el('button', 'btn chb adbtn', '▶ Ещё сундук');
-      a.onclick = async () => {
-        a.disabled = true; const res = await Ads.show('chest', ctrl.sfx); a.disabled = false;
-        if (res !== 'done') { ctrl.note(Ads.say(res)); return; }
-        if (save.adChestDay === dayKey()) return;
-        save.adChestDay = dayKey(); save.stock = save.stock || {}; save.stock.wood = (save.stock.wood || 0) + 1; ctrl.persist();
-        await openLoop('wood');
-      };
-      fr.appendChild(a);
-    }
     cg.appendChild(fr); }
   ctrl._chestQty = ctrl._chestQty || {};
   for (const kind of CHEST_ORDER) {

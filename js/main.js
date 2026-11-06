@@ -1,32 +1,32 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261106092259';
-import * as A from './art.js?v=20261106092259';
-import { Sim } from './sim.js?v=20261106092259';
-import { Gore } from './gore.js?v=20261106092259';
-import { Renderer } from './render.js?v=20261106092259';
-import { GameUI } from './ui.js?v=20261106092259';
-import { Tutorial } from './tutorial.js?v=20261106092259';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261106092259';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261106092259';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261106092259';
-import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261106092259';
-import { mapBG, releaseBG } from './env.js?v=20261106092259';
-import { MENU_SPEC } from './music.js?v=20261106092259';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261106092259';
-import { renderForge, renderAchs } from './screens.js?v=20261106092259';
-import { renderShop } from './shop.js?v=20261106092259';
-import { freeChestReady } from './chests.js?v=20261106092259';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261106092259';
-import { Wallet } from './wallet.js?v=20261106092259';
-import { initLang, pickLang } from './i18n.js?v=20261106092259';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
-import { startFit } from './fit.js?v=20261106092259';
-import { startOnline } from './online.js?v=20261106092259';
-import { Menus, RUN, clock } from './menus.js?v=20261106092259';
-import { Net } from './net.js?v=20261106092259';
-import { Ads } from './ads.js?v=20261106092259';
-import { placeText, pyramidSvg } from './place.js?v=20261106092259';
-import { gemIc } from './res.js?v=20261106092259';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261106092259';
+import * as D from './data.js?v=20261106143449';
+import * as A from './art.js?v=20261106143449';
+import { Sim } from './sim.js?v=20261106143449';
+import { Gore } from './gore.js?v=20261106143449';
+import { Renderer } from './render.js?v=20261106143449';
+import { GameUI } from './ui.js?v=20261106143449';
+import { Tutorial } from './tutorial.js?v=20261106143449';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261106143449';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261106143449';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261106143449';
+import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261106143449';
+import { mapBG, releaseBG } from './env.js?v=20261106143449';
+import { MENU_SPEC } from './music.js?v=20261106143449';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261106143449';
+import { renderForge, renderAchs } from './screens.js?v=20261106143449';
+import { renderShop, claimAdGems } from './shop.js?v=20261106143449';
+import { freeChestReady, openChests, playOpening, chestImg } from './chests.js?v=20261106143449';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261106143449';
+import { Wallet } from './wallet.js?v=20261106143449';
+import { initLang, pickLang } from './i18n.js?v=20261106143449';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
+import { startFit } from './fit.js?v=20261106143449';
+import { startOnline } from './online.js?v=20261106143449';
+import { Menus, RUN, clock } from './menus.js?v=20261106143449';
+import { Net } from './net.js?v=20261106143449';
+import { Ads } from './ads.js?v=20261106143449';
+import { placeText, pyramidSvg } from './place.js?v=20261106143449';
+import { gemIc } from './res.js?v=20261106143449';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261106143449';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -61,8 +61,8 @@ async function boot() {
   startOnline();
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261106092259').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261106092259').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261106143449').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261106143449').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
@@ -109,12 +109,12 @@ function releaseLevel() {
 function busy(on) { $('#busy').classList.toggle('hidden', !on); }
 
 // ───────── навигация ─────────
-const SCREENS = ['#title', '#world', '#game'], OVERLAYS = ['#tutask', '#shop', '#settings', '#diffsheet', '#rankedsheet', '#board', '#forge', '#achs', '#loadout', '#pausemenu', '#endmenu', '#offer'];
+const SCREENS = ['#title', '#world', '#game'], OVERLAYS = ['#tutask', '#shop', '#settings', '#diffsheet', '#rankedsheet', '#board', '#forge', '#achs', '#loadout', '#pausemenu', '#endmenu', '#offer', '#adask'];
 function hideAll() { for (const id of [...SCREENS, ...OVERLAYS]) hide(id); }
 function goTitle() { hideAll(); stopPlay(); releaseLevel(); menus.buildTitle(); show('#title'); sfx.startMusic(MENU_SPEC); updateBack(); }
 function goWorld(focus) { Net.step('world'); hideAll(); stopPlay(); releaseLevel(); menus.buildWorld(focus); show('#world'); sfx.startMusic(MENU_SPEC); updateBack(); }
 function stopPlay() { hide('#tutskip'); running = false; paused = false; held = false; reviveOpen = false; hide('#revive'); run = null; ctrl.run = null; document.body.classList.remove('ranked'); TG.closingConfirm(false); if (tutorial) tutorial.detach(); if (ui) ui.closeUpgrade(true); tally++; }
-function top() { for (const id of ['#offer', '#shop', '#settings', '#board', '#forge', '#achs', '#loadout', '#rankedsheet', '#diffsheet']) if (!$(id).classList.contains('hidden')) return id; return null; }
+function top() { for (const id of ['#adask', '#offer', '#shop', '#settings', '#board', '#forge', '#achs', '#loadout', '#rankedsheet', '#diffsheet']) if (!$(id).classList.contains('hidden')) return id; return null; }
 function back() {
   const t = top();
   if (!t && reviveOpen) { sfx.play('error'); return; }              // у ворот назад пути нет: либо вернуть жизни, либо сдаться
@@ -224,6 +224,37 @@ function setupOverlays() {
     else if (r && r.status !== 'cancelled') { sfx.play('error'); ctrl.note(r.error === 'notg' ? 'Покупка доступна внутри Telegram' : 'Не получилось, попробуй ещё раз'); }
   };
   $('#of-later').onclick = () => { sfx.play('click'); hide('#offer'); updateBack(); };
+  // окно «награда за рекламу» после уровня
+  $('#aa-skip').onclick = () => { sfx.play('click'); hide('#adask'); updateBack(); };
+  $('#aa-go').onclick = async () => {
+    const b = $('#aa-go'), p = ctrl._adPrize; if (!p || b.disabled) return;
+    b.disabled = true; const res = await Ads.show(p.kind, sfx); b.disabled = false;
+    if (res !== 'done') { ctrl.note(Ads.say(res)); return; }
+    ctrl._adPrize = null; hide('#adask'); updateBack();
+    const souls = (n) => { save.souls += n; persist(); sfx.play('upgrade'); ctrl.note(`+${n} душ`); };
+    if (p.kind === 'souls') souls(p.n);
+    else if (p.kind === 'chest') {
+      save.stock = save.stock || {}; save.stock.wood = (save.stock.wood || 0) + 1; persist();
+      const r = await openChests(save, 'wood', 1); persist();
+      if (r && r.ok) await playOpening('wood', r.loots[0], ctrl); else ctrl.note('Сундук ждёт в магазине');
+    } else {
+      save.adPending = Date.now(); persist();
+      if (await claimAdGems(save, ctrl) === 'limit') souls(p.n);             // кристаллы на сегодня кончились — вместо них души
+    }
+  };
+}
+// Окно «посмотри рекламу — получи награду»: раз в 3 сыгранных уровня кампании, после подсчёта очков, если сейчас не предлагали стартовый набор.
+// Награда выбирается заранее и видна в окне: чаще души, реже деревянный сундук, ещё реже кристаллы (их начисляет сервер, до 5 раз в сутки).
+function maybeAdAsk(r) {
+  if ((save.lvDone || 0) - (save.adAskAt || 0) < 3 || !$('#offer').classList.contains('hidden') || $('#endmenu').classList.contains('hidden')) return;
+  const n = Math.max(30, Math.round(Math.max(r.souls, 25) * (0.6 + Math.random() * 0.6) / 5) * 5), x = Math.random();       // души: 0,6–1,2 от наград за этот уровень (×2 за рекламу на плите — отдельно)
+  const p = x < 0.08 && ctrl._adLeft !== 0 && Ads.on('gems') ? { kind: 'gems', n } : x < 0.3 && Ads.on('chest') ? { kind: 'chest' } : { kind: 'souls', n };
+  if (!Ads.on(p.kind)) return;
+  ctrl._adPrize = p; save.adAskAt = save.lvDone; persist();
+  const L = bareGlyphUrl;
+  $('#aa-ic').src = p.kind === 'chest' ? chestImg('wood') : L(p.kind === 'gems' ? 'gem' : 'soul', 96);
+  $('#aa-prize').innerHTML = p.kind === 'chest' ? 'Деревянный сундук' : p.kind === 'gems' ? `<img src="${L('gem', 26)}" alt="">1–3 кристалла` : `<img src="${L('soul', 26)}" alt="">+${p.n} душ`;
+  show('#adask'); updateBack();
 }
 // Новый рекорд на уровне: на карте сразу открывается плашка этого уровня, и строка игрока поднимается в «Лучших игроках», сдвигая остальных вниз
 function showRise() {
@@ -527,7 +558,8 @@ function showEnd(won) {
   if (tut && won) { $('#e-next').classList.remove('hidden'); $('#e-next').textContent = 'К карте'; }
   $('#e-ad').classList.toggle('hidden', !(won && !tut && !run && r.souls > 0 && Ads.on('souls')));       // ×2 души за рекламу
   show('#endmenu'); fitEnd(); maybeOffer(won);
-  if (!tut) { $('#endmenu .modal').classList.add('tally'); const token = ++tally; playVerdict(v, token); }
+  if (!tut && !run) { save.lvDone = (save.lvDone || 0) + 1; persist(); }       // счётчик сыгранных уровней кампании: окно «награда за рекламу» — раз в 3
+  if (!tut) { $('#endmenu .modal').classList.add('tally'); const token = ++tally; const ed = ending; playVerdict(v, token).then(() => { if (!run) setTimeout(() => { if (ending === ed) maybeAdAsk(r); }, 500); }); }
   else $('#endmenu .modal').classList.remove('tally');
   // место в мире на этом уровне («Место 2 из 87 в мире» + похвала по проценту); новый рекорд — запоминаем, чтобы на карте показать подъём в «Лучших игроках»
   const lvId = sim.map.id;
