@@ -2,8 +2,8 @@
 // по силуэту картинки, это рисует render.js по view.hl), рядом палец с анимацией касания, остальной экран затемнён и не нажимается (касания проходят
 // только через «окно» вокруг цели). Когда игрок выбрал здание и ставит его, подсветки нет совсем: куда ставить, решает сам. Состояние берётся из симуляции
 // и интерфейса, поэтому порядок шагов не жёсткий.
-import * as D from './data.js?v=20261106084313';
-import { Net } from './net.js?v=20261106084313';
+import * as D from './data.js?v=20261106092259';
+import { Net } from './net.js?v=20261106092259';
 
 const $ = (s) => document.querySelector(s);
 
@@ -18,7 +18,7 @@ export class Tutorial {
   detach() { this.done = true; this.spot(null); const v = this.c.view; if (v) v.hl = null; }
 
   // подходящие клетки: для башни — рядом с дорогой, для рудника — подальше от неё
-  cells(kind) {
+  cells(kind, n = 5) {
     const s = this.sim, out = [];
     for (let r = 0; r < D.ROWS; r++) for (let c = 0; c < D.COLS; c++) {
       if (!s.canBuild(c, r)) continue;
@@ -27,7 +27,7 @@ export class Tutorial {
       out.push([c, r, cov]);
     }
     out.sort((a, b) => (kind === 'tower' ? b[2] - a[2] : a[2] - b[2]));
-    return out.slice(0, 5).map(([c, r]) => [c, r]);
+    return out.slice(0, n).map(([c, r]) => [c, r]);
   }
   // карточка здания в меню; если меню закрыто — сначала подсвечиваем кнопку, которая его открывает
   card(type) { const sel = `#slots .card[data-type=${type}]`, e = document.querySelector(sel); return this.ui.open && e && e.getBoundingClientRect().width ? sel : '#slotbtn'; }
@@ -68,6 +68,20 @@ export class Tutorial {
     if (o.pick) { Object.assign(cat.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' }); cat.onclick = o.pick; } else { cat.style.display = 'none'; cat.onclick = null; }
     const cx = r.x + r.w / 2, cy = r.y + r.h / 2, hw = 84; hand.style.width = hw + 'px'; hand.style.left = cx - hw * 0.07 + 'px'; hand.style.top = cy - hw * 0.05 + 'px';      // кончик пальца — в центре цели
   }
+  // палец над подходящей клеткой для выбранного здания (башня — у дороги, рудник — подальше); касания не блокируются, ставить можно куда угодно
+  pointCell() {
+    const a = this.c.view.armed, R = this.c.renderer, hand = $('#tuthand'); if (!a || !R) return;
+    const kind = a.kind === 'econ' ? 'econ' : 'tower', key = kind + ':' + this.sim.buildings.length;
+    const cv = document.getElementById('cv').getBoundingClientRect(), scr = (q) => R.toScreen((q[0] + 0.5) * D.CELL, (q[1] + 0.5) * D.CELL);
+    if (this._cellKey !== key) {                                         // только клетка, которую видно: не за краем поля, не под кнопками и панелями сверху и снизу
+      this._cellKey = key;
+      const dock = document.getElementById('dock'), db = dock ? dock.getBoundingClientRect() : null, bottom = Math.min(cv.height - 150, db && db.height ? db.top - cv.top - 40 : 1e9);
+      this._cell = this.cells(kind, 999).find((q) => { const p = scr(q); return p.x > 40 && p.x < cv.width - 60 && p.y > 130 && p.y < bottom; }) || null;
+    }
+    if (!this._cell) return;
+    const p = scr(this._cell), hw = 84;
+    hand.classList.remove('hidden'); hand.style.width = hw + 'px'; hand.style.left = cv.left + p.x - hw * 0.07 + 'px'; hand.style.top = cv.top + p.y - hw * 0.05 + 'px';
+  }
   target(sel) {
     if (sel) {
       const e = document.querySelector(sel); if (!e) return null; const b = e.getBoundingClientRect(); if (!b.width) return null;
@@ -95,7 +109,7 @@ export class Tutorial {
     const sel = typeof st.hint === 'function' ? st.hint() : st.hint;
     v.hl = st.bag ? { bag: true } : st.b ? { b: this.tower() } : null;
     // цель двигается (кнопки выезжают, монета качается), поэтому положение берём каждый кадр
-    if (this.placing) this.spot(null);                                  // здание выбрано: ни подсветки, ни затемнения
+    if (this.placing) { if (this._sp) this.spot(null); this.pointCell(); }           // здание выбрано: без затемнения, палец показывает хорошую клетку (новички уходили, не понимая, куда ставить)
     else if (sel || st.bag || st.b) this.spot(this.target(typeof sel === 'string' ? sel : null), !!st.dim, { nohand: st.nohand, pick: st.b ? () => { const t = this.tower(); if (t) this.ui.select(t); } : null });
     else this.spot(null);
     if (st.done()) this.go(this.i + 1);

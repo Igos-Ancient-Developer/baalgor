@@ -36,7 +36,7 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export async function initLang(code) {
   lang = code; document.documentElement.lang = code;
   if (code === 'ru') return;
-  let dict; try { dict = (await import(`./lang/${code}.js?v=20261106084313`)).default; } catch (e) { return; }
+  let dict; try { dict = (await import(`./lang/${code}.js?v=20261106092259`)).default; } catch (e) { return; }
   exact = new Map(Object.entries(dict));
   // самые длинные куски первыми; границы слова учитываем только там, где ключ начинается/кончается буквой (чтобы не задеть части других слов)
   // iOS до 16.4 не знает «(?<!…)» и падает на таком RegExp — там левую границу ловим группой и возвращаем её в замене
@@ -71,6 +71,7 @@ export const t = tr;
 const done = new WeakMap();
 function doText(n) {
   const v = n.nodeValue; if (!v || done.get(n) === v) return;
+  if (n.parentElement && n.parentElement.closest('[translate="no"]')) return;          // текст уже на языке игрока (например, место в мире на плите итогов)
   const nv = (CYR.test(v) || NUMS.test(v)) ? tr(v) : v; done.set(n, nv);
   if (nv !== v) n.nodeValue = nv;
 }

@@ -1,5 +1,5 @@
 // Мета-прогресс: души, дары кузницы, открытие башен, достижения. Не зависит от DOM (можно тестировать в Node).
-import * as D from './data.js?v=20261106084313';
+import * as D from './data.js?v=20261106092259';
 
 export const SOUL_K = 5;                    // общий множитель душ: полное прохождение уровня на «Ужасе» даёт около 95 душ, на «Ночном кошмаре» около 330; вся прокачка и открытие всего стоит около 10 000
 
@@ -105,7 +105,6 @@ export const ACH = [
   { id: 'impatient', name: 'Нетерпеливый', desc: 'Вызови 10 волн досрочно за партию', goal: 10, val: R('earlyCalls'), reward: 15 },
   { id: 'wave10', name: 'Выживший', desc: 'Дойди до 10 волны', goal: 10, val: L('bestWave'), reward: 10 },
   { id: 'wave20', name: 'Ветеран', desc: 'Дойди до 15 волны', goal: 15, val: L('bestWave'), reward: 25 },
-  { id: 'win', name: 'Редут стоит', desc: 'Пройди любой уровень кампании', goal: 1, val: L('wins'), reward: 60 },
   { id: 'hell_win', name: 'Хозяин Ада', desc: 'Победи на сложности «Ад»', goal: 1, val: L('hellWin'), reward: 120 },
   { id: 'hardcore_win', name: 'Бессмертный', desc: 'Победи на «Ночном кошмаре»: одна жизнь', goal: 1, val: L('hardcoreWin'), reward: 250 },
   { id: 'levels10', name: 'Путешественник', desc: 'Пройди 10 уровней кампании', goal: 10, val: (c) => clearedCount(c.save), reward: 50 },

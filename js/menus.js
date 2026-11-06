@@ -1,15 +1,15 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261106084313';
-import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261106084313';
-import * as D from './data.js?v=20261106084313';
-import * as M from './meta.js?v=20261106084313';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261106084313';
-import { url as imgUrl } from './sprites.js?v=20261106084313';
-import { Net } from './net.js?v=20261106084313';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261106084313';
-import { fillPlates, gemIc } from './res.js?v=20261106084313';
-import { gemHtml } from './gem3d.js?v=20261106084313';
-import { Wallet } from './wallet.js?v=20261106084313';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261106092259';
+import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261106092259';
+import * as D from './data.js?v=20261106092259';
+import * as M from './meta.js?v=20261106092259';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261106092259';
+import { url as imgUrl } from './sprites.js?v=20261106092259';
+import { Net } from './net.js?v=20261106092259';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261106092259';
+import { fillPlates, gemIc } from './res.js?v=20261106092259';
+import { gemHtml } from './gem3d.js?v=20261106092259';
+import { Wallet } from './wallet.js?v=20261106092259';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -230,13 +230,14 @@ export class Menus {
   closeLevel(quiet) {
     const was = !!this.lpId; this.lpId = null; this.diffSeq++; clearInterval(this._wkPlate);
     if (this.lpEl) { this.lpEl.remove(); this.lpEl = null; }
+    $('#world').classList.remove('lvopen');                                   // плашка закрыта — плавающая «Кузница» снова видна
     document.querySelectorAll('#nodes .node.sel').forEach((n) => n.classList.remove('sel'));
     return was;
   }
   openLevel(levelId) {
     const l = D.MAPS.find((q) => q.id === levelId), s = this.save, c = this.c;
     this.closeLevel(); const seq = ++this.diffSeq;
-    this.lpId = levelId; if (c.warm) c.warm(levelId, l.weekly ? WEEKLY.diff : undefined);              // пока игрок смотрит плашку, готовим листы врагов и фон карты
+    this.lpId = levelId; $('#world').classList.add('lvopen'); if (c.warm) c.warm(levelId, l.weekly ? WEEKLY.diff : undefined);              // пока игрок смотрит плашку, готовим листы врагов и фон карты
     const map = $('#worldmap'), sc = $('#worldscroll'), f = this.f || 1;
     document.querySelectorAll('#nodes .node').forEach((n) => n.classList.toggle('sel', n.dataset.id === levelId));
     const wk = !!l.weekly, wkDone = wk && weeklyState(s).done;       // кровавый уровень недели: своя плашка, сразу «Ночной кошмар»
@@ -295,7 +296,7 @@ export class Menus {
       const tb = card.querySelector('.lvp-top');
       if (!Net.enabled) tb.innerHTML = '<div class="trow empty">Нет связи</div>';
       else if (!data.loaded) tb.innerHTML = '<div class="skel"></div>'.repeat(3);
-      else { tb.innerHTML = ''; for (let k = 0; k < 3; k++) { const r = data.top && data.top[k]; if (!r) { tb.appendChild(el('div', 'trow empty', '—')); continue; } tb.appendChild(runRow({ ...r, rank: k + 1 }, 'trow', ctx)); } }
+      else { tb.innerHTML = ''; for (let k = 0; k < 3; k++) { const r = data.top && data.top[k]; if (!r) { tb.appendChild(el('div', 'trow empty', '—')); continue; } tb.appendChild(runRow({ ...r, rank: k + 1 }, 'trow', ctx)); } if (data.top) this.riseTop(l.id, data.top, tb); }
       // друзья: раздел показывается только когда в эту игру уже играют твои контакты (в списке кроме тебя есть хотя бы один друг)
       const fb = card.querySelector('.lvp-fr'), fh = fb.previousElementSibling, fr = data.friends, has = Net.enabled && Net.canSubmit() && data.loaded && fr && fr.length >= 2;
       fh.style.display = fb.style.display = has ? '' : 'none';
@@ -323,6 +324,32 @@ export class Menus {
       Net.levelFriendsAll(l.id, diff).then((r) => { if (ok()) data.friends = r; }).catch(() => {}).then(fin);
     };
     render(); place(true); if (!wk) load();
+  }
+
+  // ───── подъём в «Лучших игроках» после нового рекорда ─────
+  // Запоминаем, кто был в тройке, когда игрок видел плашку. Если после рекорда игрок поднялся (или попал в тройку), его строка
+  // плавно едет вверх со старого места (или снизу), а те, кого он обошёл, съезжают на строку вниз. Анимация — один раз, по запросу animNext.
+  animNext(levelId) { this._riseLevel = levelId; }
+  riseTop(levelId, top, tb) {
+    const ids = top.slice(0, 3).map((r) => r.tg_id), snaps = this._topSnap ||= {}, was = snaps[levelId], me = Net.me();
+    snaps[levelId] = ids;
+    if (this._riseLevel !== levelId || !me) return;
+    this._riseLevel = null;
+    const ni = ids.indexOf(me.id); if (ni < 0) return;
+    const oi = was && was.includes(me.id) ? was.indexOf(me.id) : 3;          // не был в тройке — въезжает снизу
+    if (ni >= oi) return;
+    const rows = [...tb.children]; if (rows.length < 2) return;
+    const h = rows[1].getBoundingClientRect().top - rows[0].getBoundingClientRect().top || rows[0].offsetHeight;
+    rows.forEach((row, k) => {
+      const from = k === ni ? oi : k > ni && k <= oi ? k - 1 : k;
+      if (from === k) return;
+      row.style.transition = 'none'; row.style.transform = `translateY(${(from - k) * h}px)`;
+      if (k === ni) { row.classList.add('rise'); row.style.zIndex = '2'; if (oi >= 3) row.style.opacity = '0'; }
+    });
+    setTimeout(() => {                                                       // небольшая пауза: игрок успевает увидеть старый порядок
+      rows.forEach((row) => { row.style.transition = 'transform .9s cubic-bezier(.2,.75,.25,1), opacity .45s ease'; row.style.transform = ''; row.style.opacity = ''; });
+      this.c.sfx.play('upgrade');
+    }, 650);
   }
 
   // ───── выбор сложности: карусель ─────

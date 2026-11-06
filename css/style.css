@@ -1441,3 +1441,15 @@ body.tgback #world .topbar .online { margin: 0; }
 #offer { z-index: 32; }                                                   /* поверх экрана итогов (#endmenu — 31) */
 .btn.adbtn { white-space: nowrap !important; }
 .adcard .btn.adbtn { width: 150px; font-size: 13px; letter-spacing: 0; }
+/* обучение: «Пропустить» поверх затемнения подсказок (#tutlayer — 43, палец — 44); слева — справа вверху кнопка вызова волны .wcall */
+#tutskip { position: absolute; top: 8px; left: 8px; z-index: 45; width: auto; min-height: 38px; padding: 0 12px; font-size: 13px; letter-spacing: .03em; opacity: .9; }
+#world.lvopen #world-forge.float { display: none; }                  /* открыта плашка уровня: «Кузница» закрывала её кнопку «Начать» */
+/* место в мире на плите итогов */
+#end-rank .er-t { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+#end-rank .er-t b { font-size: 16px; } #end-rank .er-t small { font-family: system-ui, sans-serif; font-size: 12.5px; line-height: 1.25; color: #ffe2a0; font-weight: 500; }
+/* подъём игрока в «Лучших игроках» на плашке уровня */
+.lvp-top .rwrap { position: relative; will-change: transform; }
+.lvp-top .rwrap.rise .rrow { animation: risefx 2.2s ease-out .4s both; }
+@keyframes risefx { 0% { box-shadow: 0 0 0 0 rgba(255,200,80,0); } 25% { box-shadow: 0 0 0 2px #ffd56a, 0 0 18px 4px rgba(255,200,80,.75); } 100% { box-shadow: 0 0 0 1.5px rgba(255,213,106,.7), 0 0 8px 1px rgba(255,200,80,.35); } }
+.er-pyr { flex: none; filter: drop-shadow(0 2px 3px rgba(0,0,0,.7)); }
+#end-rank .er-t small em.pc { font-style: normal; font-family: var(--font); font-weight: 700; font-size: 18px; line-height: 1; color: #ffd24a; text-shadow: 0 0 8px rgba(255,190,60,.7), 0 1px 0 #000; padding: 0 1px; }
