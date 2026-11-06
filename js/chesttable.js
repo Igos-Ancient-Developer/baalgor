@@ -19,8 +19,8 @@ const RAW = {
     T('harpoon', 1.2), T('tesla', 1.2), T('voidwell', 0.9), T('magnet', 0.9), T('grinder', 0.7), T('bank', 0.4), T('altar', 0.4), T('bell', 1), T('miner', 0.9), T('pendulum', 0.8),
   ] },
   silver: { souls: 0, gems: 110, stars: 17, rows: [
-    { w: 27, t: 'gems', min: 23, max: 40 }, { w: 19, t: 'gems', min: 41, max: 57 }, { w: 8, t: 'gems', min: 58, max: 89 }, { w: 2.6, t: 'gems', min: 90, max: 140 },
-    { w: 0.8, t: 'gems', min: 141, max: 300 }, { w: 0.1, t: 'gems', min: 301, max: 800 },
+    { w: 27, t: 'gems', min: 50, max: 85 }, { w: 19, t: 'gems', min: 86, max: 120 }, { w: 8, t: 'gems', min: 121, max: 185 }, { w: 2.6, t: 'gems', min: 186, max: 290 },
+    { w: 0.8, t: 'gems', min: 291, max: 620 }, { w: 0.1, t: 'gems', min: 621, max: 1650 },
     { w: 8, t: 'souls', min: 300, max: 650 }, { w: 2, t: 'souls', min: 700, max: 1500 }, { w: 0.05, t: 'souls', min: 5000, max: 5000 },
     T('frost', 1), T('mortar', 1), T('toxic', 1), T('flame', 1), T('banner', 1), T('saw', 1),
     T('harpoon', 3), T('tesla', 3), T('voidwell', 2.5), T('magnet', 2.5), T('grinder', 2), T('bank', 1.5), T('altar', 1.5), T('bell', 2.5), T('miner', 2.2), T('pendulum', 2),
@@ -50,7 +50,7 @@ export const SEGMENTS = [
 ];
 const seg = (base) => SEGMENTS.flatMap((g) => g.ids.map((id) => T(id, +(base * g.k).toFixed(3))));
 const SOUL_RAW = {
-  wood: { base: 1.1, souls: [[36, 25, 55], [24, 56, 100], [9, 101, 160], [2.5, 161, 250], [0.5, 251, 450], [0.05, 451, 1000]] },
+  wood: { base: 1.1, souls: [[36, 40, 90], [24, 91, 160], [9, 161, 260], [2.5, 261, 400], [0.5, 401, 720], [0.05, 721, 1600]] },
   silver: { base: 1.2, souls: [[34, 80, 140], [22, 141, 220], [10, 221, 330], [3, 331, 520], [0.8, 521, 900], [0.08, 901, 2000]] },
   gold: { base: 0.9, souls: [[33, 250, 420], [21, 421, 650], [9, 651, 950], [3, 951, 1400], [0.6, 1401, 2600], [0.05, 2601, 6000]] },
 };

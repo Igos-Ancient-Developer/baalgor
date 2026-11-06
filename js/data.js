@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261106145221';
+import { COLS, ROWS } from './layouts.js?v=20261106150219';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261106145221';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261106150219';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -627,7 +627,7 @@ export const UNLOCKS = {
   magnet: { souls: 700, gems: 47 }, grinder: { souls: 850, gems: 57 },
   frost: { souls: 80, gems: 5 }, toxic: { souls: 110, gems: 8 }, mortar: { souls: 150, gems: 10 },
   flame: { souls: 250, gems: 17 }, banner: { souls: 300, gems: 20 }, saw: { souls: 380, gems: 25 }, harpoon: { souls: 480, gems: 32 }, tesla: { souls: 580, gems: 38 },
-  bank: { souls: 520, gems: 43 }, voidwell: { souls: 800, gems: 53 }, altar: { souls: 760, gems: 63 },
+  bank: { souls: 520, gems: 35 }, voidwell: { souls: 800, gems: 53 }, altar: { souls: 760, gems: 51 },
   bell: { souls: 420, gems: 29 }, miner: { souls: 500, gems: 34 }, pendulum: { souls: 600, gems: 40 },
 };
 export const unlockOf = (type) => UNLOCKS[type] || (isPremium(type) ? { gems: PREMIUM[type].gems, premium: true } : undefined);
