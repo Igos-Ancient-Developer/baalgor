@@ -18,7 +18,7 @@ const RAW = {
     T('frost', 3.2), T('mortar', 3.2), T('toxic', 3.2), T('flame', 3.2), T('banner', 3), T('saw', 3),
     T('harpoon', 1.2), T('tesla', 1.2), T('voidwell', 0.9), T('magnet', 0.9), T('grinder', 0.7), T('bank', 0.4), T('altar', 0.4), T('bell', 1), T('miner', 0.9), T('pendulum', 0.8),
   ] },
-  silver: { souls: 0, gems: 65, stars: 17, rows: [
+  silver: { souls: 0, gems: 110, stars: 17, rows: [
     { w: 27, t: 'gems', min: 23, max: 40 }, { w: 19, t: 'gems', min: 41, max: 57 }, { w: 8, t: 'gems', min: 58, max: 89 }, { w: 2.6, t: 'gems', min: 90, max: 140 },
     { w: 0.8, t: 'gems', min: 141, max: 300 }, { w: 0.1, t: 'gems', min: 301, max: 800 },
     { w: 8, t: 'souls', min: 300, max: 650 }, { w: 2, t: 'souls', min: 700, max: 1500 }, { w: 0.05, t: 'souls', min: 5000, max: 5000 },
