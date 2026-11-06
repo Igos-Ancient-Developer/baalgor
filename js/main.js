@@ -1,32 +1,32 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261106143929';
-import * as A from './art.js?v=20261106143929';
-import { Sim } from './sim.js?v=20261106143929';
-import { Gore } from './gore.js?v=20261106143929';
-import { Renderer } from './render.js?v=20261106143929';
-import { GameUI } from './ui.js?v=20261106143929';
-import { Tutorial } from './tutorial.js?v=20261106143929';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261106143929';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261106143929';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261106143929';
-import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261106143929';
-import { mapBG, releaseBG } from './env.js?v=20261106143929';
-import { MENU_SPEC } from './music.js?v=20261106143929';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261106143929';
-import { renderForge, renderAchs } from './screens.js?v=20261106143929';
-import { renderShop, claimAdGems } from './shop.js?v=20261106143929';
-import { freeChestReady, openChests, playOpening, chestImg } from './chests.js?v=20261106143929';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261106143929';
-import { Wallet } from './wallet.js?v=20261106143929';
-import { initLang, pickLang } from './i18n.js?v=20261106143929';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
-import { startFit } from './fit.js?v=20261106143929';
-import { startOnline } from './online.js?v=20261106143929';
-import { Menus, RUN, clock } from './menus.js?v=20261106143929';
-import { Net } from './net.js?v=20261106143929';
-import { Ads } from './ads.js?v=20261106143929';
-import { placeText, pyramidSvg } from './place.js?v=20261106143929';
-import { gemIc } from './res.js?v=20261106143929';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261106143929';
+import * as D from './data.js?v=20261106145221';
+import * as A from './art.js?v=20261106145221';
+import { Sim } from './sim.js?v=20261106145221';
+import { Gore } from './gore.js?v=20261106145221';
+import { Renderer } from './render.js?v=20261106145221';
+import { GameUI } from './ui.js?v=20261106145221';
+import { Tutorial } from './tutorial.js?v=20261106145221';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261106145221';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261106145221';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261106145221';
+import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261106145221';
+import { mapBG, releaseBG } from './env.js?v=20261106145221';
+import { MENU_SPEC } from './music.js?v=20261106145221';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261106145221';
+import { renderForge, renderAchs } from './screens.js?v=20261106145221';
+import { renderShop, claimAdGems } from './shop.js?v=20261106145221';
+import { freeChestReady, openChests, playOpening, chestImg } from './chests.js?v=20261106145221';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261106145221';
+import { Wallet } from './wallet.js?v=20261106145221';
+import { initLang, pickLang } from './i18n.js?v=20261106145221';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
+import { startFit } from './fit.js?v=20261106145221';
+import { startOnline } from './online.js?v=20261106145221';
+import { Menus, RUN, clock } from './menus.js?v=20261106145221';
+import { Net } from './net.js?v=20261106145221';
+import { Ads } from './ads.js?v=20261106145221';
+import { placeText, pyramidSvg } from './place.js?v=20261106145221';
+import { gemIc } from './res.js?v=20261106145221';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261106145221';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -61,8 +61,8 @@ async function boot() {
   startOnline();
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261106143929').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261106143929').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261106145221').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261106145221').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
@@ -244,11 +244,12 @@ function setupOverlays() {
   };
 }
 // Окно «посмотри рекламу — получи награду»: раз в 3 сыгранных уровня кампании, после подсчёта очков, если сейчас не предлагали стартовый набор.
-// Награда выбирается заранее и видна в окне: чаще души, реже деревянный сундук, ещё реже кристаллы (их начисляет сервер, до 5 раз в сутки).
+// Награда выбирается заранее и видна в окне, шанс — по ценности: души 65%, 1–3 кристалла 30% (начисляет сервер, до 5 раз в сутки),
+// деревянный сундук 5% (он стоит 25 кристаллов — самая ценная награда, поэтому самая редкая).
 function maybeAdAsk(r) {
   if ((save.lvDone || 0) - (save.adAskAt || 0) < 3 || !$('#offer').classList.contains('hidden') || $('#endmenu').classList.contains('hidden')) return;
   const n = Math.max(30, Math.round(Math.max(r.souls, 25) * (0.6 + Math.random() * 0.6) / 5) * 5), x = Math.random();       // души: 0,6–1,2 от наград за этот уровень (×2 за рекламу на плите — отдельно)
-  const p = x < 0.08 && ctrl._adLeft !== 0 && Ads.on('gems') ? { kind: 'gems', n } : x < 0.3 && Ads.on('chest') ? { kind: 'chest' } : { kind: 'souls', n };
+  const p = x < 0.05 && Ads.on('chest') ? { kind: 'chest' } : x >= 0.05 && x < 0.35 && ctrl._adLeft !== 0 && Ads.on('gems') ? { kind: 'gems', n } : { kind: 'souls', n };
   if (!Ads.on(p.kind)) return;
   ctrl._adPrize = p; save.adAskAt = save.lvDone; persist();
   const L = bareGlyphUrl;
