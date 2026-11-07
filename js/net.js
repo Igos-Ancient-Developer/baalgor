@@ -1,5 +1,5 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261107090430';
+import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261107202451';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
@@ -47,6 +47,10 @@ export const Net = {
   // место игрока на уровне среди всех игроков мира (лучшая запись по любой сложности, как в «Лучших игроках» на плашке): { rank, total }
   async levelPlace(levelId) { const me = this.me(); if (!me) return null; const r = await rpc('level_place', { p_level: levelId, p_tg: me.id }); return r && r.rank ? r : null; },
   globalBoard(offset = 0, limit = 50) { return rpc('global_board', { p_limit: limit, p_offset: offset }); },
+  // турнир недели (supabase/tourney.sql): таблица текущей недели, моё состояние с непросмотренными призами, отметка «приз увиден» (вернёт души)
+  tourneyBoard(offset = 0, limit = 50) { return rpc('tourney_board', { p_limit: limit, p_offset: offset }); },
+  async tourneyMe() { try { return await rpc('tourney_me', { init_data: (tg && tg.initData) || '' }); } catch (e) { return null; } },
+  async tourneySeen(week) { if (!this.canSubmit()) return null; try { return await rpc('tourney_seen', { init_data: tg.initData, p_week: week }); } catch (e) { return null; } },
   async globalRank() { const me = this.me(); if (!me) return null; const r = await rpc('global_rank', { p_tg: me.id }); return r[0] || null; },
   invalidate(levelId) { cache.delete('tops:' + levelId); cache.forEach((_, k) => { if (k.startsWith('fr:' + levelId + ':')) cache.delete(k); }); },
   // друзья: я и приглашённые мной/пригласившие меня, по местам на уровне (нужна подпись Telegram; без неё и без серверных функций — null)

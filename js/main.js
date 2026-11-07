@@ -1,32 +1,33 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261107090430';
-import * as A from './art.js?v=20261107090430';
-import { Sim } from './sim.js?v=20261107090430';
-import { Gore } from './gore.js?v=20261107090430';
-import { Renderer } from './render.js?v=20261107090430';
-import { GameUI } from './ui.js?v=20261107090430';
-import { Tutorial } from './tutorial.js?v=20261107090430';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261107090430';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261107090430';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261107090430';
-import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261107090430';
-import { mapBG, releaseBG } from './env.js?v=20261107090430';
-import { MENU_SPEC } from './music.js?v=20261107090430';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261107090430';
-import { renderForge, renderAchs } from './screens.js?v=20261107090430';
-import { renderShop, claimAdGems } from './shop.js?v=20261107090430';
-import { freeChestReady, openChests, playOpening, chestImg } from './chests.js?v=20261107090430';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261107090430';
-import { Wallet } from './wallet.js?v=20261107090430';
-import { initLang, pickLang } from './i18n.js?v=20261107090430';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
-import { startFit } from './fit.js?v=20261107090430';
-import { startOnline } from './online.js?v=20261107090430';
-import { Menus, RUN, clock } from './menus.js?v=20261107090430';
-import { Net } from './net.js?v=20261107090430';
-import { Ads } from './ads.js?v=20261107090430';
-import { placeText, pyramidSvg } from './place.js?v=20261107090430';
-import { gemIc } from './res.js?v=20261107090430';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261107090430';
+import * as D from './data.js?v=20261107202451';
+import * as A from './art.js?v=20261107202451';
+import { Sim } from './sim.js?v=20261107202451';
+import { Gore } from './gore.js?v=20261107202451';
+import { Renderer } from './render.js?v=20261107202451';
+import { GameUI } from './ui.js?v=20261107202451';
+import { Tutorial } from './tutorial.js?v=20261107202451';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261107202451';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261107202451';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261107202451';
+import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261107202451';
+import { mapBG, releaseBG } from './env.js?v=20261107202451';
+import { MENU_SPEC } from './music.js?v=20261107202451';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261107202451';
+import { renderForge, renderAchs } from './screens.js?v=20261107202451';
+import { renderShop, claimAdGems } from './shop.js?v=20261107202451';
+import { freeChestReady, openChests, playOpening, chestImg, refreshStock } from './chests.js?v=20261107202451';
+import { tourneyState, prizeHtml } from './tourney.js?v=20261107202451';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261107202451';
+import { Wallet } from './wallet.js?v=20261107202451';
+import { initLang, pickLang } from './i18n.js?v=20261107202451';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
+import { startFit } from './fit.js?v=20261107202451';
+import { startOnline } from './online.js?v=20261107202451';
+import { Menus, RUN, clock } from './menus.js?v=20261107202451';
+import { Net } from './net.js?v=20261107202451';
+import { Ads } from './ads.js?v=20261107202451';
+import { placeText, pyramidSvg } from './place.js?v=20261107202451';
+import { gemIc } from './res.js?v=20261107202451';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261107202451';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -61,8 +62,8 @@ async function boot() {
   startOnline();
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261107090430').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261107090430').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261107202451').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261107202451').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
@@ -79,6 +80,7 @@ async function boot() {
   Wallet.init(save, () => { persist(); }); Wallet.sync().then(() => { if (!$('#title').classList.contains('hidden')) menus.buildTitle(); });
   hide('#loading'); goTitle(); Net.step('loaded');
   if (!tutorialDone(save)) { save.tutSeen = 1; persist(); prepareLevel('tut', 1); }      // новичок сразу в бою-обучении (в нём есть «Пропустить»): в окне выбора «обучение / пропустить» уходила половина новичков
+  else setTimeout(maybePrize, 1200);                                                     // приз турнира прошлой недели, если ещё не забран
   notifySync();
   last = performance.now();
 }
@@ -109,12 +111,12 @@ function releaseLevel() {
 function busy(on) { $('#busy').classList.toggle('hidden', !on); }
 
 // ───────── навигация ─────────
-const SCREENS = ['#title', '#world', '#game'], OVERLAYS = ['#tutask', '#shop', '#settings', '#diffsheet', '#rankedsheet', '#board', '#forge', '#achs', '#loadout', '#pausemenu', '#endmenu', '#offer', '#adask'];
+const SCREENS = ['#title', '#world', '#game'], OVERLAYS = ['#tutask', '#shop', '#settings', '#diffsheet', '#rankedsheet', '#board', '#forge', '#achs', '#loadout', '#pausemenu', '#endmenu', '#offer', '#adask', '#tprize'];
 function hideAll() { for (const id of [...SCREENS, ...OVERLAYS]) hide(id); }
 function goTitle() { hideAll(); stopPlay(); releaseLevel(); menus.buildTitle(); show('#title'); sfx.startMusic(MENU_SPEC); updateBack(); }
 function goWorld(focus) { Net.step('world'); hideAll(); stopPlay(); releaseLevel(); menus.buildWorld(focus); show('#world'); sfx.startMusic(MENU_SPEC); updateBack(); }
 function stopPlay() { hide('#tutskip'); running = false; paused = false; held = false; reviveOpen = false; hide('#revive'); run = null; ctrl.run = null; document.body.classList.remove('ranked'); TG.closingConfirm(false); if (tutorial) tutorial.detach(); if (ui) ui.closeUpgrade(true); tally++; }
-function top() { for (const id of ['#adask', '#offer', '#shop', '#settings', '#board', '#forge', '#achs', '#loadout', '#rankedsheet', '#diffsheet']) if (!$(id).classList.contains('hidden')) return id; return null; }
+function top() { for (const id of ['#tprize', '#adask', '#offer', '#shop', '#settings', '#board', '#forge', '#achs', '#loadout', '#rankedsheet', '#diffsheet']) if (!$(id).classList.contains('hidden')) return id; return null; }
 function back() {
   const t = top();
   if (!t && reviveOpen) { sfx.play('error'); return; }              // у ворот назад пути нет: либо вернуть жизни, либо сдаться
@@ -256,6 +258,23 @@ function maybeAdAsk() {
   $('#aa-ic').src = p.kind === 'chest' ? chestImg('wood') : L(p.kind === 'gems' ? 'gem' : 'soul', 96);
   $('#aa-prize').innerHTML = p.kind === 'chest' ? 'Деревянный сундук' : p.kind === 'gems' ? `<img src="${L('gem', 26)}" alt="">1–3 кристалла` : `<img src="${L('soul', 26)}" alt="">+${p.n} душ`;
   show('#adask'); updateBack();
+}
+// Приз турнира недели: сервер уже положил сундук на склад и отправляет подарок Telegram; окно показываем в главном меню, пока игрок его не забрал.
+// «Забрать» отмечает приз увиденным и возвращает души (они хранятся в сохранении игры). Если призов несколько недель — по одному.
+async function maybePrize() {
+  const st = await tourneyState(true).catch(() => null), p = st && st.prizes && st.prizes[0];
+  if (!p || running || top() || $('#title').classList.contains('hidden')) return;
+  $('#tp-body').innerHTML = prizeHtml(p); show('#tprize'); updateBack(); sfx.play('win');
+  $('#tp-ok').onclick = async () => {
+    const b = $('#tp-ok'); if (b.disabled) return; b.disabled = true;
+    const r = await Net.tourneySeen(p.week); b.disabled = false;
+    if (!(r && r.ok)) { ctrl.note('Не получилось, попробуй ещё раз'); return; }
+    if (r.souls) { save.souls = (save.souls || 0) + r.souls; persist(); }
+    if (p.chest) await refreshStock(save);
+    sfx.play('upgrade'); hide('#tprize'); updateBack(); menus.buildTitle();
+    if (p.chest) ctrl.note('Сундук ждёт в магазине');
+    if (st.prizes.length > 1) setTimeout(maybePrize, 600);
+  };
 }
 // Новый рекорд на уровне: на карте сразу открывается плашка этого уровня, и строка игрока поднимается в «Лучших игроках», сдвигая остальных вниз
 function showRise() {
@@ -475,7 +494,10 @@ function onOver({ won }) {
   if (run) {                                              // копим результат забега; в таблицу уходит один итог
     run.score += sim.score; run.time += sim.time; run.kills += sim.stats.kills; run.waves += sim.wave;
     run.done = !won || run.i >= run.levels.length - 1;
-    if (run.done) { recordRun(won); ending.submit = submitRun(won && run.i >= run.levels.length - 1); }
+    if (run.done) {
+      recordRun(won); ending.submit = submitRun(won && run.i >= run.levels.length - 1);
+      ending.submit.then((r) => tourneyState(true).then((st) => { if (r && r.week_rank && st && st.on) setTimeout(() => ctrl.note(`Место в турнире недели: #${r.week_rank}`), 1800); }));      // забег окончен: место в турнире недели
+    }
     else { recordRun(false); submitRun(false); }              // прогресс забега сохраняется после каждого рубежа: даже если выйти, результат уже учтён
     return;
   }

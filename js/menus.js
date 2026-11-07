@@ -1,15 +1,16 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261107090430';
-import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261107090430';
-import * as D from './data.js?v=20261107090430';
-import * as M from './meta.js?v=20261107090430';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261107090430';
-import { url as imgUrl } from './sprites.js?v=20261107090430';
-import { Net } from './net.js?v=20261107090430';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261107090430';
-import { fillPlates, gemIc } from './res.js?v=20261107090430';
-import { gemHtml } from './gem3d.js?v=20261107090430';
-import { Wallet } from './wallet.js?v=20261107090430';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261107202451';
+import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261107202451';
+import * as D from './data.js?v=20261107202451';
+import * as M from './meta.js?v=20261107202451';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261107202451';
+import { url as imgUrl } from './sprites.js?v=20261107202451';
+import { Net } from './net.js?v=20261107202451';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261107202451';
+import { fillPlates, gemIc } from './res.js?v=20261107202451';
+import { gemHtml } from './gem3d.js?v=20261107202451';
+import { Wallet } from './wallet.js?v=20261107202451';
+import { tourneyState, tourneyOn, tourneyCached, tourneyHead, fillPodium, tickClock, countdown } from './tourney.js?v=20261107202451';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -113,6 +114,14 @@ export class Menus {
     const me = Net.me() || c.TG.user(), pf = $('#pf'); pf.innerHTML = '';
     pf.appendChild(avatar(me && (me.photo || me.photo_url), me ? (me.name || me.first_name || me.username) : 'Игрок', me ? me.id : 0));
     $('#gem-ic').innerHTML = gemHtml(30, 0, true); $('#gem-n').textContent = (s.gems || 0).toLocaleString('ru-RU');
+    this.tourneyBadge(); tourneyState().then(() => this.tourneyBadge());
+  }
+  // значок турнира на плите «Рейтинговый забег»: сколько осталось до итогов недели
+  tourneyBadge() {
+    const b = $('#tn-badge'); if (!b) return;
+    b.classList.toggle('hidden', !tourneyOn()); if (!tourneyOn()) return;
+    b.innerHTML = `<img src="${imgUrl('ui/ic/cont_cup.webp')}" alt=""><span>Турнир</span><b>${countdown().short}</b>`;
+    clearTimeout(this._tbT); this._tbT = setTimeout(() => { if (!$('#title').classList.contains('hidden')) this.tourneyBadge(); }, 30000);
   }
 
   // ───── настройки: всё в одном месте ─────
@@ -426,7 +435,7 @@ export class Menus {
         ${row('gem', 'Редкая награда', 'За рейтинговый забег иногда можно выбить кристаллы', '✦', 'good')}
         ${row('fast', 'Ускорение', 'Скорость игры не меняется. Хочешь быстрее и получить бонус золота — вызывай следующую волну раньше срока кнопкой справа сверху', '', 'neutral').replace('<b></b>', '<b>волны</b>')}
       </div>
-      <div class="dsub">Лучшие игроки</div><div class="rk-top">${'<div class="skel"></div>'.repeat(3)}</div></div>
+      <div class="dsub" id="rk-topt">Лучшие игроки</div><div class="rk-top">${'<div class="skel"></div>'.repeat(3)}</div></div>
       <div class="rk-actions"><button class="btn big" id="rk-go">В бой</button><button class="btn" id="rk-board">Таблица лидеров</button></div>`;
     $('#rk-go').onclick = () => { c.sfx.play('click'); c.startRun(); };
     $('#rk-board').onclick = () => { c.sfx.play('click'); this.openBoard({ ...RUN, title: 'Рейтинговый забег' }); };
@@ -437,7 +446,17 @@ export class Menus {
       if (seq !== this.diffSeq) return; box.innerHTML = '';
       for (let k = 0; k < 3; k++) { const r = rows && rows[k]; if (!r) { box.appendChild(el('div', 'trow empty', '—')); continue; } box.appendChild(runRow({ ...r, rank: k + 1 }, 'trow', { diff: RUN.diff })); }
     };
-    if (!Net.enabled) fill(null); else Net.levelBoard(RUN.level, RUN.diff, 0, 3).then(fill).catch(() => fill(null));
+    const loadTop = () => { if (!Net.enabled) fill(null); else (tourneyOn() ? Net.tourneyBoard(0, 3) : Net.levelBoard(RUN.level, RUN.diff, 0, 3)).then(fill).catch(() => fill(null)); };
+    // турнир недели: плашка с отсчётом и моим местом над описанием, «Лучшие игроки» — за эту неделю
+    tourneyState().then((st) => {
+      if (seq !== this.diffSeq) return;
+      if (st && st.on) {
+        const b = el('button', 'tn-mini', `<img src="${imgUrl('ui/ic/cont_cup.webp')}" alt=""><span class="tm-t"><b>Турнир недели</b><small>Призы: подарки Telegram и сундуки</small></span><span class="tm-r"><small>Итоги через</small><b class="tm-c">${countdown().short}</b>${st.rank ? `<i>#${st.rank}</i>` : ''}</span>`);
+        b.onclick = () => { c.sfx.play('click'); this.openBoard({ ...RUN, title: 'Рейтинговый забег' }); };
+        body.querySelector('.rk-slab .carvep').after(b); $('#rk-topt').textContent = 'Лучшие за неделю';
+      }
+      loadTop();
+    });
   }
 
   // ───── подготовка к уровню: выбор зданий по слотам ─────
@@ -521,12 +540,13 @@ export class Menus {
   }
 
   // ───── таблицы лидеров ─────
+  // рейтинговый забег: вкладки «Турнир недели» (по умолчанию, пока турнир идёт) и «За всё время»; у недели сверху отсчёт и пьедестал с призами
   async openBoard(spec) {
     if (spec.global) spec = { ...RUN, title: 'Мировой рейтинг' };      // мировой рейтинг — только те, кто проходил рейтинговый забег; результаты обычных уровней видны в таблице самого уровня
-    const c = this.c, list = $('#boardlist'), me = $('#bd-me'); const seq = (this.boardSeq = (this.boardSeq || 0) + 1);
+    const c = this.c, list = $('#boardlist'), me = $('#bd-me'), head = $('#bd-head'); const seq = (this.boardSeq = (this.boardSeq || 0) + 1);
     const title = spec.title ? spec.title : spec.global ? 'Мировой рейтинг' : `${D.MAPS.find((q) => q.id === spec.level).name} · ${D.DIFFS[spec.diff].name}`;
-    $('#bd-title').textContent = title; list.innerHTML = '<div class="skel"></div>'.repeat(8); me.classList.add('hidden'); me.innerHTML = '';
-    this.show('#board'); $('#board').scrollTop = 0;
+    $('#bd-title').textContent = title; list.innerHTML = '<div class="skel"></div>'.repeat(8); me.classList.add('hidden'); me.innerHTML = ''; head.innerHTML = '';
+    this.show('#board'); if (!spec.keepScroll) $('#board').scrollTop = 0;
     const meU = Net.me();
     const row = (r) => {
       const d = el('div', 'brow' + (meU && r.tg_id === meU.id ? ' me' : ''));
@@ -538,15 +558,24 @@ export class Menus {
     const row2 = (r) => (isRun ? runRow(r, 'brow', { diff: RUN.diff }) : row(r));
     const empty = (icon) => { list.innerHTML = `<div class="empty-state"><img src="${bareGlyphUrl(icon, 64)}" alt=""></div>`; };
     if (!Net.enabled) { empty('crown'); return; }
+    const st = isRun ? (tourneyCached() || await tourneyState().catch(() => null)) : null;
+    if (seq !== this.boardSeq) return;
+    const week = !!(st && st.on) && spec.tab !== 'all';
+    if (st && st.on) {
+      const tabs = el('div', 'seg bd-tabs', `<button class="${week ? 'on' : ''}" data-t="week">Турнир недели</button><button class="${week ? '' : 'on'}" data-t="all">За всё время</button>`);
+      tabs.onclick = (e) => { const t = e.target.closest('button'); if (!t || t.classList.contains('on')) return; c.sfx.play('click'); this.openBoard({ ...spec, tab: t.dataset.t, keepScroll: true }); };
+      head.appendChild(tabs);
+      if (week) { const h = el('div', '', tourneyHead()); head.appendChild(h); tickClock(h.querySelector('.tn-clock'), () => { if (seq === this.boardSeq && !$('#board').classList.contains('hidden')) tourneyState(true).then(() => this.openBoard({ ...spec, keepScroll: true })); }); }
+    }
     let offset = 0; const LIM = 50;
     const hideDup = () => { if (list.querySelector('.me')) me.classList.add('hidden'); };      // я уже в списке — закреплённая строка внизу не нужна (иначе меня два раза)
     const load = async () => {
       let rows;
-      try { rows = spec.global ? await Net.globalBoard(offset, LIM) : await Net.levelBoard(spec.level, spec.diff, offset, LIM); } catch (e) { if (seq === this.boardSeq && !offset) empty('skull'); return; }
+      try { rows = week ? await Net.tourneyBoard(offset, LIM) : spec.global ? await Net.globalBoard(offset, LIM) : await Net.levelBoard(spec.level, spec.diff, offset, LIM); } catch (e) { if (seq === this.boardSeq && !offset) empty('skull'); return; }
       if (seq !== this.boardSeq) return;
-      if (!offset) list.innerHTML = '';
+      if (!offset) { list.innerHTML = ''; if (week) fillPodium(head, rows); }
       list.querySelector('.more')?.remove();
-      if (!rows.length && !offset) { empty('crown'); return; }
+      if (!rows.length && !offset) { if (week) list.innerHTML = '<div class="tn-empty">В этом турнире ещё никто не сыграл. Начни забег — и первое место твоё!</div>'; else empty('crown'); return; }
       for (const r of rows) list.appendChild(row2(r));
       offset += rows.length; hideDup();
       if (rows.length === LIM) { const more = el('button', 'btn ghost more', '…'); more.onclick = () => { more.textContent = '…'; load(); }; list.appendChild(more); }
@@ -555,7 +584,7 @@ export class Menus {
     // моя позиция: только если меня нет среди загруженных строк
     if (meU) {
       try {
-        const r = spec.global ? await Net.globalRank() : await Net.levelRank(spec.level, spec.diff);
+        const r = week ? (st.rank ? { rank: st.rank, score: st.score, lv: st.lv, duration: st.duration } : null) : spec.global ? await Net.globalRank() : await Net.levelRank(spec.level, spec.diff);
         await first;
         if (seq === this.boardSeq && r && !list.querySelector('.me')) { me.classList.remove('hidden'); me.innerHTML = ''; me.appendChild(row2({ rank: r.rank, tg_id: meU.id, name: meU.name, username: meU.username, photo: meU.photo, score: r.score, lv: r.lv || (this.save.rank || {}).lv, duration: r.duration || (this.save.rank || {}).time, loadout: r.loadout || (this.save.rank || {}).loadout })); }
       } catch (e) { /* без связи */ }
