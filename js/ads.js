@@ -2,8 +2,8 @@
 // какое место приносит больше. SDK грузится только при первом показе. Вне Telegram и без номера блока кнопки рекламы не показываются.
 // show(kind) → 'done' (досмотрел, награду можно выдавать) | 'skip' (закрыл раньше) | 'none' (рекламы сейчас нет) | 'error'.
 // Кристаллы за рекламу начисляет сервер: AdsGram сам сообщает о просмотре (Reward URL → функция ad-reward), клиент лишь забирает начисление (supabase/ads.sql).
-import { ADS } from './config.js?v=20261106150219';
-import { Net } from './net.js?v=20261106150219';
+import { ADS } from './config.js?v=20261107090430';
+import { Net } from './net.js?v=20261107090430';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const SDK = 'https://sad.adsgram.ai/js/sad.min.js';

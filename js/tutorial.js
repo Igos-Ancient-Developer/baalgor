@@ -2,8 +2,8 @@
 // по силуэту картинки, это рисует render.js по view.hl), рядом палец с анимацией касания, остальной экран затемнён и не нажимается (касания проходят
 // только через «окно» вокруг цели). Когда игрок выбрал здание и ставит его, подсветки нет совсем: куда ставить, решает сам. Состояние берётся из симуляции
 // и интерфейса, поэтому порядок шагов не жёсткий.
-import * as D from './data.js?v=20261106150219';
-import { Net } from './net.js?v=20261106150219';
+import * as D from './data.js?v=20261107090430';
+import { Net } from './net.js?v=20261107090430';
 
 const $ = (s) => document.querySelector(s);
 
@@ -15,7 +15,7 @@ export class Tutorial {
     const hand = $('#tuthand'); if (!hand.src) hand.src = new URL('../img/ui/hand.webp', import.meta.url).href;
     this.go(0);
   }
-  detach() { this.done = true; this.spot(null); const v = this.c.view; if (v) v.hl = null; }
+  detach() { this.done = true; clearTimeout(this._end); this.spot(null); const v = this.c.view; if (v) v.hl = null; }
 
   // подходящие клетки: для башни — рядом с дорогой, для рудника — подальше от неё
   cells(kind, n = 5) {
@@ -96,9 +96,14 @@ export class Tutorial {
   go(i) {
     this.spot(null); this.placing = false; const v = this.c.view; if (v) v.hl = null;
     while (i < this.steps.length && this.steps[i].skip && this.steps[i].skip()) i++;
-    this.i = i; if (i >= this.steps.length) return;
+    this.i = i; if (i >= this.steps.length) { this.complete(); return; }
     Net.step('tut' + i);                                     // воронка новичка: до какого шага обучения дошёл
     const st = this.steps[i]; if (st.enter) st.enter(); this.c.sfx.play('select');
+  }
+  // все подсказки пройдены — обучение засчитано сразу, без оставшихся волн (новички уходили, когда делать было уже нечего)
+  complete() {
+    const s = this.sim; clearTimeout(this._end);
+    this._end = setTimeout(() => { if (this.done || this.sim !== s || s.state !== 'play') return; s.state = 'won'; s.finish(true); s.emit('over', { won: true }); }, 1200);       // пауза, чтобы игрок увидел улучшенную башню
   }
   update(dt) {
     if (this.done || this.i < 0 || this.i >= this.steps.length) return;
