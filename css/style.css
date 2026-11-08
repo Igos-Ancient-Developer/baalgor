@@ -1430,7 +1430,7 @@ body.tgback #world .topbar .online { margin: 0; }
 .of-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 16px; }
 .of-list li { display: flex; align-items: center; justify-content: center; gap: 6px; } .of-list img { width: 18px; height: 18px; }
 .of-box .btn { width: 100%; }
-#offer, #adask { z-index: 32; }                                           /* поверх экрана итогов (#endmenu — 31) */
+#offer, #adask { z-index: 32; }                                           /* выше вкладок и меню; поверх итогов больше не показываются — итоги к этому времени закрыты */
 .aa-box { gap: 10px; }
 .aa-box .rib { white-space: nowrap; }
 .aa-box .of-ic { width: 96px; height: 96px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(80,230,200,.45)); }

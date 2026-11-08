@@ -1,33 +1,33 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261107202451';
-import * as A from './art.js?v=20261107202451';
-import { Sim } from './sim.js?v=20261107202451';
-import { Gore } from './gore.js?v=20261107202451';
-import { Renderer } from './render.js?v=20261107202451';
-import { GameUI } from './ui.js?v=20261107202451';
-import { Tutorial } from './tutorial.js?v=20261107202451';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261107202451';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261107202451';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261107202451';
-import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261107202451';
-import { mapBG, releaseBG } from './env.js?v=20261107202451';
-import { MENU_SPEC } from './music.js?v=20261107202451';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261107202451';
-import { renderForge, renderAchs } from './screens.js?v=20261107202451';
-import { renderShop, claimAdGems } from './shop.js?v=20261107202451';
-import { freeChestReady, openChests, playOpening, chestImg, refreshStock } from './chests.js?v=20261107202451';
-import { tourneyState, prizeHtml } from './tourney.js?v=20261107202451';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261107202451';
-import { Wallet } from './wallet.js?v=20261107202451';
-import { initLang, pickLang } from './i18n.js?v=20261107202451';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
-import { startFit } from './fit.js?v=20261107202451';
-import { startOnline } from './online.js?v=20261107202451';
-import { Menus, RUN, clock } from './menus.js?v=20261107202451';
-import { Net } from './net.js?v=20261107202451';
-import { Ads } from './ads.js?v=20261107202451';
-import { placeText, pyramidSvg } from './place.js?v=20261107202451';
-import { gemIc } from './res.js?v=20261107202451';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261107202451';
+import * as D from './data.js?v=20261108184840';
+import * as A from './art.js?v=20261108184840';
+import { Sim } from './sim.js?v=20261108184840';
+import { Gore } from './gore.js?v=20261108184840';
+import { Renderer } from './render.js?v=20261108184840';
+import { GameUI } from './ui.js?v=20261108184840';
+import { Tutorial } from './tutorial.js?v=20261108184840';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261108184840';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261108184840';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261108184840';
+import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261108184840';
+import { mapBG, releaseBG } from './env.js?v=20261108184840';
+import { MENU_SPEC } from './music.js?v=20261108184840';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261108184840';
+import { renderForge, renderAchs } from './screens.js?v=20261108184840';
+import { renderShop, claimAdGems } from './shop.js?v=20261108184840';
+import { freeChestReady, openChests, playOpening, chestImg, refreshStock } from './chests.js?v=20261108184840';
+import { tourneyState, prizeHtml } from './tourney.js?v=20261108184840';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261108184840';
+import { Wallet } from './wallet.js?v=20261108184840';
+import { initLang, pickLang } from './i18n.js?v=20261108184840';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
+import { startFit } from './fit.js?v=20261108184840';
+import { startOnline } from './online.js?v=20261108184840';
+import { Menus, RUN, clock } from './menus.js?v=20261108184840';
+import { Net } from './net.js?v=20261108184840';
+import { Ads } from './ads.js?v=20261108184840';
+import { placeText, pyramidSvg } from './place.js?v=20261108184840';
+import { gemIc } from './res.js?v=20261108184840';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261108184840';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -62,8 +62,8 @@ async function boot() {
   startOnline();
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261107202451').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261107202451').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261108184840').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261108184840').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
@@ -79,8 +79,9 @@ async function boot() {
   setupGameUi(); setupInput(); setupOverlays(); setupRevive(); setupNav(); setupTabs();
   Wallet.init(save, () => { persist(); }); Wallet.sync().then(() => { if (!$('#title').classList.contains('hidden')) menus.buildTitle(); });
   hide('#loading'); goTitle(); Net.step('loaded');
+  save.visits = (save.visits || 0) + 1; persist();                                      // заходы в игру: стартовый набор предлагаем со второго
   if (!tutorialDone(save)) { save.tutSeen = 1; persist(); prepareLevel('tut', 1); }      // новичок сразу в бою-обучении (в нём есть «Пропустить»): в окне выбора «обучение / пропустить» уходила половина новичков
-  else setTimeout(maybePrize, 1200);                                                     // приз турнира прошлой недели, если ещё не забран
+  else setTimeout(async () => { if (!(await maybePrize())) maybeOffer(); }, 1200);     // приз турнира прошлой недели, если ещё не забран; иначе — стартовый набор
   notifySync();
   last = performance.now();
 }
@@ -198,14 +199,16 @@ function setupOverlays() {
   $('#p-restart').onclick = () => { hide('#pausemenu'); if (meta) meta.abandon(); prepareLevel(D.MAPS[levelIdx].id, diffI, true, weeklyRun); };
   $('#p-quit').onclick = () => { if (meta) meta.abandon(); if (run) { abandonRun(); return; } if (D.MAPS[levelIdx].tutorial) { goTitle(); return; } goWorld(D.MAPS[levelIdx].id); };
   $('#p-settings').onclick = () => { sfx.play('click'); menus.openSettings(); updateBack(); };
-  $('#e-again').onclick = () => { hide('#endmenu'); if (run) { startRunFlow(); return; } prepareLevel(D.MAPS[levelIdx].id, diffI, true, weeklyRun); };
-  $('#e-menu').onclick = () => { hide('#endmenu'); askNotify(); if (run) { goTitle(); return; } if (showRise()) return; goWorld(D.MAPS[levelIdx].id); };
-  $('#e-next').onclick = () => {
-    hide('#endmenu'); askNotify();
+  // уход с итогов: плита итогов закрывается, после уровня кампании отдельно (ни поверх итогов, ни поверх других окон) — окно «награда за рекламу», потом само действие
+  const leaveEnd = (go) => { hide('#endmenu'); if (!adAsk(go)) go(); };
+  $('#e-again').onclick = () => leaveEnd(() => { if (run) { startRunFlow(); return; } prepareLevel(D.MAPS[levelIdx].id, diffI, true, weeklyRun); });
+  $('#e-menu').onclick = () => leaveEnd(() => { askNotify(); if (run) { goTitle(); return; } if (showRise()) return; goWorld(D.MAPS[levelIdx].id); });
+  $('#e-next').onclick = () => leaveEnd(() => {
+    askNotify();
     if (run) { run.i++; openLoadoutFor(run.levels[run.i], RUN.diff); return; }
     if (showRise()) return;
     const n = nextAfter(save, D.MAPS[levelIdx].id); goWorld(n ? n.id : D.MAPS[levelIdx].id);
-  };
+  });
   $('#end-verdict').onclick = () => { tally++; };       // касание пропускает анимацию подсчёта
   // «Пропустить обучение» прямо в бою-обучении: сразу на карту мира, обучение больше не предлагается
   $('#tutskip').onclick = () => { sfx.unlock(); sfx.play('click'); if (meta) meta.abandon(); save.tutDone = 1; persist(); Net.step('tut_skip'); goWorld(); };
@@ -218,21 +221,21 @@ function setupOverlays() {
     save.souls += r.souls; persist(); b.classList.add('hidden'); sfx.play('upgrade');
     $('#end-souls').innerHTML = `<img src="${bareGlyphUrl('soul', 24)}" alt=""> +${r.souls * 2}`;
   };
-  // стартовый набор после победы
+  // стартовый набор (на главном экране со второго захода в игру)
   $('#of-buy').onclick = async () => {
     const b = $('#of-buy'), t0 = b.innerHTML; if (b.disabled) return; b.disabled = true; b.textContent = 'Открываю счёт…';
-    const r = await Wallet.buy('starter'); b.disabled = false; b.innerHTML = t0;
+    const r = await Wallet.buy('starter', 'offer'); b.disabled = false; b.innerHTML = t0;
     if (r && r.status === 'paid') { Net.step('offer_buy'); hide('#offer'); persist(); sfx.play('win'); ctrl.note('Стартовый набор получен'); menus.buildTitle(); updateBack(); }
     else if (r && r.status !== 'cancelled') { sfx.play('error'); ctrl.note(r.error === 'notg' ? 'Покупка доступна внутри Telegram' : 'Не получилось, попробуй ещё раз'); }
   };
   $('#of-later').onclick = () => { sfx.play('click'); hide('#offer'); updateBack(); };
   // окно «награда за рекламу» после уровня
-  $('#aa-skip').onclick = () => { sfx.play('click'); hide('#adask'); updateBack(); };
+  $('#aa-skip').onclick = () => { sfx.play('click'); const go = ctrl._adAfter; ctrl._adAfter = null; ctrl._adPrize = null; hide('#adask'); updateBack(); if (go) go(); };
   $('#aa-go').onclick = async () => {
     const b = $('#aa-go'), p = ctrl._adPrize; if (!p || b.disabled) return;
     b.disabled = true; const res = await Ads.show(p.kind, sfx); b.disabled = false;
     if (res !== 'done') { ctrl.note(Ads.say(res)); return; }
-    ctrl._adPrize = null; hide('#adask'); updateBack();
+    const go = ctrl._adAfter; ctrl._adAfter = null; ctrl._adPrize = null; hide('#adask'); updateBack();
     const souls = (n) => { save.souls += n; persist(); sfx.play('upgrade'); ctrl.note(`+${n} душ`); };
     if (p.kind === 'souls') souls(p.n);
     else if (p.kind === 'chest') {
@@ -243,27 +246,29 @@ function setupOverlays() {
       save.adPending = Date.now(); persist();
       if (await claimAdGems(save, ctrl) === 'limit') souls(p.n);             // кристаллы на сегодня кончились — вместо них души
     }
+    if (go) go();                                                        // дальше — куда игрок шёл с итогов (после открытия сундука, не поверх него)
   };
 }
-// Окно «посмотри рекламу — получи награду»: раз в 3 сыгранных уровня кампании, после подсчёта очков, если сейчас не предлагали стартовый набор.
+// Окно «посмотри рекламу — получи награду»: после каждого уровня кампании (и победы, и поражения), когда игрок уходит с итогов — отдельным окном, итоги уже закрыты.
+// after — куда игрок шёл (вызывается после «Пропустить» или после награды). false — окно не показано (реклама выключена, забег, обучение)
 // Награда выбирается заранее и видна в окне, шанс — по ценности: души 65%, 1–3 кристалла 30% (начисляет сервер, до 5 раз в сутки),
 // деревянный сундук 5% (он стоит 25 кристаллов — самая ценная награда, поэтому самая редкая).
-function maybeAdAsk() {
-  if ((save.lvDone || 0) - (save.adAskAt || 0) < 3 || !$('#offer').classList.contains('hidden') || $('#endmenu').classList.contains('hidden')) return;
+function adAsk(after) {
+  if (run || D.MAPS[levelIdx].tutorial || top()) return false;
   const n = 15 + Math.round(Math.random() * 4) * 5, x = Math.random();       // души: 15–35 — по цене как 1–3 кристалла (сундук: 25 кристаллов = 300 душ), чтобы частая награда не была ценнее редкой
   const p = x < 0.05 && Ads.on('chest') ? { kind: 'chest' } : x >= 0.05 && x < 0.35 && ctrl._adLeft !== 0 && Ads.on('gems') ? { kind: 'gems', n } : { kind: 'souls', n };
-  if (!Ads.on(p.kind)) return;
-  ctrl._adPrize = p; save.adAskAt = save.lvDone; persist();
+  if (!Ads.on(p.kind)) return false;
+  ctrl._adPrize = p; ctrl._adAfter = after;
   const L = bareGlyphUrl;
   $('#aa-ic').src = p.kind === 'chest' ? chestImg('wood') : L(p.kind === 'gems' ? 'gem' : 'soul', 96);
   $('#aa-prize').innerHTML = p.kind === 'chest' ? 'Деревянный сундук' : p.kind === 'gems' ? `<img src="${L('gem', 26)}" alt="">1–3 кристалла` : `<img src="${L('soul', 26)}" alt="">+${p.n} душ`;
-  show('#adask'); updateBack();
+  show('#adask'); updateBack(); return true;
 }
 // Приз турнира недели: сервер уже положил сундук на склад и отправляет подарок Telegram; окно показываем в главном меню, пока игрок его не забрал.
 // «Забрать» отмечает приз увиденным и возвращает души (они хранятся в сохранении игры). Если призов несколько недель — по одному.
 async function maybePrize() {
   const st = await tourneyState(true).catch(() => null), p = st && st.prizes && st.prizes[0];
-  if (!p || running || top() || $('#title').classList.contains('hidden')) return;
+  if (!p || running || top() || $('#title').classList.contains('hidden')) return false;
   $('#tp-body').innerHTML = prizeHtml(p); show('#tprize'); updateBack(); sfx.play('win');
   $('#tp-ok').onclick = async () => {
     const b = $('#tp-ok'); if (b.disabled) return; b.disabled = true;
@@ -275,6 +280,7 @@ async function maybePrize() {
     if (p.chest) ctrl.note('Сундук ждёт в магазине');
     if (st.prizes.length > 1) setTimeout(maybePrize, 600);
   };
+  return true;
 }
 // Новый рекорд на уровне: на карте сразу открывается плашка этого уровня, и строка игрока поднимается в «Лучших игроках», сдвигая остальных вниз
 function showRise() {
@@ -284,19 +290,21 @@ function showRise() {
   setTimeout(() => { if (!$('#world').classList.contains('hidden')) menus.openLevel(r.level); }, 80);       // после того как карта прокрутилась к уровню
   return true;
 }
-// Предложение стартового набора: после победы в кампании, пока набор не куплен; первый раз — после первой победы, потом не чаще раза в 3 дня
-function maybeOffer(won) {
-  if (!won || run || weeklyRun || D.MAPS[levelIdx].tutorial || save.starterBought || !Wallet.online) return;
-  if (save.offerAt && Date.now() - save.offerAt < 3 * 864e5) return;
+// Предложение стартового набора: только на главном экране при запуске, со второго захода в игру, пока набор не куплен, не чаще раза в 3 дня
+// и только если ничего другого не открыто (раньше всплывало поверх итогов первой победы под пальцем, который пропускал подсчёт: оплату открывали
+// случайно и закрывали за 2–3 с). Кнопка покупки первые 0,9 с не нажимается. true — окно показано
+function maybeOffer() {
+  if (save.starterBought || !Wallet.online || (save.visits || 0) < 2 || !tutorialDone(save)) return false;
+  if (save.offerAt && Date.now() - save.offerAt < 3 * 864e5) return false;
+  if (running || top() || $('#title').classList.contains('hidden')) return false;
   const T = D.STARTER, worth = Math.round((T.gems + D.PREMIUM[T.tower].gems) / (D.PACKS[0].gems / D.PACKS[0].stars));
   $('#of-ic').src = bareGlyphUrl('premium', 96);
   $('#of-list').innerHTML = `<li>${gemIc(18)} ${T.gems} кристаллов</li><li><img src="${bareGlyphUrl('premium', 18)}" alt=""> ${D.PREMIUM[T.tower].name}, навсегда</li><li><img src="${bareGlyphUrl('soul', 18)}" alt=""> ${T.souls} душ</li>`;
   $('#of-worth').textContent = `Выгода: на ${worth} ⭐ товаров за ${T.stars} ⭐`;
-  $('#of-buy').innerHTML = `⭐ ${T.stars}`;
-  setTimeout(() => {                                                    // поверх итогов, когда игрок их увидел
-    if ($('#endmenu').classList.contains('hidden') || save.starterBought) return;
-    save.offerAt = Date.now(); persist(); show('#offer'); Net.step('offer_show'); updateBack();
-  }, 1600);
+  const b = $('#of-buy'); b.innerHTML = `<span>Купить за</span> ⭐ ${T.stars}`;
+  b.style.pointerEvents = 'none'; setTimeout(() => { b.style.pointerEvents = ''; }, 900);
+  save.offerAt = Date.now(); persist(); show('#offer'); Net.step('offer_show'); updateBack();
+  return true;
 }
 // Сообщения от бота (напоминания): спрашиваем один раз, после первой победы в кампании, когда игрок уходит с экрана итогов.
 // Telegram показывает своё окно «разрешить боту писать»; кто уже разрешил (или писал боту) — не спрашиваем, только сообщаем серверу.
@@ -352,7 +360,7 @@ function setupRevive() {
   $('#rv-quick').onclick = async () => {
     const q = quickPack(); if (reviveBusy || !reviveOpen || !q) return; reviveBusy = true;
     const b = $('#rv-quick'), t0 = b.innerHTML; b.disabled = true; b.textContent = 'Открываю счёт…';
-    const r = await Wallet.buy(q.id); reviveBusy = false; b.disabled = false; b.innerHTML = t0;
+    const r = await Wallet.buy(q.id, 'revive'); reviveBusy = false; b.disabled = false; b.innerHTML = t0;
     if (!reviveOpen || !sim) return;
     persist(); renderRevive();
     if (r && r.status === 'paid') { if ((save.gems || 0) >= revivePrice()) $('#rv-buy').click(); else ctrl.note('Кристаллы придут через минуту'); }
@@ -580,9 +588,9 @@ function showEnd(won) {
   $('#e-menu').textContent = run ? 'В меню' : tut ? 'В меню' : 'На карту';
   if (tut && won) { $('#e-next').classList.remove('hidden'); $('#e-next').textContent = 'К карте'; }
   $('#e-ad').classList.toggle('hidden', !(won && !tut && !run && r.souls > 0 && Ads.on('souls')));       // ×2 души за рекламу
-  show('#endmenu'); fitEnd(); maybeOffer(won);
-  if (!tut && !run) { save.lvDone = (save.lvDone || 0) + 1; persist(); }       // счётчик сыгранных уровней кампании: окно «награда за рекламу» — раз в 3
-  if (!tut) { $('#endmenu .modal').classList.add('tally'); const token = ++tally; const ed = ending; playVerdict(v, token).then(() => { if (!run) setTimeout(() => { if (ending === ed) maybeAdAsk(); }, 500); }); }
+  show('#endmenu'); fitEnd();
+  if (!tut && !run) { save.lvDone = (save.lvDone || 0) + 1; persist(); }       // счётчик сыгранных уровней кампании
+  if (!tut) { $('#endmenu .modal').classList.add('tally'); playVerdict(v, ++tally); }
   else $('#endmenu .modal').classList.remove('tally');
   // место в мире на этом уровне («Место 2 из 87 в мире» + похвала по проценту); новый рекорд — запоминаем, чтобы на карте показать подъём в «Лучших игроках»
   const lvId = sim.map.id;

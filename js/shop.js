@@ -1,14 +1,14 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261107202451';
-import { Wallet } from './wallet.js?v=20261107202451';
-import { fillPlates, gemIc } from './res.js?v=20261107202451';
-import { towerIcon } from './ui.js?v=20261107202451';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261107202451';
-import { SHOP_IMG } from './iconmap.js?v=20261107202451';
-import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest, freeChestIn } from './chests.js?v=20261107202451';
-import { Net } from './net.js?v=20261107202451';
+import * as D from './data.js?v=20261108184840';
+import { Wallet } from './wallet.js?v=20261108184840';
+import { fillPlates, gemIc } from './res.js?v=20261108184840';
+import { towerIcon } from './ui.js?v=20261108184840';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261108184840';
+import { SHOP_IMG } from './iconmap.js?v=20261108184840';
+import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest, freeChestIn } from './chests.js?v=20261108184840';
+import { Net } from './net.js?v=20261108184840';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
 
 // забрать кристаллы за досмотренный ролик (сервер ждёт подтверждения от AdsGram, обычно оно приходит за секунды);
@@ -46,7 +46,7 @@ export function renderShop(save, ctrl, redraw) {
       <div class="st-t"><b>Стартовый набор</b><ul><li>${gemIc(18)} ${D.STARTER.gems} кристаллов</li><li><img src="${bareGlyphUrl('premium', 18)}" alt=""> ${D.PREMIUM[D.STARTER.tower].name}, навсегда</li><li><img src="${bareGlyphUrl('soul', 18)}" alt=""> ${D.STARTER.souls} душ</li></ul></div></div>
       <div class="st-worth">Выгода: на ${worth} ⭐ товаров за ${D.STARTER.stars} ⭐</div>`;
     const b = el('button', 'btn big buy', `⭐ ${D.STARTER.stars}`);
-    b.onclick = async () => { b.disabled = true; const t0 = b.innerHTML; b.textContent = 'Открываю счёт…'; const r = await Wallet.buy('starter'); b.disabled = false; b.innerHTML = t0; if (ok(r)) { ctrl.sfx.play('win'); ctrl.note('Стартовый набор получен'); redraw(); } else if (r.status !== 'cancelled') { say(r); fail(b); } };
+    b.onclick = async () => { b.disabled = true; const t0 = b.innerHTML; b.textContent = 'Открываю счёт…'; const r = await Wallet.buy('starter', 'shop'); b.disabled = false; b.innerHTML = t0; if (ok(r)) { ctrl.sfx.play('win'); ctrl.note('Стартовый набор получен'); redraw(); } else if (r.status !== 'cancelled') { say(r); fail(b); } };
     card.appendChild(b); body.appendChild(card);
   }
 
@@ -117,7 +117,7 @@ export function renderShop(save, ctrl, redraw) {
     const row = el('div', 'krow' + (p.tag ? ' ' + p.tag : ''));
     row.innerHTML = `<div class="kl">${gemIc(30)}<b>${first ? `<s>${fmt(p.gems)}</s> ` : ''}${fmt(got)}</b>${first ? '<span class="x2">×2 за первую покупку</span>' : ''}${p.tag === 'hit' ? '<span class="tag">Хит</span>' : p.tag === 'best' ? '<span class="tag gold">Лучшая цена</span>' : ''}</div>`;
     const b = el('button', 'btn buy', `⭐ ${p.stars}`);
-    b.onclick = async () => { b.disabled = true; const t0 = b.innerHTML; b.textContent = '…'; const r = await Wallet.buy(p); b.disabled = false; b.innerHTML = t0; if (ok(r)) { ctrl.sfx.play('win'); ctrl.note(`+${fmt(got)} кристаллов`); redraw(); } else if (r.status !== 'cancelled') { say(r); fail(b); } };
+    b.onclick = async () => { b.disabled = true; const t0 = b.innerHTML; b.textContent = '…'; const r = await Wallet.buy(p, 'shop'); b.disabled = false; b.innerHTML = t0; if (ok(r)) { ctrl.sfx.play('win'); ctrl.note(`+${fmt(got)} кристаллов`); redraw(); } else if (r.status !== 'cancelled') { say(r); fail(b); } };
     row.appendChild(b); grid.appendChild(row);
   });
   body.appendChild(grid);
