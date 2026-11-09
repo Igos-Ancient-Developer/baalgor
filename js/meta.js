@@ -1,5 +1,5 @@
 // Мета-прогресс: души, дары кузницы, открытие башен, достижения. Не зависит от DOM (можно тестировать в Node).
-import * as D from './data.js?v=20261108184840';
+import * as D from './data.js?v=20261109100442';
 
 export const SOUL_K = 5;                    // общий множитель душ: полное прохождение уровня на «Ужасе» даёт около 95 душ, на «Ночном кошмаре» около 330; вся прокачка и открытие всего стоит около 10 000
 
@@ -129,7 +129,7 @@ export class Meta {
 
   attach(sim, diffIdx, mapId, opts = {}) {
     const save = this.save; if (!save.life) save.life = newLife();
-    const life = save.life, dm = (D.DIFFS[diffIdx] || D.DIFFS[1]).souls * (opts.soulMult || 1);
+    const life = save.life, dm = (sim.D || D.DIFFS[diffIdx] || D.DIFFS[1]).souls * (opts.soulMult || 1);      // у рейтингового забега своя сложность (sim.D)
     this.sim = sim; this.diffIdx = diffIdx; this.mapId = mapId; this.closed = false;
     const run = this.run = { kills: 0, chainMax: 0, meteorBurst: 0, maxGold: 0, maxMines: 0, maxMineLvl: 0, maxIncome: 0, hordeSet: new Set(), hordeTiers: 0, builtSet: new Set(), typesBuilt: 0,
       maxTowerLvl: 0, bothBranches: 0, earlyCalls: 0, econUsed: false, souls: 0, soulsF: 0, newAch: [], startLives: sim.lives, score: 0 };
@@ -183,13 +183,14 @@ export class Meta {
     if (won && this.tut && !save.tutDone) { save.souls += 60; run.souls += 60; }      // подарок новичку: хватит на первую закрытую башню
     if (won) {
       this.award(12);
-      life.wins++; if (this.diffIdx >= 3) life.hellWin = 1;
-      if (this.diffIdx === 4) life.hardcoreWin = 1;
+      life.wins++; const hard = !sim.D.run;              // рейтинговый забег легче «Ночного кошмара»: его победы не засчитываются как победы на сложности 4
+      if (hard && this.diffIdx >= 3) life.hellWin = 1;
+      if (hard && this.diffIdx === 4) life.hardcoreWin = 1;
       if (sim.lives >= run.startLives) life.flawless = 1;
       if (!run.econUsed) life.noEconWin = 1;
-      if (!sim.map.weekly) { (life.mapWins ||= {})[sim.map.id] = 1; markCleared(save, sim.map.id, this.diffIdx); }
+      if (!sim.map.weekly) { (life.mapWins ||= {})[sim.map.id] = 1; if (hard) markCleared(save, sim.map.id, this.diffIdx); }
     }
-    { const k = `${sim.map.id}_${this.diffIdx}`; sim.score = Math.round(sim.score); if (sim.score > (save.prog.scores[k] || 0)) save.prog.scores[k] = sim.score; }
+    { const k = `${sim.map.id}_${this.diffIdx}`; sim.score = Math.round(sim.score); if (!sim.D.run && sim.score > (save.prog.scores[k] || 0)) save.prog.scores[k] = sim.score; }
     life.bestWave = Math.max(life.bestWave, won ? sim.total : sim.wave);
     this.poll(); this.persist();
   }

@@ -1,6 +1,6 @@
 // Игровая симуляция. Никакого DOM/canvas — только состояние и события (emit).
 // Рендер, гор, звук и UI подписываются на события через sim.on(type, fn).
-import * as D from './data.js?v=20261108184840';
+import * as D from './data.js?v=20261109100442';
 const { CELL, COLS, ROWS } = D;
 
 export function mulberry32(a) {
@@ -47,7 +47,7 @@ const TARGET_MODES = ['Первый', 'Последний', 'Сильный', '�
 export { TARGET_MODES };
 
 export class Sim {
-  constructor({ mapId = 0, diffIdx = 1, seed = 1, perks = null, locked = [], allowed = null, limits = null, gold = null, hold = false, autoCollect = false, weeklyHp = 1 } = {}) {
+  constructor({ mapId = 0, diffIdx = 1, seed = 1, perks = null, locked = [], allowed = null, limits = null, gold = null, hold = false, autoCollect = false, weeklyHp = 1, run = false } = {}) {
     this.autoCollect = autoCollect;      // боты: монеты собираются сами; у игрока — только тапом
     this.mods = Object.assign({ startGold: 0, lives: 0, baseIncome: 0, mine: 0, crit: 0, dmg: 0, gold: 0, bag: 0, sell: 0, spellCd: 0, build: 0, rate: 0, call: 0 }, perks || {});
     this.locked = new Set(locked);
@@ -59,7 +59,7 @@ export class Sim {
     this.map = D.MAPS[mapId];
     this.weeklyHp = weeklyHp;                              // кровавый уровень недели: враги крепче
     this.mapId = mapId;
-    this.diffIdx = diffIdx; this.D = this.map.weekly ? { ...D.DIFFS[diffIdx], tier: this.map.tier, hp: 1 } : D.DIFFS[diffIdx]; this.total = this.map.waves; this.score = 0; this.buildIdxMap();
+    this.diffIdx = diffIdx; this.D = run ? D.RUN_DIFF : this.map.weekly ? { ...D.DIFFS[diffIdx], tier: this.map.tier, hp: 1 } : D.DIFFS[diffIdx]; this.total = this.map.waves; this.score = 0; this.buildIdxMap();
     this.lf = D.levelMult(this.map.lvl);                   // множитель глубины уровня
     this.parts = { waves: 0, kills: 0, time: 0, leaks: 0 }; this.verdict = null;
     this.rng = mulberry32(seed);
@@ -435,9 +435,10 @@ export class Sim {
     this.emit('waveclear', { n: e.w });
   }
   // очки: три части (волны, сильные враги, время) считаются с множителем глубины уровня и округляются до целых; сумма умножается на множитель сложности
-  // штраф за пропущенных: доля от того, что уровень мог дать за волны и время; хоть один пропуск — минус очко (в рейтинговом забеге одна жизнь, штрафа нет)
+  // штраф за пропущенных: доля от того, что уровень мог дать за волны и время; хоть один пропуск — минус очко (в рейтинговом забеге штрафа нет: там его заменяют жизни)
+  // в рейтинговом забеге части умножаются на RUN_SCORE_K до округления: очки идут с первой волны
   partsNow() {
-    const p = this.parts, lf = this.lf, w = Math.round(p.waves * lf), k = Math.round(p.kills * lf), t = Math.round(p.time * lf);
+    const p = this.parts, lf = this.lf * (this.D.run ? D.RUN_SCORE_K : 1), w = Math.round(p.waves * lf), k = Math.round(p.kills * lf), t = Math.round(p.time * lf);
     const l = p.leaks ? -Math.max(1, Math.round(p.leaks * lf)) : 0, sub = Math.max(0, w + k + t + l);
     return { waves: w, kills: k, time: t, leaks: l, sub, total: Math.round(sub * this.D.score) };
   }
@@ -498,7 +499,7 @@ export class Sim {
   leak(e) {
     e.dead = true; this.waveDone(e);
     this.stats.leaks++;
-    if (this.D.lives !== 1) { this.parts.leaks += D.LEAK_FRAC * this.potential() * Math.min(this.lives, e.def.lives); this.rescore(); }
+    if (this.D.lives !== 1 && !this.D.run) { this.parts.leaks += D.LEAK_FRAC * this.potential() * Math.min(this.lives, e.def.lives); this.rescore(); }
     this.lives = Math.max(this.map.tutorial ? 1 : 0, this.lives - e.def.lives);      // обучение проиграть нельзя: новички уходили после поражения в нём
     this.emit('leak', { e, x: e.x, y: e.y });
     if (this.lives <= 0 && this.state === 'play' && !this.limbo) {

@@ -1,33 +1,33 @@
 // Точка входа: загрузка ассетов, навигация (старт → карта → сложность → подготовка → бой), игровой цикл, ввод, сохранения.
-import * as D from './data.js?v=20261108184840';
-import * as A from './art.js?v=20261108184840';
-import { Sim } from './sim.js?v=20261108184840';
-import { Gore } from './gore.js?v=20261108184840';
-import { Renderer } from './render.js?v=20261108184840';
-import { GameUI } from './ui.js?v=20261108184840';
-import { Tutorial } from './tutorial.js?v=20261108184840';
-import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261108184840';
-import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261108184840';
-import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261108184840';
-import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261108184840';
-import { mapBG, releaseBG } from './env.js?v=20261108184840';
-import { MENU_SPEC } from './music.js?v=20261108184840';
-import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261108184840';
-import { renderForge, renderAchs } from './screens.js?v=20261108184840';
-import { renderShop, claimAdGems } from './shop.js?v=20261108184840';
-import { freeChestReady, openChests, playOpening, chestImg, refreshStock } from './chests.js?v=20261108184840';
-import { tourneyState, prizeHtml } from './tourney.js?v=20261108184840';
-import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261108184840';
-import { Wallet } from './wallet.js?v=20261108184840';
-import { initLang, pickLang } from './i18n.js?v=20261108184840';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
-import { startFit } from './fit.js?v=20261108184840';
-import { startOnline } from './online.js?v=20261108184840';
-import { Menus, RUN, clock } from './menus.js?v=20261108184840';
-import { Net } from './net.js?v=20261108184840';
-import { Ads } from './ads.js?v=20261108184840';
-import { placeText, pyramidSvg } from './place.js?v=20261108184840';
-import { gemIc } from './res.js?v=20261108184840';
-import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261108184840';
+import * as D from './data.js?v=20261109100442';
+import * as A from './art.js?v=20261109100442';
+import { Sim } from './sim.js?v=20261109100442';
+import { Gore } from './gore.js?v=20261109100442';
+import { Renderer } from './render.js?v=20261109100442';
+import { GameUI } from './ui.js?v=20261109100442';
+import { Tutorial } from './tutorial.js?v=20261109100442';
+import { Sfx, attachSfx, GORE_SOUNDS } from './audio.js?v=20261109100442';
+import { TG, defaultSave, defaultSettings, betterRun } from './tg.js?v=20261109100442';
+import { applyEnemySprites, releaseEnemies, enemyFiles } from './enemies.js?v=20261109100442';
+import { loadSprites, spritesReady, loadEnemyImgs, loadLand, dropLand, url as imgUrl } from './sprites.js?v=20261109100442';
+import { mapBG, releaseBG } from './env.js?v=20261109100442';
+import { MENU_SPEC } from './music.js?v=20261109100442';
+import { Meta, perkMods, lockedItems, nextAfter, tutorialDone, getLoadout, slotsOf } from './meta.js?v=20261109100442';
+import { renderForge, renderAchs } from './screens.js?v=20261109100442';
+import { renderShop, claimAdGems } from './shop.js?v=20261109100442';
+import { freeChestReady, openChests, playOpening, chestImg, refreshStock } from './chests.js?v=20261109100442';
+import { tourneyState, prizeHtml } from './tourney.js?v=20261109100442';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState } from './weekly.js?v=20261109100442';
+import { Wallet } from './wallet.js?v=20261109100442';
+import { initLang, pickLang } from './i18n.js?v=20261109100442';                // язык новичка — по языку Telegram, без окна выбора (окно отпугивало новичков из рекламы); сменить — в настройках
+import { startFit } from './fit.js?v=20261109100442';
+import { startOnline } from './online.js?v=20261109100442';
+import { Menus, RUN, clock } from './menus.js?v=20261109100442';
+import { Net } from './net.js?v=20261109100442';
+import { Ads } from './ads.js?v=20261109100442';
+import { placeText, pyramidSvg } from './place.js?v=20261109100442';
+import { gemIc } from './res.js?v=20261109100442';
+import { bareGlyphUrl, glyphIcon, iconUrl, PALETTE } from './icons.js?v=20261109100442';
 
 const $ = (s) => document.querySelector(s);
 const show = (id) => $(id).classList.remove('hidden');
@@ -62,8 +62,8 @@ async function boot() {
   startOnline();
   TG.init();
   if (location.search.includes('debug')) window.__bk = ctrl;
-  if (location.search.includes('enemydemo')) import('./demo.js?v=20261108184840').then((m) => m.enemyDemo(ctrl));
-  if (location.search.includes('buildall')) import('./demo.js?v=20261108184840').then((m) => m.buildAll(ctrl));
+  if (location.search.includes('enemydemo')) import('./demo.js?v=20261109100442').then((m) => m.enemyDemo(ctrl));
+  if (location.search.includes('buildall')) import('./demo.js?v=20261109100442').then((m) => m.buildAll(ctrl));
   save = await TG.load(); ctrl.save = save;
   weeklyState(save);                                         // настроить недельный уровень на текущую неделю
   if (save.perks && save.perks.luck) {                      // дар «Золотая рука» убран: потраченные на него души возвращаем
@@ -91,7 +91,7 @@ async function boot() {
 // в памяти только то, что нужно сейчас.
 let warmId = null, warmP = null;
 function ensureLevel(L, diffIdx = 1) {
-  const tier = L.weekly ? L.tier : (D.DIFFS[diffIdx] || {}).tier || 0, key = L.id + ':' + tier;      // виды врагов зависят от сложности (сдвиг tier)
+  const tier = L.weekly ? L.tier : ((run && diffIdx === RUN.diff ? D.RUN_DIFF : D.DIFFS[diffIdx]) || {}).tier || 0, key = L.id + ':' + tier;      // виды врагов зависят от сложности (сдвиг tier; у забега своя)
   if (warmId === key && warmP) return warmP;
   warmId = key;
   const types = D.levelTypes(L, tier);
@@ -379,7 +379,7 @@ function setupRevive() {
 // текущие очки в меню паузы (в рейтинговом забеге — за весь забег и время)
 function renderPauseScore() {
   const box = $('#p-score'); if (!sim || D.MAPS[levelIdx].tutorial) { box.innerHTML = ''; return; }
-  const sc = Math.round(sim.score), img = `<img src="${SCORE_ICON}" alt="">`, dd = D.DIFFS[diffI];
+  const sc = Math.round(sim.score), img = `<img src="${SCORE_ICON}" alt="">`, dd = run ? D.RUN_DIFF : D.DIFFS[diffI];
   const dl = `<div class="ps-d" style="--dc:${dd.color}"><img src="${new URL(`../img/ui/ic/diff_${diffI}.webp`, import.meta.url).href}" alt=""><b>${dd.name}</b>${weeklyRun ? '<span>недельный уровень</span>' : ''}</div>`;
   box.innerHTML = dl + (run
     ? `<div class="ps-v">${img}${fmt(run.score + sim.score)}</div><small>Рубеж ${run.i + 1} из ${run.levels.length} · время ${clock(run.time + sim.time)} · за этот рубеж +${fmt(sc)}</small>`
@@ -456,7 +456,7 @@ async function startLevel(levelId, diffIdx, ranked, loadout, boosts = [], weekly
   if (!ranked) { run = null; ctrl.run = null; }
   const std = !tut;                                      // в обучении без даров Кузницы; в рейтинговом забеге действует всё, что игрок открыл и прокачал
   sim = new Sim({ mapId: levelIdx, diffIdx, seed: (Math.random() * 1e9) | 0, perks: boostMods(perkMods(std ? save.perks : {}), boosts, diffIdx), locked: std ? lockedItems(save) : [],
-    allowed: loadout, weeklyHp: weeklyRun ? L.weeklyHp : 1, limits: tut ? { bolt: 1, mine: 1 } : null, gold: tut ? 110 : null, hold: tut });
+    allowed: loadout, weeklyHp: weeklyRun ? L.weeklyHp : 1, limits: tut ? { bolt: 1, mine: 1 } : null, gold: tut ? 110 : null, hold: tut, run: !!ranked });
   ctrl.sim = sim; if (location.search.includes('debug')) window.__bk = ctrl;
   if (gore) gore.dispose();
   gore = new Gore(); gore.muzzle = A.muzzle; gore.headAngle = A.headAngle; ctrl.gore = gore; gore.level = 1; gore.attach(sim); gore.onSound = (n, v) => { if (GORE_SOUNDS.has(n)) sfx.play(n, v); };
@@ -561,11 +561,11 @@ function showEnd(won) {
   const more = !!run && !run.done;                       // забег продолжается: следующий рубеж
   $('#end-title').textContent = tut ? (won ? 'Обучение пройдено' : 'Поражение') : run ? (more ? `Рубеж ${run.i + 1} из ${run.levels.length} взят` : won ? 'Забег пройден' : `Забег окончен на рубеже ${run.i + 1}`) : won ? 'Победа' : 'Поражение';
   $('#end-title').style.color = won ? '#8fe36a' : '#ff5a6a';
-  const dl = D.DIFFS[diffI];
+  const dl = run ? D.RUN_DIFF : D.DIFFS[diffI];          // у рейтингового забега своя сложность
   const par = clock(v.par);
   const diffImg = new URL(`../img/ui/ic/diff_${diffI}.webp`, import.meta.url).href;
   $('#end-hero').innerHTML = `<div class="eh ${won ? 'win' : 'lose'}"><i class="ehr"></i><div class="ehi"><img src="${L(won ? 'crown' : 'skull', 64)}" alt=""></div></div>`;
-  $('#end-sub').innerHTML = tut ? '' : `<div class="es"><b>${run ? 'Рейтинговый забег' : D.MAPS[levelIdx].name}</b><span style="--dc:${dl.color}"><img src="${diffImg}" alt="">${dl.name}${weeklyRun ? ' · недельный' : ''}</span></div>`;
+  $('#end-sub').innerHTML = tut ? '' : `<div class="es"><b>${D.MAPS[levelIdx].name}</b><span style="--dc:${dl.color}"><img src="${diffImg}" alt="">${dl.name}${weeklyRun ? ' · недельный' : ''}</span></div>`;
   $('#end-verdict').innerHTML = tut ? '' : `
     <div class="vr" data-k="waves"><span><img src="${L('flag', 22)}" alt="">Волны</span><b>+0</b></div>
     <div class="vr" data-k="kills"><span><img src="${L('skull', 22)}" alt="">Сильные враги</span><b>+0</b></div>

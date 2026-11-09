@@ -1,10 +1,10 @@
 // Турнир недели: рейтинговый забег с обнулением каждый понедельник 00:00 UTC (supabase/tourney.sql). Здесь — состояние с сервера,
 // шапка таблицы лидеров (отсчёт до итогов, пьедестал 2–1–3 с призами, награды за остальные места) и окно приза прошлой недели.
 // Пока на сервере нет ключа tourney_from, сервер отвечает on: false и игра турнир не показывает.
-import { Net } from './net.js?v=20261108184840';
-import { weekLeft } from './weekly.js?v=20261108184840';
-import { chestImg } from './chests.js?v=20261108184840';
-import { url as imgUrl } from './sprites.js?v=20261108184840';
+import { Net } from './net.js?v=20261109100442';
+import { weekLeft } from './weekly.js?v=20261109100442';
+import { chestImg } from './chests.js?v=20261109100442';
+import { url as imgUrl } from './sprites.js?v=20261109100442';
 
 const IC = (n) => imgUrl('ui/ic/' + n + '.webp');
 const esc = (s) => String(s).replace(/[<&]/g, (c) => (c === '<' ? '&lt;' : '&amp;'));
