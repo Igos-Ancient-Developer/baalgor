@@ -1,16 +1,16 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261109140352';
-import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261109140352';
-import * as D from './data.js?v=20261109140352';
-import * as M from './meta.js?v=20261109140352';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261109140352';
-import { url as imgUrl } from './sprites.js?v=20261109140352';
-import { Net } from './net.js?v=20261109140352';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261109140352';
-import { fillPlates, gemIc } from './res.js?v=20261109140352';
-import { gemHtml } from './gem3d.js?v=20261109140352';
-import { Wallet } from './wallet.js?v=20261109140352';
-import { tourneyState, tourneyOn, tourneyCached, tourneyHead, fillPodium, tickClock, countdown } from './tourney.js?v=20261109140352';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261109142430';
+import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261109142430';
+import * as D from './data.js?v=20261109142430';
+import * as M from './meta.js?v=20261109142430';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261109142430';
+import { url as imgUrl } from './sprites.js?v=20261109142430';
+import { Net } from './net.js?v=20261109142430';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261109142430';
+import { fillPlates, gemIc } from './res.js?v=20261109142430';
+import { gemHtml } from './gem3d.js?v=20261109142430';
+import { Wallet } from './wallet.js?v=20261109142430';
+import { tourneyState, tourneyOn, tourneyCached, tourneyHead, fillPodium, tickClock, countdown } from './tourney.js?v=20261109142430';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };

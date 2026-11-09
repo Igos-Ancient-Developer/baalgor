@@ -42,9 +42,9 @@ img:not([src]),img[src=""]{visibility:hidden}
 @font-face{font-family:'Oswald';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/oswald-latin-5.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 </style>
 <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
-<script type="module" src="js/track.js?v=20261109140352"></script>
-<link rel="stylesheet" href="css/style.css?v=20261109140352" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="css/style.css?v=20261109140352"></noscript>
+<script type="module" src="js/track.js?v=20261109142430"></script>
+<link rel="stylesheet" href="css/style.css?v=20261109142430" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="css/style.css?v=20261109142430"></noscript>
 </head>
 <body>
 <div id="app">
@@ -236,6 +236,18 @@ img:not([src]),img[src=""]{visibility:hidden}
   </div>
 
   <!-- ПРЕДЛОЖЕНИЕ СТАРТОВОГО НАБОРА: после победы поверх итогов, пока набор не куплен (не чаще раза в 3 дня) -->
+  <!-- ВЫХОД ИЗ РЕЙТИНГОВОГО ЗАБЕГА: текущий результат и что он запишется в таблицу турнира (окно одно на экране: итоги или пауза на это время скрыты) -->
+  <div id="runquit" class="screen overlay hidden">
+    <div class="modal of-box rq-box">
+      <div class="rib">Рейтинговый забег</div>
+      <h2>Завершить забег?</h2>
+      <div class="rq-list" id="rq-list"></div>
+      <p class="aa-sub">Этот результат запишется в таблицу турнира недели. Продолжить этот забег потом будет нельзя.</p>
+      <button class="btn big" id="rq-stay">Продолжить забег</button>
+      <button class="btn danger" id="rq-quit">Завершить и выйти</button>
+    </div>
+  </div>
+
   <div id="offer" class="screen overlay hidden">
     <div class="modal of-box">
       <div class="rib">Один раз</div>
@@ -279,6 +291,6 @@ img:not([src]),img[src=""]{visibility:hidden}
   </nav>
 
 </div>
-<script type="module" src="js/main.js?v=20261109140352"></script>
+<script type="module" src="js/main.js?v=20261109142430"></script>
 </body>
 </html>

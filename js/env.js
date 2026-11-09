@@ -1,9 +1,9 @@
 // Окружение: фон карт, пятна крови, иконки интерфейса. На картах стоят только деревья и валуны; портал и ворота — на концах дороги.
-import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261109140352';
-import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261109140352';
-import { UI_IMG, inner } from './iconmap.js?v=20261109140352';
-import { BLOOD } from './enemies.js?v=20261109140352';
-import { SPR, img } from './sprites.js?v=20261109140352';
+import { OUT, S, mk, cached, shade, lin, rad, rrect, ell, circ, poly, fillStroke, tube, glow, shadowEll, rng } from './art.js?v=20261109142430';
+import { CELL, COLS, ROWS, WORLD_W, WORLD_H, PAD, MAPS } from './data.js?v=20261109142430';
+import { UI_IMG, inner } from './iconmap.js?v=20261109142430';
+import { BLOOD } from './enemies.js?v=20261109142430';
+import { SPR, img } from './sprites.js?v=20261109142430';
 
 const T2 = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

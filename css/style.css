@@ -1430,6 +1430,13 @@ body.tgback #world .topbar .online { margin: 0; }
 .of-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 16px; }
 .of-list li { display: flex; align-items: center; justify-content: center; gap: 6px; } .of-list img { width: 18px; height: 18px; }
 .of-box .btn { width: 100%; }
+#runquit { z-index: 32; }
+.rq-list { display: flex; flex-direction: column; gap: 6px; width: 100%; margin: 4px 0 2px; }
+.rq-list .rq { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; background: rgba(0, 0, 0, .38); }
+.rq-list .rq span { color: #cfd8c8; font-size: 15px; }
+.rq-list .rq b { display: flex; align-items: center; gap: 6px; font-size: 19px; color: #ffd24a; text-align: right; }
+.rq-list .rq b img { width: 22px; height: 22px; }
+.rq-list .rq b small { font-size: 13px; color: #e8dcc0; font-weight: 400; }
 #offer, #adask { z-index: 32; }                                           /* выше вкладок и меню; поверх итогов больше не показываются — итоги к этому времени закрыты */
 .aa-box { gap: 10px; }
 .aa-box .rib { white-space: nowrap; }

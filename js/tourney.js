@@ -1,10 +1,10 @@
 // Турнир недели: рейтинговый забег с обнулением каждый понедельник 00:00 UTC (supabase/tourney.sql). Здесь — состояние с сервера,
 // шапка таблицы лидеров (отсчёт до итогов, пьедестал 2–1–3 с призами, награды за остальные места) и окно приза прошлой недели.
 // Пока на сервере нет ключа tourney_from, сервер отвечает on: false и игра турнир не показывает.
-import { Net } from './net.js?v=20261109140352';
-import { weekLeft } from './weekly.js?v=20261109140352';
-import { chestImg } from './chests.js?v=20261109140352';
-import { url as imgUrl } from './sprites.js?v=20261109140352';
+import { Net } from './net.js?v=20261109142430';
+import { weekLeft } from './weekly.js?v=20261109142430';
+import { chestImg } from './chests.js?v=20261109142430';
+import { url as imgUrl } from './sprites.js?v=20261109142430';
 
 const IC = (n) => imgUrl('ui/ic/' + n + '.webp');
 const esc = (s) => String(s).replace(/[<&]/g, (c) => (c === '<' ? '&lt;' : '&amp;'));
@@ -68,7 +68,6 @@ export function tourneyHead() {
       <div class="tr"><b>4–10</b><img src="${chestImg('silver')}" alt=""><span>Серебряный сундук</span></div>
       <div class="tr"><b>50%</b><img src="${chestImg('wood')}" alt=""><span>Деревянный сундук верхней половине таблицы</span></div>
       <div class="tr"><b>100%</b><img src="${IC('loot_souls')}" alt=""><span><em>100</em> душ каждому участнику</span></div>
-      <p>Подарок Telegram приходит от бота прямо в профиль. Его получают те, кто дошёл до 3-го уровня, сундук — те, кто прошёл 1-й.</p>
     </div></div>`;
 }
 // имена тех, кто сейчас стоит на пьедестале
@@ -79,7 +78,7 @@ export function fillPodium(head, rows) {
 // окно приза прошлой недели: место, подарок, сундук, души. ok() — после «Забрать»
 export function prizeHtml(p) {
   const medal = p.place <= 3 ? IC('cont_m' + p.place) : IC('cont_cup');
-  const giftSub = p.gift_status === 'sent' ? 'Уже у тебя в профиле Telegram' : 'Бот пришлёт его в ближайшее время';
+  const giftSub = p.gift_status === 'sent' ? 'Уже у тебя в профиле Telegram' : 'Скоро появится в профиле Telegram';
   const line = (img, name, sub) => `<li><img src="${img}" alt=""><span><b>${name}</b><small>${sub}</small></span></li>`;
   return `<img class="of-ic tp-medal" src="${medal}" alt=""><div class="tp-place"><b>#${p.place}</b><small>/ ${p.total}</small></div>
     <ul class="of-list tp-list">${p.gift ? line(giftSvg(p.gift), GIFT_NAME[p.gift], giftSub) : ''}${p.chest ? line(chestImg(p.chest), CHEST_NAME[p.chest], 'Лежит на складе в магазине') : ''}${p.souls ? line(IC('loot_souls'), `+${p.souls}`, 'душ') : ''}</ul>`;
