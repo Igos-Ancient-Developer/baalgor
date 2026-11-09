@@ -1,16 +1,16 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261109100442';
-import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261109100442';
-import * as D from './data.js?v=20261109100442';
-import * as M from './meta.js?v=20261109100442';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261109100442';
-import { url as imgUrl } from './sprites.js?v=20261109100442';
-import { Net } from './net.js?v=20261109100442';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261109100442';
-import { fillPlates, gemIc } from './res.js?v=20261109100442';
-import { gemHtml } from './gem3d.js?v=20261109100442';
-import { Wallet } from './wallet.js?v=20261109100442';
-import { tourneyState, tourneyOn, tourneyCached, tourneyHead, fillPodium, tickClock, countdown } from './tourney.js?v=20261109100442';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261109100959';
+import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261109100959';
+import * as D from './data.js?v=20261109100959';
+import * as M from './meta.js?v=20261109100959';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261109100959';
+import { url as imgUrl } from './sprites.js?v=20261109100959';
+import { Net } from './net.js?v=20261109100959';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261109100959';
+import { fillPlates, gemIc } from './res.js?v=20261109100959';
+import { gemHtml } from './gem3d.js?v=20261109100959';
+import { Wallet } from './wallet.js?v=20261109100959';
+import { tourneyState, tourneyOn, tourneyCached, tourneyHead, fillPodium, tickClock, countdown } from './tourney.js?v=20261109100959';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
@@ -428,7 +428,7 @@ export class Menus {
       <div class="rk-rules">
         ${row('flag', 'Рубежей подряд', 'Все уровни кампании по порядку, общий таймер на весь забег', n)}
         ${row('skull', 'Сложность', `«${d.name}»: орды ×${x(d.horde)}, ${Math.round(d.elite * 100)}% элитных`, '', 'bad').replace('<b></b>', `<b>${d.name}</b>`)}
-        ${row('heart', 'Жизни крепости', 'Каждый пропущенный враг отнимает жизнь. Жизни кончились — забег окончен', d.lives, 'bad')}
+        ${row('heart', 'Жизнь', 'Один пропущенный враг — забег окончен', '1', 'bad')}
         ${row('coins', 'Золото', 'Из всех источников', '+' + Math.round(d.gold * 100) + '%', 'good')}
         ${row('star', 'Очки', 'За победу над волной, за сильных врагов и за скорость прохождения уровня. Чем дальше уровень, тем больше очков. Итог каждого уровня умножается на сложность', '×' + x(d.score), 'good').replace('mrow good', 'mrow good tokrow').replace(`<img src="${tileUrl('star')}" alt="">`, `<img src="${SC()}" alt="" class="scimg">`)}
         ${row('tower', 'Слоты', 'Перед каждым уровнем собираешь набор из зданий, которые у тебя открыты. Слоты, открытые башни и дары Кузницы — как в обычной игре', M.slotsOf(s), 'neutral')}
