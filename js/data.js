@@ -1,7 +1,7 @@
 // Все игровые данные: карты, башни, экономика, враги, волны.
 // Файл не зависит ни от DOM, ни от canvas — его использует и симуляция в Node (баланс-бот).
 
-import { COLS, ROWS } from './layouts.js?v=20261109100959';
+import { COLS, ROWS } from './layouts.js?v=20261109140352';
 export const CELL = 48;
 export { COLS, ROWS };
 export const WORLD_W = CELL * COLS, WORLD_H = CELL * ROWS;
@@ -20,7 +20,7 @@ export const CHEST_CHANCE = 0.6, CHEST_HITS = 3, CHEST_GOLD_MIN = 15, CHEST_GOLD
 
 // ───────────────────────── Карты ─────────────────────────
 // Уровни кампании описаны в levels.js (раскладки дорог — в layouts.js). Индекс в MAPS = номер уровня.
-import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261109100959';
+import { LEVELS, SECTORS, CAMPAIGN } from './levels.js?v=20261109140352';
 export const MAPS = LEVELS;
 export { CAMPAIGN };
 export { SECTORS };
@@ -38,9 +38,9 @@ export const DIFFS = [
 ];
 // Рейтинговый забег: своя сложность. В таблице лидеров забег по-прежнему записан на сложности 4 (RUN.diff в menus.js), но в бою — эти параметры.
 // На «Ночном кошмаре» (враги как с уровней на 16 дальше, крепче ×1,6, элитных 24%) никто из игроков не прошёл даже 1-й рубеж и не набрал ни очка.
-// Жизнь в забеге по-прежнему одна, поэтому монстры слабее, чем в кампании: бот проходит 1-й рубеж 12/12, 2-й 9/12, 3-й и 4-й 6/12.
+// Жизнь в забеге по-прежнему одна, поэтому монстры слабее, чем в кампании. 09.11 чуть усложнён (орды 0,8 → 0,9): бот проходит рубежи 1–3 в 15, 12 и 9 случаях из 18, 4-й — нет.
 // Очки забега считаются без округления частей до целых и ×RUN_SCORE_K: иначе за проигранный 1-й рубеж выходил 0.
-export const RUN_DIFF = { id: 'run', name: 'Рейтинговый забег', hp: 0.85, spd: 1, tier: 0, score: 4, gold: 0.15, lives: 1, horde: 0.8, elite: 0.08, eliteHp: 2, eliteSpd: 1.2, souls: 2, demon: 'archdemon', color: '#c01a2a', run: true };
+export const RUN_DIFF = { id: 'run', name: 'Рейтинговый забег', hp: 0.85, spd: 1, tier: 0, score: 4, gold: 0.15, lives: 1, horde: 0.9, elite: 0.08, eliteHp: 2, eliteSpd: 1.2, souls: 2, demon: 'archdemon', color: '#c01a2a', run: true };
 export const RUN_SCORE_K = 10;
 
 // ───────────────────────── Башни ─────────────────────────
