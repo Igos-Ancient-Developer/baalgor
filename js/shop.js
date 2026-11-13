@@ -1,14 +1,14 @@
 // Магазин: ежедневный подарок, стартовый набор (один раз), премиум-башни за кристаллы, пакеты кристаллов за Telegram Stars.
 // Приёмы, которые тут работают на повторные покупки: первая покупка каждого пакета даёт ×2, ярлыки «Хит» и «Лучшая цена»,
 // серия подарков на 7 дней, постоянные траты кристаллов (слоты, закрытые здания, премиум, усилители с растущей ценой).
-import * as D from './data.js?v=20261113142918';
-import { Wallet } from './wallet.js?v=20261113142918';
-import { fillPlates, gemIc } from './res.js?v=20261113142918';
-import { towerIcon } from './ui.js?v=20261113142918';
-import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261113142918';
-import { SHOP_IMG } from './iconmap.js?v=20261113142918';
-import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest, freeChestIn } from './chests.js?v=20261113142918';
-import { Net } from './net.js?v=20261113142918';
+import * as D from './data.js?v=20261113142938';
+import { Wallet } from './wallet.js?v=20261113142938';
+import { fillPlates, gemIc } from './res.js?v=20261113142938';
+import { towerIcon } from './ui.js?v=20261113142938';
+import { iconUrl, bareGlyphUrl, glyphIcon } from './icons.js?v=20261113142938';
+import { SHOP_IMG } from './iconmap.js?v=20261113142938';
+import { CHESTS, CHEST_ORDER, buyChests, openChests, stockOf, refreshStock, playOpening, chestHtml, chestImg, topPrizes, freeChestReady, claimFreeChest, freeChestIn } from './chests.js?v=20261113142938';
+import { Net } from './net.js?v=20261113142938';
 const big = (n, s = 96) => iconUrl(glyphIcon(n, { size: s }));
 
 // забрать кристаллы за досмотренный ролик (сервер ждёт подтверждения от AdsGram, обычно оно приходит за секунды);

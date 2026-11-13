@@ -1,16 +1,16 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261113142918';
-import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261113142918';
-import * as D from './data.js?v=20261113142918';
-import * as M from './meta.js?v=20261113142918';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261113142918';
-import { url as imgUrl } from './sprites.js?v=20261113142918';
-import { Net } from './net.js?v=20261113142918';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261113142918';
-import { fillPlates, gemIc } from './res.js?v=20261113142918';
-import { gemHtml } from './gem3d.js?v=20261113142918';
-import { Wallet } from './wallet.js?v=20261113142918';
-import { tourneyState, tourneyOn, tourneyCached, tourneyHead, fillPodium, tickClock, countdown } from './tourney.js?v=20261113142918';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261113142938';
+import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261113142938';
+import * as D from './data.js?v=20261113142938';
+import * as M from './meta.js?v=20261113142938';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261113142938';
+import { url as imgUrl } from './sprites.js?v=20261113142938';
+import { Net } from './net.js?v=20261113142938';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261113142938';
+import { fillPlates, gemIc } from './res.js?v=20261113142938';
+import { gemHtml } from './gem3d.js?v=20261113142938';
+import { Wallet } from './wallet.js?v=20261113142938';
+import { tourneyState, tourneyOn, tourneyCached, tourneyHead, fillPodium, tickClock, countdown } from './tourney.js?v=20261113142938';
 
 const CHANNEL_URL = 'https://t.me/baalgor', CHANNEL_GEMS = 30;   // = private.channel_gems() в supabase/channel.sql
 const $ = (s) => document.querySelector(s);
