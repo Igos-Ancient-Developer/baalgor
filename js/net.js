@@ -1,5 +1,5 @@
 // Клиент рейтингов (Supabase REST, без SDK). Все вызовы — через RPC-функции из supabase/schema.sql.
-import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261109142430';
+import { SUPABASE_URL, SUPABASE_KEY, APP_LINK } from './config.js?v=20261113142918';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const cache = new Map();
@@ -91,6 +91,21 @@ export const Net = {
     }
     return r;
   },
+  // задание «Подпишись на канал» (supabase/channel.sql): сервер сам спрашивает Telegram, подписан ли игрок, и один раз даёт кристаллы.
+  // Ответ Telegram сервер получает в фоне за доли секунды, поэтому несколько попыток. Ответ: кошелёк + gain/done или { error: 'not_member' | 'pending' | 'net' … }
+  async channelCheck(tries = 6) {
+    if (!this.canSubmit()) return { error: 'noauth' };
+    let r = null;
+    for (let i = 0; i < tries; i++) {
+      try { r = await rpc('channel_check', { init_data: tg.initData }); } catch (e) { r = { error: 'net' }; }
+      if (!r || (r.error !== 'pending' && r.error !== 'retry') || i === tries - 1) return r || { error: 'net' };
+      await new Promise((ok) => setTimeout(ok, 900));
+    }
+    return r;
+  },
+  async channelStatus() { if (!this.canSubmit()) return null; try { return await rpc('channel_status', { init_data: tg.initData }); } catch (e) { return null; } },
+  openChannel(url) { if (tg && tg.openTelegramLink) tg.openTelegramLink(url); else window.open(url, '_blank'); },
+  onReturn(fn) { if (tg && tg.onEvent) tg.onEvent('activated', fn); document.addEventListener('visibilitychange', () => { if (!document.hidden) fn(); }); },
   // сообщения от бота (напоминания): согласие игрока писать ему и язык; сервер шлёт только тем, кто разрешил (supabase/notify.sql)
   notifySet(on) {
     if (!this.canSubmit()) return;

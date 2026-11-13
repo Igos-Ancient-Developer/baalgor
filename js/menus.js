@@ -1,17 +1,18 @@
 // Экраны вне боя: стартовый, карта кампании (рисованная карта мира), выбор сложности (карусель), рейтинговый забег, таблицы лидеров.
-import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261109142430';
-import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261109142430';
-import * as D from './data.js?v=20261109142430';
-import * as M from './meta.js?v=20261109142430';
-import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261109142430';
-import { url as imgUrl } from './sprites.js?v=20261109142430';
-import { Net } from './net.js?v=20261109142430';
-import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261109142430';
-import { fillPlates, gemIc } from './res.js?v=20261109142430';
-import { gemHtml } from './gem3d.js?v=20261109142430';
-import { Wallet } from './wallet.js?v=20261109142430';
-import { tourneyState, tourneyOn, tourneyCached, tourneyHead, fillPodium, tickClock, countdown } from './tourney.js?v=20261109142430';
+import { WEEKLY, WEEKLY_LEVEL, weeklyState, weekLeft, leftText } from './weekly.js?v=20261113142918';
+import { LANGS, setLang, rememberLang, lang as curLang } from './i18n.js?v=20261113142918';
+import * as D from './data.js?v=20261113142918';
+import * as M from './meta.js?v=20261113142918';
+import { glyphIcon, iconUrl, bareGlyphUrl, PALETTE } from './icons.js?v=20261113142918';
+import { url as imgUrl } from './sprites.js?v=20261113142918';
+import { Net } from './net.js?v=20261113142918';
+import { towerIcon, econIcon, itemChips, itemCard } from './ui.js?v=20261113142918';
+import { fillPlates, gemIc } from './res.js?v=20261113142918';
+import { gemHtml } from './gem3d.js?v=20261113142918';
+import { Wallet } from './wallet.js?v=20261113142918';
+import { tourneyState, tourneyOn, tourneyCached, tourneyHead, fillPodium, tickClock, countdown } from './tourney.js?v=20261113142918';
 
+const CHANNEL_URL = 'https://t.me/baalgor', CHANNEL_GEMS = 30;   // = private.channel_gems() в supabase/channel.sql
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
 const fmt = (n) => Math.round(n).toLocaleString('ru-RU');
@@ -115,6 +116,36 @@ export class Menus {
     pf.appendChild(avatar(me && (me.photo || me.photo_url), me ? (me.name || me.first_name || me.username) : 'Игрок', me ? me.id : 0));
     $('#gem-ic').innerHTML = gemHtml(30, 0, true); $('#gem-n').textContent = (s.gems || 0).toLocaleString('ru-RU');
     this.tourneyBadge(); tourneyState().then(() => this.tourneyBadge());
+    this.channelTask();
+  }
+  // задание «Подпишись на канал»: первое касание открывает канал, следующее (или возврат в игру) — проверка подписки на сервере, награда один раз
+  channelTask() {
+    const s = this.save, c = this.c, b = $('#b-chan'); if (!b) return;
+    const show = Net.canSubmit() && !s.chDone; b.classList.toggle('hidden', !show); if (!show) return;
+    $('#chan-g').innerHTML = `+${CHANNEL_GEMS} ${gemIc(18)}`;
+    $('#chan-t').textContent = this._chOpened ? 'Проверить подписку' : 'Подпишись на канал';
+    const done = (r) => {
+      s.chDone = 1; c.persist(); b.classList.add('hidden');
+      if (r && r.gain) { Wallet.apply(r); Net.step('ch_join'); c.sfx.play('win'); c.note(`+${r.gain} кристаллов за подписку!`); this.buildTitle(); }
+    };
+    const check = async (quiet) => {
+      if (this._chBusy) return; this._chBusy = true; b.disabled = true; $('#chan-t').textContent = 'Проверяю…';
+      const r = await Net.channelCheck(); this._chBusy = false; b.disabled = false;
+      if (r && r.ok && r.done) return done(r);
+      if (r && r.error === 'not_member') { this._chOpened = false; if (!quiet) c.note('Подписка не найдена. Подпишись на канал и вернись в игру'); }
+      else if (!quiet) c.note('Не получилось, попробуй ещё раз');
+      this.channelTask();
+    };
+    b.onclick = () => {
+      c.sfx.unlock(); c.sfx.play('click');
+      if (this._chOpened) { check(false); return; }
+      this._chOpened = true; Net.step('ch_open'); Net.openChannel(CHANNEL_URL); this.channelTask();
+    };
+    if (!this._chHooked) {                                                       // вернулся из канала — проверяем сами, без лишнего касания
+      this._chHooked = true;
+      Net.onReturn(() => { if (this._chOpened && !s.chDone && !$('#title').classList.contains('hidden')) setTimeout(() => check(true), 600); });
+      Net.channelStatus().then((r) => { if (r && r.done) { s.chDone = 1; c.persist(); b.classList.add('hidden'); } });   // уже забрал на другом устройстве
+    }
   }
   // значок турнира на плите «Рейтинговый забег»: сколько осталось до итогов недели
   tourneyBadge() {
